@@ -19,9 +19,10 @@ const formatTimeAgo = (date) => {
 
 const formatDate = (date) => {
   const d = new Date(date)
-  const month = d.getMonth() + 1
-  const day = d.getDate()
-  return `${month}/${day}`
+  const year = d.getFullYear().toString().slice(2)
+  const month = (d.getMonth() + 1).toString().padStart(2, '0')
+  const day = d.getDate().toString().padStart(2, '0')
+  return `${year}/${month}/${day}`
 }
 
 const ChatRoomCard = ({ room, onClick }) => {
