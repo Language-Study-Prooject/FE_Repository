@@ -1,5 +1,10 @@
-backend:
-  - "**/src/main/java/**"
+# Frontend Project Auto-Labeler Configuration
+
+frontend:
+  - "src/**"
+  - "public/**"
+  - "app/**"
+  - "pages/**"
 
 docs:
   - "docs/**"
@@ -11,54 +16,95 @@ infra:
   - "Dockerfile"
   - "docker-compose*.yml"
   - ".dockerignore"
-  - "k8s/**"
-  - "kubernetes/**"
+  - "nginx/**"
+  - "nginx.conf"
 
-database:
-  - "src/main/resources/db/**"
-  - "src/main/resources/migration/**"
-  - "**/*migration*.sql"
-  - "**/*schema*.sql"
+config:
+  - "*.config.js"
+  - "*.config.ts"
+  - "*.config.mjs"
+  - "vite.config.*"
+  - "next.config.*"
+  - "nuxt.config.*"
+  - "webpack.config.*"
+  - "rollup.config.*"
+  - "tsconfig*.json"
+  - "jsconfig*.json"
+  - ".eslintrc*"
+  - ".prettierrc*"
+  - "tailwind.config.*"
+  - "postcss.config.*"
 
-# 백엔드 레이어별 라벨
-layer:entity:
-  - "**/src/main/java/**/entity/**"
-  - "**/src/main/java/**/domain/**"
-  - "**/src/main/java/**/model/**"
+# Frontend Layer Labels
+layer:components:
+  - "src/components/**"
+  - "components/**"
+  - "app/components/**"
 
-layer:controller:
-  - "**/src/main/java/**/controller/**"
-  - "**/src/main/java/**/api/**"
+layer:pages:
+  - "src/pages/**"
+  - "pages/**"
+  - "app/**/page.*"
+  - "src/views/**"
+  - "views/**"
 
-layer:dto:
-  - "**/src/main/java/**/dto/**"
-  - "**/src/main/java/**/request/**"
-  - "**/src/main/java/**/response/**"
+layer:hooks:
+  - "src/hooks/**"
+  - "hooks/**"
+  - "src/composables/**"
+  - "composables/**"
 
-layer:repository:
-  - "**/src/main/java/**/repository/**"
-  - "**/src/main/java/**/dao/**"
+layer:utils:
+  - "src/utils/**"
+  - "utils/**"
+  - "src/lib/**"
+  - "lib/**"
+  - "src/helpers/**"
 
-layer:service:
-  - "**/src/main/java/**/service/**"
+layer:store:
+  - "src/store/**"
+  - "src/stores/**"
+  - "store/**"
+  - "stores/**"
+  - "src/redux/**"
+  - "src/recoil/**"
+  - "src/zustand/**"
 
-layer:util:
-  - "**/src/main/java/**/util/**"
-  - "**/src/main/java/**/helper/**"
-  - "**/src/main/java/**/common/**"
+layer:api:
+  - "src/api/**"
+  - "src/services/**"
+  - "api/**"
+  - "services/**"
 
-layer:config:
-  - "**/src/main/java/**/config/**"
-  - "**/src/main/java/**/configuration/**"
+layer:styles:
+  - "src/styles/**"
+  - "styles/**"
+  - "**/*.css"
+  - "**/*.scss"
+  - "**/*.sass"
+  - "**/*.less"
+
+layer:types:
+  - "src/types/**"
+  - "types/**"
+  - "**/*.d.ts"
+
+layer:assets:
+  - "src/assets/**"
+  - "assets/**"
+  - "public/**"
 
 layer:test:
-  - "**/src/test/**"
-  - "**/*Test.java"
-  - "**/*Tests.java"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "__tests__/**"
+  - "tests/**"
+  - "test/**"
+  - "cypress/**"
+  - "e2e/**"
 
-layer:resource:
-  - "**/src/main/resources/**/*.yml"
-  - "**/src/main/resources/**/*.yaml"
-  - "**/src/main/resources/**/*.properties"
-  - "**/src/main/resources/**/*.xml"
-  - "**/src/main/resources/**/*.json"
+dependencies:
+  - "package.json"
+  - "package-lock.json"
+  - "yarn.lock"
+  - "pnpm-lock.yaml"
