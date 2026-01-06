@@ -19,7 +19,6 @@ import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
   Dashboard as DashboardIcon,
-  RecordVoiceOver as InterviewIcon,
   Headphones as OpicIcon,
   Chat as FreetalkIcon,
   Edit as WritingIcon,
@@ -59,13 +58,6 @@ const menuItems = [
             description: '문법 교정 & 피드백'
           },
         ],
-      },
-      {
-        id: 'interview',
-        label: '면접 시뮬레이션',
-        icon: InterviewIcon,
-        path: '/interview',
-        description: 'AI 면접관과 실전 연습'
       },
       {
         id: 'freetalk',

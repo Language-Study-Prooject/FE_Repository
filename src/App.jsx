@@ -1,14 +1,22 @@
-import { Routes, Route } from 'react-router-dom'
-import { Box, Typography, Container, Card, CardContent, Grid, Button } from '@mui/material'
+import { useState } from 'react'
+import { Routes, Route, useNavigate } from 'react-router-dom'
+import { Box, Typography, Container, Card, CardContent, Grid, Button, Collapse, IconButton } from '@mui/material'
 import {
-  RecordVoiceOver as InterviewIcon,
   School as EnglishIcon,
   Chat as FreetalkIcon,
+  Headphones as OpicIcon,
+  Edit as WritingIcon,
+  People as PeopleIcon,
+  SmartToy as AiIcon,
+  ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material'
 import MainLayout from './layouts/MainLayout'
 
 // 임시 대시보드 페이지
 function Dashboard() {
+  const navigate = useNavigate()
+  const [expandedCard, setExpandedCard] = useState(null)
+
   const learningModes = [
     {
       id: 'english',
@@ -16,15 +24,10 @@ function Dashboard() {
       description: 'OPIC 연습, 작문 연습으로 영어 실력 향상',
       icon: EnglishIcon,
       color: '#2196f3',
-      path: '/opic',
-    },
-    {
-      id: 'interview',
-      title: '면접 시뮬레이션',
-      description: 'AI 면접관과 실전처럼 연습하세요',
-      icon: InterviewIcon,
-      color: '#0124ac',
-      path: '/interview',
+      children: [
+        { id: 'opic', title: 'OPIC 연습', icon: OpicIcon, path: '/opic', description: '레벨별 맞춤 연습' },
+        { id: 'writing', title: '작문 연습', icon: WritingIcon, path: '/writing', description: '문법 교정 & 피드백' },
+      ],
     },
     {
       id: 'freetalk',
@@ -32,9 +35,25 @@ function Dashboard() {
       description: '사람들과 또는 AI와 자유롭게 대화',
       icon: FreetalkIcon,
       color: '#4caf50',
-      path: '/freetalk/ai',
+      children: [
+        { id: 'freetalk-people', title: '사람들과', icon: PeopleIcon, path: '/freetalk/people', description: '다른 학습자와 대화' },
+        { id: 'freetalk-ai', title: 'AI와', icon: AiIcon, path: '/freetalk/ai', description: 'AI와 자유 대화' },
+      ],
     },
   ]
+
+  const handleCardClick = (mode) => {
+    if (mode.children) {
+      setExpandedCard(expandedCard === mode.id ? null : mode.id)
+    } else if (mode.path) {
+      navigate(mode.path)
+    }
+  }
+
+  const handleSubItemClick = (path, e) => {
+    e.stopPropagation()
+    navigate(path)
+  }
 
   return (
     <Container maxWidth="lg">
@@ -47,49 +66,134 @@ function Dashboard() {
         </Typography>
       </Box>
 
-      <Grid container spacing={3}>
+      <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
         {learningModes.map((mode) => {
           const Icon = mode.icon
+          const isExpanded = expandedCard === mode.id
+          const hasChildren = mode.children && mode.children.length > 0
+
           return (
-            <Grid item xs={12} sm={6} md={3} key={mode.id}>
+            <Box
+              key={mode.id}
+              sx={{
+                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                width: isExpanded ? { xs: '100%', md: '500px' } : { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(33.333% - 16px)' },
+                minWidth: isExpanded ? { xs: '100%', md: '500px' } : 'auto',
+              }}
+            >
               <Card
+                onClick={() => handleCardClick(mode)}
                 sx={{
                   height: '100%',
                   cursor: 'pointer',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                  transform: isExpanded ? 'scale(1.02)' : 'scale(1)',
+                  boxShadow: isExpanded ? 8 : 1,
+                  border: isExpanded ? `2px solid ${mode.color}` : '2px solid transparent',
                   '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: 4,
+                    transform: isExpanded ? 'scale(1.02)' : 'translateY(-4px)',
+                    boxShadow: isExpanded ? 8 : 4,
                   },
                 }}
               >
-                <CardContent sx={{ textAlign: 'center', py: 4 }}>
-                  <Box
-                    sx={{
-                      width: 64,
-                      height: 64,
-                      borderRadius: '50%',
-                      backgroundColor: `${mode.color}15`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      margin: '0 auto 16px',
-                    }}
-                  >
-                    <Icon sx={{ fontSize: 32, color: mode.color }} />
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                    {/* 메인 아이콘 */}
+                    <Box
+                      sx={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: '50%',
+                        backgroundColor: `${mode.color}15`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Icon sx={{ fontSize: 32, color: mode.color }} />
+                    </Box>
+
+                    {/* 텍스트 */}
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Typography variant="h6" fontWeight={600}>
+                          {mode.title}
+                        </Typography>
+                        {hasChildren && (
+                          <ChevronRightIcon
+                            sx={{
+                              transition: 'transform 0.3s',
+                              transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                              color: mode.color,
+                            }}
+                          />
+                        )}
+                      </Box>
+                      <Typography variant="body2" color="text.secondary">
+                        {mode.description}
+                      </Typography>
+                    </Box>
                   </Box>
-                  <Typography variant="h6" fontWeight={600} gutterBottom>
-                    {mode.title}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {mode.description}
-                  </Typography>
+
+                  {/* 하위 카테고리 - 애니메이션으로 펼쳐짐 */}
+                  {hasChildren && (
+                    <Collapse in={isExpanded} timeout={400}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          gap: 2,
+                          mt: 3,
+                          pt: 3,
+                          borderTop: 1,
+                          borderColor: 'divider',
+                        }}
+                      >
+                        {mode.children.map((child, index) => {
+                          const ChildIcon = child.icon
+                          return (
+                            <Box
+                              key={child.id}
+                              onClick={(e) => handleSubItemClick(child.path, e)}
+                              sx={{
+                                flex: 1,
+                                p: 2,
+                                borderRadius: 2,
+                                backgroundColor: 'action.hover',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s',
+                                transform: isExpanded ? 'translateX(0)' : 'translateX(-20px)',
+                                opacity: isExpanded ? 1 : 0,
+                                transitionDelay: `${index * 100}ms`,
+                                '&:hover': {
+                                  backgroundColor: `${mode.color}20`,
+                                  transform: 'scale(1.02)',
+                                },
+                              }}
+                            >
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                <ChildIcon sx={{ color: mode.color, fontSize: 24 }} />
+                                <Box>
+                                  <Typography variant="subtitle2" fontWeight={600}>
+                                    {child.title}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {child.description}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            </Box>
+                          )
+                        })}
+                      </Box>
+                    </Collapse>
+                  )}
                 </CardContent>
               </Card>
-            </Grid>
+            </Box>
           )
         })}
-      </Grid>
+      </Box>
 
       {/* 최근 학습 */}
       <Box sx={{ mt: 6 }}>
