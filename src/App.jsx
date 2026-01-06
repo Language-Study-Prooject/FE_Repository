@@ -67,34 +67,24 @@ function Dashboard() {
         </Typography>
       </Box>
 
-      <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+      <Grid container spacing={3}>
         {learningModes.map((mode) => {
           const Icon = mode.icon
           const isExpanded = expandedCard === mode.id
           const hasChildren = mode.children && mode.children.length > 0
 
           return (
-            <Box
-              key={mode.id}
-              sx={{
-                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                width: isExpanded ? { xs: '100%', md: '500px' } : { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(33.333% - 16px)' },
-                minWidth: isExpanded ? { xs: '100%', md: '500px' } : 'auto',
-              }}
-            >
+            <Grid item xs={12} sm={6} key={mode.id}>
               <Card
                 onMouseEnter={() => handleCardHover(mode.id)}
                 onMouseLeave={handleCardLeave}
                 sx={{
-                  height: '100%',
                   cursor: 'pointer',
-                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                  transform: isExpanded ? 'scale(1.02)' : 'scale(1)',
+                  transition: 'all 0.3s ease',
                   boxShadow: isExpanded ? 8 : 1,
                   border: isExpanded ? `2px solid ${mode.color}` : '2px solid transparent',
                   '&:hover': {
-                    transform: isExpanded ? 'scale(1.02)' : 'translateY(-4px)',
-                    boxShadow: isExpanded ? 8 : 4,
+                    boxShadow: 6,
                   },
                 }}
               >
@@ -192,10 +182,10 @@ function Dashboard() {
                   )}
                 </CardContent>
               </Card>
-            </Box>
+            </Grid>
           )
         })}
-      </Box>
+      </Grid>
 
       {/* 최근 학습 */}
       <Box sx={{ mt: 6 }}>
