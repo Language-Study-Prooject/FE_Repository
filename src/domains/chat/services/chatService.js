@@ -75,8 +75,8 @@ export const messageService = {
 // 음성 API
 export const voiceService = {
   // TTS 변환
-  synthesize: async (text) => {
-    return chatApi.post('/chat/voice/synthesize', { text })
+  synthesize: async (text, voice = 'FEMALE') => {
+    return chatApi.post('/chat/voice/synthesize', { text, voice })
   },
 }
 
