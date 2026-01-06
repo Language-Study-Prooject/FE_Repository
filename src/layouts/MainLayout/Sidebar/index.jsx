@@ -20,11 +20,11 @@ import {
   ChevronRight as ChevronRightIcon,
   Dashboard as DashboardIcon,
   Headphones as OpicIcon,
-  Chat as FreetalkIcon,
   Edit as WritingIcon,
   Assessment as ReportIcon,
   Settings as SettingsIcon,
-  School as EnglishIcon,
+  Mic as SpeakingIcon,
+  Create as WritingCategoryIcon,
   People as PeopleIcon,
   SmartToy as AiIcon,
   ExpandMore as ExpandMoreIcon,
@@ -39,44 +39,44 @@ const menuItems = [
     category: '학습 모드',
     items: [
       {
-        id: 'english',
-        label: '영어공부',
-        icon: EnglishIcon,
+        id: 'speaking',
+        label: '말하기연습',
+        icon: SpeakingIcon,
         children: [
           {
             id: 'opic',
-            label: 'OPIC 연습',
+            label: '오픽연습',
             icon: OpicIcon,
             path: '/opic',
             description: '레벨별 맞춤 연습'
           },
           {
-            id: 'writing',
-            label: '작문 연습',
-            icon: WritingIcon,
-            path: '/writing',
-            description: '문법 교정 & 피드백'
+            id: 'ai-talk',
+            label: 'AI와 말해보기',
+            icon: AiIcon,
+            path: '/freetalk/ai',
+            description: 'AI와 자유로운 대화'
           },
         ],
       },
       {
-        id: 'freetalk',
-        label: '프리토킹',
-        icon: FreetalkIcon,
+        id: 'writing',
+        label: '쓰기연습',
+        icon: WritingCategoryIcon,
         children: [
           {
-            id: 'freetalk-people',
-            label: '사람들과',
+            id: 'chat-people',
+            label: '사람들과 채팅하기',
             icon: PeopleIcon,
             path: '/freetalk/people',
             description: '다른 학습자와 대화'
           },
           {
-            id: 'freetalk-ai',
-            label: 'AI와',
-            icon: AiIcon,
-            path: '/freetalk/ai',
-            description: 'AI와 자유로운 대화'
+            id: 'writing-practice',
+            label: '작문연습',
+            icon: WritingIcon,
+            path: '/writing',
+            description: '문법 교정 & 피드백'
           },
         ],
       },
@@ -119,7 +119,7 @@ const Sidebar = ({ open, collapsed, onToggleCollapse, onClose }) => {
   // 펼침 상태 (localStorage 저장)
   const [expandedMenus, setExpandedMenus] = useState(() => {
     const saved = localStorage.getItem('expandedMenus')
-    return saved ? JSON.parse(saved) : { english: true, freetalk: true }
+    return saved ? JSON.parse(saved) : { speaking: true, writing: true }
   })
 
   useEffect(() => {
