@@ -40,6 +40,7 @@ const ChatRoomModal = ({ open, onClose, room, onLeave }) => {
   const [playingTTS, setPlayingTTS] = useState(null)
   const [minimized, setMinimized] = useState(false)
   const [position, setPosition] = useState({ x: 0, y: 0 })
+  const [savedPosition, setSavedPosition] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   // 메시지 목록 조회
@@ -192,6 +193,19 @@ const ChatRoomModal = ({ open, onClose, room, onLeave }) => {
     }
   }
 
+  // 최소화/최대화 토글
+  const handleToggleMinimize = () => {
+    if (!minimized) {
+      // 최소화: 현재 위치 저장 후 우측 하단으로 이동
+      setSavedPosition(position)
+      setPosition({ x: 0, y: 0 })
+    } else {
+      // 최대화: 저장된 위치로 복원
+      setPosition(savedPosition)
+    }
+    setMinimized(!minimized)
+  }
+
   // 채팅방 퇴장
   const handleLeaveRoom = async () => {
     try {
@@ -269,7 +283,7 @@ const ChatRoomModal = ({ open, onClose, room, onLeave }) => {
             <IconButton size="small" onClick={fetchMessages} sx={{ color: 'white' }} title="새로고침">
               <RefreshIcon fontSize="small" />
             </IconButton>
-            <IconButton size="small" onClick={() => setMinimized(!minimized)} sx={{ color: 'white' }} title={minimized ? '최대화' : '최소화'}>
+            <IconButton size="small" onClick={handleToggleMinimize} sx={{ color: 'white' }} title={minimized ? '최대화' : '최소화'}>
               {minimized ? <MaximizeIcon fontSize="small" /> : <MinimizeIcon fontSize="small" />}
             </IconButton>
             <IconButton size="small" onClick={handleLeaveRoom} sx={{ color: 'white' }} title="나가기">
