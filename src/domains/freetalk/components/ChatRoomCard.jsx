@@ -21,9 +21,7 @@ const formatDate = (date) => {
   const d = new Date(date)
   const month = d.getMonth() + 1
   const day = d.getDate()
-  const hours = d.getHours()
-  const minutes = d.getMinutes().toString().padStart(2, '0')
-  return `${month}/${day} ${hours}:${minutes}`
+  return `${month}/${day}`
 }
 
 const ChatRoomCard = ({ room, onClick }) => {
@@ -34,7 +32,7 @@ const ChatRoomCard = ({ room, onClick }) => {
       onClick={() => onClick?.(room)}
       sx={{
         width: 300,
-        height: 140,
+        height: 100,
         display: 'flex',
         flexDirection: 'column',
         cursor: 'pointer',
@@ -65,7 +63,7 @@ const ChatRoomCard = ({ room, onClick }) => {
               {room.name}
             </Typography>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1, flexWrap: 'wrap' }}>
               {/* 인원 */}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <PeopleIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
@@ -84,12 +82,10 @@ const ChatRoomCard = ({ room, onClick }) => {
                   {formatTimeAgo(room.lastMessageAt)}
                 </Typography>
               </Box>
-            </Box>
 
-            {/* 생성일 */}
-            <Box sx={{ mt: 'auto', pt: 1 }}>
+              {/* 생성일 */}
               <Typography variant="caption" color="text.secondary">
-                생성: {formatDate(room.createdAt)}
+                · {formatDate(room.createdAt)}
               </Typography>
             </Box>
           </Box>
