@@ -85,7 +85,7 @@ const ChatRoomCard = ({ room, onClick }) => {
 
               {/* 생성일 */}
               <Typography variant="caption" color="text.secondary">
-                · {formatDate(room.createdAt)}
+                · 생성: {formatDate(room.createdAt)}
               </Typography>
             </Box>
           </Box>
