@@ -33,6 +33,9 @@ const ChatRoomCard = ({ room, onClick }) => {
     <Card
       onClick={() => onClick?.(room)}
       sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
         cursor: 'pointer',
         transition: 'all 0.2s ease-in-out',
         '&:hover': {
@@ -41,7 +44,7 @@ const ChatRoomCard = ({ room, onClick }) => {
         },
       }}
     >
-      <CardContent sx={{ p: 2.5 }}>
+      <CardContent sx={{ p: 2.5, flex: 1, display: 'flex', flexDirection: 'column' }}>
         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
           {/* 레벨 뱃지 */}
           <Chip
