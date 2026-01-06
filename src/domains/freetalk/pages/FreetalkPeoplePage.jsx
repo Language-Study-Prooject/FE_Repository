@@ -163,9 +163,9 @@ const FreetalkPeoplePage = () => {
       </Box>
 
       {/* 채팅방 목록 */}
-      <Grid container spacing={2}>
+      <Grid container spacing={2} alignItems="stretch">
         {filteredRooms.map((room) => (
-          <Grid item xs={12} sm={6} md={4} key={room.id}>
+          <Grid item xs={12} sm={6} md={4} key={room.id} sx={{ display: 'flex' }}>
             <ChatRoomCard room={room} onClick={handleRoomClick} />
           </Grid>
         ))}
