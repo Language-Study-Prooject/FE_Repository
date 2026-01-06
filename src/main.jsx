@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import { store } from './store'
 import { ThemeProvider } from './contexts/ThemeContext'
+import { ChatProvider } from './contexts/ChatContext'
 import './index.css'
 
 createRoot(document.getElementById('root')).render(
@@ -12,7 +13,9 @@ createRoot(document.getElementById('root')).render(
     <Provider store={store}>
       <BrowserRouter>
         <ThemeProvider>
-          <App />
+          <ChatProvider>
+            <App />
+          </ChatProvider>
         </ThemeProvider>
       </BrowserRouter>
     </Provider>
