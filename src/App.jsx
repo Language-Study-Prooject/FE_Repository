@@ -12,6 +12,7 @@ import {
 } from '@mui/icons-material'
 import MainLayout from './layouts/MainLayout'
 import FreetalkPeoplePage from './domains/freetalk/pages/FreetalkPeoplePage'
+import ChatRoomPage from './domains/freetalk/pages/ChatRoomPage'
 
 // 임시 대시보드 페이지
 function Dashboard() {
@@ -271,6 +272,9 @@ function NotFound() {
 function App() {
   return (
     <Routes>
+      {/* 채팅방 페이지 (별도 레이아웃) */}
+      <Route path="/freetalk/people/room/:roomId" element={<ChatRoomPage />} />
+
       {/* MainLayout 적용 라우트 */}
       <Route element={<MainLayout />}>
         <Route path="/" element={<Dashboard />} />

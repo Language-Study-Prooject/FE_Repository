@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Container,
@@ -16,84 +16,25 @@ import {
   DialogContent,
   DialogActions,
   Chip,
+  CircularProgress,
+  Alert,
 } from '@mui/material'
 import {
   Search as SearchIcon,
   Add as AddIcon,
   Lock as LockIcon,
   People as PeopleIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material'
 import ChatRoomCard from '../components/ChatRoomCard'
+import CreateRoomModal from '../components/CreateRoomModal'
+import { chatRoomService, TEMP_USER_ID } from '../../chat/services/chatService'
 
 const levelColors = {
   beginner: { bg: '#e8f5e9', color: '#2e7d32', label: '초급' },
   intermediate: { bg: '#fff3e0', color: '#ef6c00', label: '중급' },
   advanced: { bg: '#fce4ec', color: '#c2185b', label: '고급' },
 }
-
-// 더미 데이터
-const mockRooms = [
-  {
-    id: 1,
-    name: '영어 일상 대화방',
-    description: '편하게 일상 영어로 대화해요',
-    level: 'beginner',
-    currentMembers: 3,
-    maxMembers: 6,
-    lastMessageAt: new Date(Date.now() - 5 * 60 * 1000),
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    isPrivate: false,
-    isJoined: true,
-  },
-  {
-    id: 2,
-    name: '비즈니스 영어 연습',
-    description: '회의, 이메일, 프레젠테이션 영어',
-    level: 'intermediate',
-    currentMembers: 4,
-    maxMembers: 5,
-    lastMessageAt: new Date(Date.now() - 30 * 60 * 1000),
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    isPrivate: true,
-    isJoined: false,
-  },
-  {
-    id: 3,
-    name: '고급 토론방',
-    description: '시사 이슈로 깊이 있는 토론',
-    level: 'advanced',
-    currentMembers: 2,
-    maxMembers: 4,
-    lastMessageAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    isPrivate: true,
-    isJoined: true,
-  },
-  {
-    id: 4,
-    name: '영어 초보 환영',
-    description: '틀려도 괜찮아요! 함께 성장해요',
-    level: 'beginner',
-    currentMembers: 5,
-    maxMembers: 8,
-    lastMessageAt: new Date(Date.now() - 10 * 60 * 1000),
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    isPrivate: false,
-    isJoined: false,
-  },
-  {
-    id: 5,
-    name: '프리토킹 중급반',
-    description: '자유 주제로 스피킹 연습',
-    level: 'intermediate',
-    currentMembers: 3,
-    maxMembers: 6,
-    lastMessageAt: new Date(Date.now() - 45 * 60 * 1000),
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    isPrivate: false,
-    isJoined: true,
-  },
-]
 
 const FreetalkPeoplePage = () => {
   const navigate = useNavigate()
@@ -103,6 +44,138 @@ const FreetalkPeoplePage = () => {
   const [modalOpen, setModalOpen] = useState(false)
   const [password, setPassword] = useState('')
   const [passwordError, setPasswordError] = useState('')
+
+  // API 관련 state
+  const [rooms, setRooms] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [cursor, setCursor] = useState(null)
+  const [hasMore, setHasMore] = useState(true)
+  const [joining, setJoining] = useState(false)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const observerRef = useRef(null)
+
+  // API에서 채팅방 데이터를 프론트엔드 형식으로 변환
+  const transformRoomData = (apiRoom) => ({
+    id: apiRoom.roomId,
+    name: apiRoom.name,
+    description: apiRoom.description || '',
+    level: apiRoom.level?.toLowerCase() || 'beginner',
+    currentMembers: apiRoom.currentParticipants || 0,
+    maxMembers: apiRoom.maxParticipants || 6,
+    lastMessageAt: apiRoom.lastMessageAt ? new Date(apiRoom.lastMessageAt) : null,
+    createdAt: apiRoom.createdAt ? new Date(apiRoom.createdAt) : new Date(),
+    isPrivate: apiRoom.isPrivate || false,
+    isJoined: apiRoom.isJoined || false,
+  })
+
+  // 채팅방 목록 조회
+  const fetchRooms = useCallback(async (isLoadMore = false) => {
+    if (loading) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const params = {
+        limit: 10,
+        ...(levelFilter !== 'all' && levelFilter !== 'joined' && { level: levelFilter.toUpperCase() }),
+        ...(levelFilter === 'joined' && { joined: true }),
+        ...(isLoadMore && cursor && { cursor }),
+      }
+
+      const response = await chatRoomService.getList(params)
+      const transformedRooms = (response.rooms || []).map(transformRoomData)
+
+      if (isLoadMore) {
+        setRooms((prev) => [...prev, ...transformedRooms])
+      } else {
+        setRooms(transformedRooms)
+      }
+
+      setCursor(response.nextCursor || null)
+      setHasMore(!!response.nextCursor)
+    } catch (err) {
+      console.error('Failed to fetch rooms:', err)
+      setError('채팅방 목록을 불러오는데 실패했습니다')
+    } finally {
+      setLoading(false)
+    }
+  }, [levelFilter, cursor, loading])
+
+  // 초기 로드 및 필터 변경 시 재조회
+  useEffect(() => {
+    const loadRooms = async () => {
+      setLoading(true)
+      setError(null)
+      setCursor(null)
+      setHasMore(true)
+      setRooms([])
+
+      try {
+        const params = {
+          limit: 10,
+          ...(levelFilter !== 'all' && levelFilter !== 'joined' && { level: levelFilter.toUpperCase() }),
+          ...(levelFilter === 'joined' && { joined: true }),
+        }
+
+        const response = await chatRoomService.getList(params)
+        const transformedRooms = (response.rooms || []).map(transformRoomData)
+        setRooms(transformedRooms)
+        setCursor(response.nextCursor || null)
+        setHasMore(!!response.nextCursor)
+      } catch (err) {
+        console.error('Failed to fetch rooms:', err)
+        setError('채팅방 목록을 불러오는데 실패했습니다')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadRooms()
+  }, [levelFilter])
+
+  // 무한 스크롤
+  const lastRoomRef = useCallback((node) => {
+    if (loading) return
+    if (observerRef.current) observerRef.current.disconnect()
+
+    observerRef.current = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasMore && !loading) {
+        fetchRooms(true)
+      }
+    })
+
+    if (node) observerRef.current.observe(node)
+  }, [loading, hasMore, fetchRooms])
+
+  // 새로고침
+  const handleRefresh = async () => {
+    setLoading(true)
+    setError(null)
+    setCursor(null)
+    setHasMore(true)
+    setRooms([])
+
+    try {
+      const params = {
+        limit: 10,
+        ...(levelFilter !== 'all' && levelFilter !== 'joined' && { level: levelFilter.toUpperCase() }),
+        ...(levelFilter === 'joined' && { joined: true }),
+      }
+
+      const response = await chatRoomService.getList(params)
+      const transformedRooms = (response.rooms || []).map(transformRoomData)
+      setRooms(transformedRooms)
+      setCursor(response.nextCursor || null)
+      setHasMore(!!response.nextCursor)
+    } catch (err) {
+      console.error('Failed to fetch rooms:', err)
+      setError('채팅방 목록을 불러오는데 실패했습니다')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleLevelChange = (event, newLevel) => {
     if (newLevel !== null) {
@@ -124,32 +197,36 @@ const FreetalkPeoplePage = () => {
     setPasswordError('')
   }
 
-  const handleEnterRoom = () => {
-    if (selectedRoom?.isPrivate) {
-      // 비밀번호 검증 (더미: 1234)
-      if (password === '1234') {
+  const handleEnterRoom = async () => {
+    if (!selectedRoom) return
+
+    setJoining(true)
+    setPasswordError('')
+
+    try {
+      await chatRoomService.join(selectedRoom.id, selectedRoom.isPrivate ? password : undefined)
+      navigate(`/freetalk/people/room/${selectedRoom.id}`)
+      handleCloseModal()
+    } catch (err) {
+      console.error('Failed to join room:', err)
+      if (err.response?.status === 401 || err.response?.data?.message?.includes('password')) {
+        setPasswordError('비밀번호가 일치하지 않습니다')
+      } else if (err.response?.status === 409) {
+        // 이미 참여중인 경우 바로 입장
         navigate(`/freetalk/people/room/${selectedRoom.id}`)
         handleCloseModal()
       } else {
-        setPasswordError('비밀번호가 일치하지 않습니다')
+        setPasswordError('입장에 실패했습니다. 다시 시도해주세요.')
       }
-    } else {
-      navigate(`/freetalk/people/room/${selectedRoom.id}`)
-      handleCloseModal()
+    } finally {
+      setJoining(false)
     }
   }
 
-  const filteredRooms = mockRooms.filter((room) => {
+  // 클라이언트 사이드 검색 필터
+  const filteredRooms = rooms.filter((room) => {
     const matchesSearch = room.name.toLowerCase().includes(searchQuery.toLowerCase())
-    let matchesLevel = false
-    if (levelFilter === 'all') {
-      matchesLevel = true
-    } else if (levelFilter === 'joined') {
-      matchesLevel = room.isJoined
-    } else {
-      matchesLevel = room.level === levelFilter
-    }
-    return matchesSearch && matchesLevel
+    return matchesSearch
   })
 
   return (
@@ -165,7 +242,7 @@ const FreetalkPeoplePage = () => {
       </Box>
 
       {/* 필터 영역 */}
-      <Box sx={{ mb: 3, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+      <Box sx={{ mb: 3, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, alignItems: 'center' }}>
         {/* 검색 */}
         <TextField
           placeholder="채팅방 검색..."
@@ -195,25 +272,58 @@ const FreetalkPeoplePage = () => {
           <ToggleButton value="advanced">고급</ToggleButton>
           <ToggleButton value="joined">참여중</ToggleButton>
         </ToggleButtonGroup>
+
+        {/* 새로고침 버튼 */}
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<RefreshIcon />}
+          onClick={handleRefresh}
+          disabled={loading}
+        >
+          새로고침
+        </Button>
       </Box>
+
+      {/* 에러 메시지 */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
 
       {/* 채팅방 목록 */}
       <Grid container spacing={2} alignItems="stretch">
-        {filteredRooms.map((room) => (
-          <Grid item xs={12} sm={6} md={4} key={room.id} sx={{ display: 'flex' }}>
+        {filteredRooms.map((room, index) => (
+          <Grid
+            item
+            xs={12}
+            sm={6}
+            md={4}
+            key={room.id}
+            sx={{ display: 'flex' }}
+            ref={index === filteredRooms.length - 1 ? lastRoomRef : null}
+          >
             <ChatRoomCard room={room} onClick={handleRoomClick} />
           </Grid>
         ))}
       </Grid>
 
+      {/* 로딩 인디케이터 */}
+      {loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <CircularProgress />
+        </Box>
+      )}
+
       {/* 빈 상태 */}
-      {filteredRooms.length === 0 && (
+      {!loading && filteredRooms.length === 0 && (
         <Box sx={{ textAlign: 'center', py: 8 }}>
           <Typography variant="h6" color="text.secondary" gutterBottom>
-            검색 결과가 없습니다
+            {error ? '데이터를 불러올 수 없습니다' : '채팅방이 없습니다'}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            다른 키워드로 검색하거나 새 채팅방을 만들어보세요
+            {error ? '새로고침 버튼을 눌러 다시 시도해주세요' : '새 채팅방을 만들어보세요'}
           </Typography>
         </Box>
       )}
@@ -227,13 +337,17 @@ const FreetalkPeoplePage = () => {
           bottom: 24,
           right: 24,
         }}
-        onClick={() => {
-          // TODO: 채팅방 생성 모달
-          console.log('Create new room')
-        }}
+        onClick={() => setCreateModalOpen(true)}
       >
         <AddIcon />
       </Fab>
+
+      {/* 채팅방 생성 모달 */}
+      <CreateRoomModal
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onSuccess={handleRefresh}
+      />
 
       {/* 입장 모달 */}
       <Dialog open={modalOpen} onClose={handleCloseModal} maxWidth="xs" fullWidth>
@@ -296,15 +410,16 @@ const FreetalkPeoplePage = () => {
               )}
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 2 }}>
-              <Button onClick={handleCloseModal} color="inherit">
+              <Button onClick={handleCloseModal} color="inherit" disabled={joining}>
                 취소
               </Button>
               <Button
                 onClick={handleEnterRoom}
                 variant="contained"
-                disabled={selectedRoom.isPrivate && !password}
+                disabled={(selectedRoom.isPrivate && !password) || joining}
+                startIcon={joining && <CircularProgress size={16} color="inherit" />}
               >
-                입장하기
+                {joining ? '입장중...' : '입장하기'}
               </Button>
             </DialogActions>
           </>
