@@ -1,6 +1,20 @@
 import { useState } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
-import { Box, Typography, Container, Card, CardContent, Grid, Button, Collapse, IconButton } from '@mui/material'
+import {
+  Box,
+  Typography,
+  Container,
+  Card,
+  CardContent,
+  Grid,
+  Button,
+  Collapse,
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+} from '@mui/material'
 import {
   Mic as SpeakingIcon,
   Create as WritingCategoryIcon,
@@ -15,6 +29,7 @@ import FreetalkPeoplePage from './domains/freetalk/pages/FreetalkPeoplePage'
 import ChatRoomPage from './domains/freetalk/pages/ChatRoomPage'
 import ChatRoomModal from './domains/freetalk/components/ChatRoomModal'
 import { useChat } from './contexts/ChatContext'
+import { useSettings } from './contexts/SettingsContext'
 
 // 임시 대시보드 페이지
 function Dashboard() {
@@ -245,10 +260,46 @@ function ReportsPage() {
 }
 
 function SettingsPage() {
+  const { settings, setTtsVoice } = useSettings()
+
   return (
-    <Container>
-      <Typography variant="h4">설정</Typography>
-      <Typography color="text.secondary">계정 및 앱 설정</Typography>
+    <Container maxWidth="md">
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" fontWeight={700} gutterBottom>
+          설정
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          앱 설정을 변경할 수 있습니다
+        </Typography>
+      </Box>
+
+      <Card>
+        <CardContent>
+          <FormControl component="fieldset">
+            <FormLabel component="legend" sx={{ fontWeight: 600, mb: 1 }}>
+              TTS 음성 선택
+            </FormLabel>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              채팅에서 메시지를 읽어줄 음성을 선택하세요
+            </Typography>
+            <RadioGroup
+              value={settings.ttsVoice}
+              onChange={(e) => setTtsVoice(e.target.value)}
+            >
+              <FormControlLabel
+                value="FEMALE"
+                control={<Radio />}
+                label="여성 음성"
+              />
+              <FormControlLabel
+                value="MALE"
+                control={<Radio />}
+                label="남성 음성"
+              />
+            </RadioGroup>
+          </FormControl>
+        </CardContent>
+      </Card>
     </Container>
   )
 }

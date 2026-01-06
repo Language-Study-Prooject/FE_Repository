@@ -6,6 +6,7 @@ import App from './App.jsx'
 import { store } from './store'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { ChatProvider } from './contexts/ChatContext'
+import { SettingsProvider } from './contexts/SettingsContext'
 import './index.css'
 
 createRoot(document.getElementById('root')).render(
@@ -13,9 +14,11 @@ createRoot(document.getElementById('root')).render(
     <Provider store={store}>
       <BrowserRouter>
         <ThemeProvider>
-          <ChatProvider>
-            <App />
-          </ChatProvider>
+          <SettingsProvider>
+            <ChatProvider>
+              <App />
+            </ChatProvider>
+          </SettingsProvider>
         </ThemeProvider>
       </BrowserRouter>
     </Provider>

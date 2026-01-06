@@ -21,6 +21,7 @@ import {
   OpenInFull as MaximizeIcon,
 } from '@mui/icons-material'
 import { chatRoomService, messageService, voiceService, TEMP_USER_ID } from '../../chat/services/chatService'
+import { useSettings } from '../../../contexts/SettingsContext'
 
 const levelColors = {
   beginner: { bg: '#e8f5e9', color: '#2e7d32', label: '초급' },
@@ -29,6 +30,7 @@ const levelColors = {
 }
 
 const ChatRoomModal = ({ open, onClose, room, onLeave }) => {
+  const { settings } = useSettings()
   const messagesEndRef = useRef(null)
   const dragRef = useRef(null)
 
@@ -179,7 +181,7 @@ const ChatRoomModal = ({ open, onClose, room, onLeave }) => {
 
     setPlayingTTS(messageId)
     try {
-      const response = await voiceService.synthesize(text)
+      const response = await voiceService.synthesize(text, settings.ttsVoice)
       const responseData = response.data || response
       if (responseData.audioUrl) {
         const audio = new Audio(responseData.audioUrl)
