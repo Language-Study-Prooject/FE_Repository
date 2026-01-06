@@ -1,5 +1,5 @@
-import { Card, CardContent, Box, Typography, Chip, Avatar, AvatarGroup } from '@mui/material'
-import { AccessTime as TimeIcon, People as PeopleIcon } from '@mui/icons-material'
+import { Card, CardContent, Box, Typography, Chip, Button } from '@mui/material'
+import { AccessTime as TimeIcon, People as PeopleIcon, Lock as LockIcon } from '@mui/icons-material'
 
 const levelColors = {
   beginner: { bg: '#e8f5e9', color: '#2e7d32', label: '초급' },
@@ -19,25 +19,27 @@ const formatTimeAgo = (date) => {
 
 const formatDate = (date) => {
   const d = new Date(date)
-  const month = d.getMonth() + 1
-  const day = d.getDate()
-  const hours = d.getHours()
-  const minutes = d.getMinutes().toString().padStart(2, '0')
-  return `${month}/${day} ${hours}:${minutes}`
+  const year = d.getFullYear().toString().slice(2)
+  const month = (d.getMonth() + 1).toString().padStart(2, '0')
+  const day = d.getDate().toString().padStart(2, '0')
+  return `${year}/${month}/${day}`
 }
 
 const ChatRoomCard = ({ room, onClick }) => {
   const level = levelColors[room.level] || levelColors.beginner
 
+  const handleEnterClick = (e) => {
+    e.stopPropagation()
+    onClick?.(room)
+  }
+
   return (
     <Card
-      onClick={() => onClick?.(room)}
       sx={{
-        width: '100%',
-        height: '100%',
+        width: 300,
+        height: 140,
         display: 'flex',
         flexDirection: 'column',
-        cursor: 'pointer',
         transition: 'all 0.2s ease-in-out',
         '&:hover': {
           transform: 'translateY(-4px)',
@@ -45,9 +47,9 @@ const ChatRoomCard = ({ room, onClick }) => {
         },
       }}
     >
-      <CardContent sx={{ p: 2.5, flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-          {/* 레벨 뱃지 */}
+      <CardContent sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
+        {/* 상단: 레벨 뱃지 + 방 이름 + 입장 버튼 */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
           <Chip
             label={level.label}
             size="small"
@@ -55,52 +57,78 @@ const ChatRoomCard = ({ room, onClick }) => {
               backgroundColor: level.bg,
               color: level.color,
               fontWeight: 600,
-              minWidth: 48,
+              fontSize: 11,
+              height: 24,
             }}
           />
 
-          {/* 채팅방 정보 */}
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="subtitle1" fontWeight={600} noWrap>
+          <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
+            {room.isPrivate && (
+              <LockIcon sx={{ fontSize: 16, color: 'warning.main' }} />
+            )}
+            <Typography variant="subtitle2" fontWeight={600} noWrap>
               {room.name}
             </Typography>
-
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
-              {/* 인원 */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <PeopleIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                <Typography variant="body2" color="text.secondary">
-                  <Box component="span" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                    {room.currentMembers}
-                  </Box>
-                  /{room.maxMembers}
-                </Typography>
-              </Box>
-
-              {/* 마지막 대화 */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <TimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                <Typography variant="body2" color="text.secondary">
-                  {formatTimeAgo(room.lastMessageAt)}
-                </Typography>
-              </Box>
-            </Box>
-
-            {/* 참여자 아바타 & 생성일 */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1.5 }}>
-              <AvatarGroup max={4} sx={{ '& .MuiAvatar-root': { width: 28, height: 28, fontSize: 12 } }}>
-                {room.participants?.map((participant, index) => (
-                  <Avatar key={index} alt={participant.name} src={participant.avatar}>
-                    {participant.name?.[0]}
-                  </Avatar>
-                ))}
-              </AvatarGroup>
-
-              <Typography variant="caption" color="text.secondary">
-                생성: {formatDate(room.createdAt)}
-              </Typography>
-            </Box>
           </Box>
+
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleEnterClick}
+            sx={{
+              minWidth: 52,
+              height: 28,
+              fontSize: 12,
+              fontWeight: 600,
+              borderRadius: 2,
+              '&:hover': {
+                backgroundColor: 'primary.main',
+                color: 'white',
+              },
+            }}
+          >
+            입장
+          </Button>
+        </Box>
+
+        {/* 중단: 소개 */}
+        {room.description && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{
+              mt: 0.5,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {room.description}
+          </Typography>
+        )}
+
+        {/* 하단: 인원, 마지막 대화, 생성일 */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 'auto' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <PeopleIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+            <Typography variant="caption" color="text.secondary">
+              <Box component="span" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                {room.currentMembers}
+              </Box>
+              /{room.maxMembers}
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <TimeIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+            <Typography variant="caption" color="text.secondary">
+              {formatTimeAgo(room.lastMessageAt)}
+            </Typography>
+          </Box>
+
+          <Typography variant="caption" color="text.secondary">
+            · 생성: {formatDate(room.createdAt)}
+          </Typography>
         </Box>
       </CardContent>
     </Card>
