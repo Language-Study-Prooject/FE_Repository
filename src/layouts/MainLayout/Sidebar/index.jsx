@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   Drawer,
@@ -10,6 +11,7 @@ import {
   IconButton,
   Divider,
   Typography,
+  Collapse,
   useTheme,
   useMediaQuery,
 } from '@mui/material'
@@ -17,12 +19,16 @@ import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
   Dashboard as DashboardIcon,
-  RecordVoiceOver as InterviewIcon,
   Headphones as OpicIcon,
   Chat as FreetalkIcon,
   Edit as WritingIcon,
   Assessment as ReportIcon,
   Settings as SettingsIcon,
+  School as EnglishIcon,
+  People as PeopleIcon,
+  SmartToy as AiIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material'
 
 const DRAWER_WIDTH = 260
@@ -33,32 +39,46 @@ const menuItems = [
     category: '학습 모드',
     items: [
       {
-        id: 'interview',
-        label: '면접 시뮬레이션',
-        icon: InterviewIcon,
-        path: '/interview',
-        description: 'AI 면접관과 실전 연습'
-      },
-      {
-        id: 'opic',
-        label: 'OPIC 연습',
-        icon: OpicIcon,
-        path: '/opic',
-        description: '레벨별 맞춤 연습'
+        id: 'english',
+        label: '영어공부',
+        icon: EnglishIcon,
+        children: [
+          {
+            id: 'opic',
+            label: 'OPIC 연습',
+            icon: OpicIcon,
+            path: '/opic',
+            description: '레벨별 맞춤 연습'
+          },
+          {
+            id: 'writing',
+            label: '작문 연습',
+            icon: WritingIcon,
+            path: '/writing',
+            description: '문법 교정 & 피드백'
+          },
+        ],
       },
       {
         id: 'freetalk',
         label: '프리토킹',
         icon: FreetalkIcon,
-        path: '/freetalk',
-        description: 'AI와 자유로운 대화'
-      },
-      {
-        id: 'writing',
-        label: '작문 연습',
-        icon: WritingIcon,
-        path: '/writing',
-        description: '문법 교정 & 피드백'
+        children: [
+          {
+            id: 'freetalk-people',
+            label: '사람들과',
+            icon: PeopleIcon,
+            path: '/freetalk/people',
+            description: '다른 학습자와 대화'
+          },
+          {
+            id: 'freetalk-ai',
+            label: 'AI와',
+            icon: AiIcon,
+            path: '/freetalk/ai',
+            description: 'AI와 자유로운 대화'
+          },
+        ],
       },
     ],
   },
@@ -96,6 +116,16 @@ const Sidebar = ({ open, collapsed, onToggleCollapse, onClose }) => {
   const navigate = useNavigate()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
+  // 펼침 상태 (localStorage 저장)
+  const [expandedMenus, setExpandedMenus] = useState(() => {
+    const saved = localStorage.getItem('expandedMenus')
+    return saved ? JSON.parse(saved) : { english: true, freetalk: true }
+  })
+
+  useEffect(() => {
+    localStorage.setItem('expandedMenus', JSON.stringify(expandedMenus))
+  }, [expandedMenus])
+
   const drawerWidth = collapsed ? DRAWER_WIDTH_COLLAPSED : DRAWER_WIDTH
 
   const handleNavigation = (path) => {
@@ -105,7 +135,91 @@ const Sidebar = ({ open, collapsed, onToggleCollapse, onClose }) => {
     }
   }
 
+  const handleToggleExpand = (menuId) => {
+    setExpandedMenus((prev) => ({
+      ...prev,
+      [menuId]: !prev[menuId],
+    }))
+  }
+
   const isActive = (path) => location.pathname === path
+  const isParentActive = (children) => children?.some((child) => location.pathname === child.path)
+
+  const renderMenuItem = (item, isChild = false) => {
+    const Icon = item.icon
+    const hasChildren = item.children && item.children.length > 0
+    const active = item.path ? isActive(item.path) : isParentActive(item.children)
+    const expanded = expandedMenus[item.id]
+
+    return (
+      <Box key={item.id}>
+        <ListItem disablePadding sx={{ mb: 0.5 }}>
+          <ListItemButton
+            onClick={() => {
+              if (hasChildren) {
+                handleToggleExpand(item.id)
+              } else if (item.path) {
+                handleNavigation(item.path)
+              }
+            }}
+            sx={{
+              borderRadius: 2,
+              minHeight: 48,
+              justifyContent: collapsed ? 'center' : 'flex-start',
+              px: collapsed ? 1 : 2,
+              pl: isChild && !collapsed ? 4 : (collapsed ? 1 : 2),
+              backgroundColor: active && !hasChildren ? 'primary.main' : 'transparent',
+              color: active && !hasChildren ? 'white' : 'text.primary',
+              '&:hover': {
+                backgroundColor: active && !hasChildren
+                  ? 'primary.dark'
+                  : 'action.hover',
+              },
+            }}
+          >
+            <ListItemIcon
+              sx={{
+                minWidth: collapsed ? 0 : 40,
+                justifyContent: 'center',
+                color: active && !hasChildren ? 'white' : 'primary.main',
+              }}
+            >
+              <Icon fontSize={isChild ? 'small' : 'medium'} />
+            </ListItemIcon>
+
+            {!collapsed && (
+              <>
+                <ListItemText
+                  primary={item.label}
+                  secondary={!hasChildren ? item.description : null}
+                  primaryTypographyProps={{
+                    fontSize: isChild ? 13 : 14,
+                    fontWeight: active ? 600 : 500,
+                  }}
+                  secondaryTypographyProps={{
+                    fontSize: 11,
+                    color: active && !hasChildren ? 'rgba(255,255,255,0.7)' : 'text.secondary',
+                  }}
+                />
+                {hasChildren && (
+                  expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />
+                )}
+              </>
+            )}
+          </ListItemButton>
+        </ListItem>
+
+        {/* 하위 메뉴 */}
+        {hasChildren && !collapsed && (
+          <Collapse in={expanded} timeout="auto" unmountOnExit>
+            <List disablePadding>
+              {item.children.map((child) => renderMenuItem(child, true))}
+            </List>
+          </Collapse>
+        )}
+      </Box>
+    )
+  }
 
   const drawerContent = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -143,56 +257,7 @@ const Sidebar = ({ open, collapsed, onToggleCollapse, onClose }) => {
             )}
 
             <List disablePadding>
-              {category.items.map((item) => {
-                const Icon = item.icon
-                const active = isActive(item.path)
-
-                return (
-                  <ListItem key={item.id} disablePadding sx={{ mb: 0.5 }}>
-                    <ListItemButton
-                      onClick={() => handleNavigation(item.path)}
-                      sx={{
-                        borderRadius: 2,
-                        minHeight: 48,
-                        justifyContent: collapsed ? 'center' : 'flex-start',
-                        px: collapsed ? 1 : 2,
-                        backgroundColor: active ? 'primary.main' : 'transparent',
-                        color: active ? 'white' : 'text.primary',
-                        '&:hover': {
-                          backgroundColor: active
-                            ? 'primary.dark'
-                            : 'action.hover',
-                        },
-                      }}
-                    >
-                      <ListItemIcon
-                        sx={{
-                          minWidth: collapsed ? 0 : 40,
-                          justifyContent: 'center',
-                          color: active ? 'white' : 'primary.main',
-                        }}
-                      >
-                        <Icon />
-                      </ListItemIcon>
-
-                      {!collapsed && (
-                        <ListItemText
-                          primary={item.label}
-                          secondary={item.description}
-                          primaryTypographyProps={{
-                            fontSize: 14,
-                            fontWeight: active ? 600 : 500,
-                          }}
-                          secondaryTypographyProps={{
-                            fontSize: 11,
-                            color: active ? 'rgba(255,255,255,0.7)' : 'text.secondary',
-                          }}
-                        />
-                      )}
-                    </ListItemButton>
-                  </ListItem>
-                )
-              })}
+              {category.items.map((item) => renderMenuItem(item))}
             </List>
 
             {categoryIndex < menuItems.length - 1 && !collapsed && (
