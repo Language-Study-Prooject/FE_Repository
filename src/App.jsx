@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
 import { Box, Typography, Container, Card, CardContent, Grid, Button, Collapse, IconButton } from '@mui/material'
 import {
-  School as EnglishIcon,
-  Chat as FreetalkIcon,
+  Mic as SpeakingIcon,
+  Create as WritingCategoryIcon,
   Headphones as OpicIcon,
   Edit as WritingIcon,
   People as PeopleIcon,
@@ -20,25 +20,25 @@ function Dashboard() {
 
   const learningModes = [
     {
-      id: 'english',
-      title: '영어공부',
-      description: 'OPIC 연습, 작문 연습으로 영어 실력 향상',
-      icon: EnglishIcon,
+      id: 'speaking',
+      title: '말하기연습',
+      description: '오픽 연습과 AI 대화로 스피킹 실력 향상',
+      icon: SpeakingIcon,
       color: '#2196f3',
       children: [
-        { id: 'opic', title: 'OPIC 연습', icon: OpicIcon, path: '/opic', description: '레벨별 맞춤 연습' },
-        { id: 'writing', title: '작문 연습', icon: WritingIcon, path: '/writing', description: '문법 교정 & 피드백' },
+        { id: 'opic', title: '오픽연습', icon: OpicIcon, path: '/opic', description: '레벨별 맞춤 연습' },
+        { id: 'ai-talk', title: 'AI와 말해보기', icon: AiIcon, path: '/freetalk/ai', description: 'AI와 자유로운 대화' },
       ],
     },
     {
-      id: 'freetalk',
-      title: '프리토킹',
-      description: '사람들과 또는 AI와 자유롭게 대화',
-      icon: FreetalkIcon,
+      id: 'writing',
+      title: '쓰기연습',
+      description: '채팅과 작문으로 라이팅 실력 향상',
+      icon: WritingCategoryIcon,
       color: '#4caf50',
       children: [
-        { id: 'freetalk-people', title: '사람들과', icon: PeopleIcon, path: '/freetalk/people', description: '다른 학습자와 대화' },
-        { id: 'freetalk-ai', title: 'AI와', icon: AiIcon, path: '/freetalk/ai', description: 'AI와 자유 대화' },
+        { id: 'chat-people', title: '사람들과 채팅하기', icon: PeopleIcon, path: '/freetalk/people', description: '다른 학습자와 대화' },
+        { id: 'writing-practice', title: '작문연습', icon: WritingIcon, path: '/writing', description: '문법 교정 & 피드백' },
       ],
     },
   ]
