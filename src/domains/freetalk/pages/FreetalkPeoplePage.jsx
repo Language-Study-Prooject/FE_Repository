@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import {
   Container,
   Box,
@@ -29,6 +28,7 @@ import {
 import ChatRoomCard from '../components/ChatRoomCard'
 import CreateRoomModal from '../components/CreateRoomModal'
 import { chatRoomService, TEMP_USER_ID } from '../../chat/services/chatService'
+import { useChat } from '../../../contexts/ChatContext'
 
 const levelColors = {
   beginner: { bg: '#e8f5e9', color: '#2e7d32', label: '초급' },
@@ -37,7 +37,7 @@ const levelColors = {
 }
 
 const FreetalkPeoplePage = () => {
-  const navigate = useNavigate()
+  const { openChatRoom } = useChat()
   const [searchQuery, setSearchQuery] = useState('')
   const [levelFilter, setLevelFilter] = useState('all')
   const [selectedRoom, setSelectedRoom] = useState(null)
@@ -56,18 +56,25 @@ const FreetalkPeoplePage = () => {
   const observerRef = useRef(null)
 
   // API에서 채팅방 데이터를 프론트엔드 형식으로 변환
-  const transformRoomData = (apiRoom) => ({
-    id: apiRoom.roomId,
-    name: apiRoom.name,
-    description: apiRoom.description || '',
-    level: apiRoom.level?.toLowerCase() || 'beginner',
-    currentMembers: apiRoom.currentParticipants || 0,
-    maxMembers: apiRoom.maxParticipants || 6,
-    lastMessageAt: apiRoom.lastMessageAt ? new Date(apiRoom.lastMessageAt) : null,
-    createdAt: apiRoom.createdAt ? new Date(apiRoom.createdAt) : new Date(),
-    isPrivate: apiRoom.isPrivate || false,
-    isJoined: apiRoom.isJoined || false,
-  })
+  const transformRoomData = (apiRoom) => {
+    // pk가 "ROOM#uuid" 형식이므로 ID 추출
+    const roomId = apiRoom.pk?.replace('ROOM#', '') || apiRoom.roomId
+    // 참여자 수 필드명 여러 가지 체크
+    const currentMembers = apiRoom.currentParticipants || apiRoom.participantCount || apiRoom.memberCount || apiRoom.currentMembers || 0
+    const maxMembers = apiRoom.maxParticipants || apiRoom.maxMembers || 6
+    return {
+      id: roomId,
+      name: apiRoom.name || '채팅방',
+      description: apiRoom.description || '',
+      level: (apiRoom.level || 'beginner').toLowerCase(),
+      currentMembers,
+      maxMembers,
+      lastMessageAt: apiRoom.lastMessageAt ? new Date(apiRoom.lastMessageAt) : null,
+      createdAt: apiRoom.createdAt ? new Date(apiRoom.createdAt) : new Date(),
+      isPrivate: apiRoom.isPrivate || false,
+      isJoined: apiRoom.isJoined || false,
+    }
+  }
 
   // 채팅방 목록 조회
   const fetchRooms = useCallback(async (isLoadMore = false) => {
@@ -85,7 +92,9 @@ const FreetalkPeoplePage = () => {
       }
 
       const response = await chatRoomService.getList(params)
-      const transformedRooms = (response.rooms || []).map(transformRoomData)
+      // API 응답: { success, message, data: { rooms, hasMore, nextCursor } }
+      const responseData = response.data || response
+      const transformedRooms = (responseData.rooms || []).map(transformRoomData)
 
       if (isLoadMore) {
         setRooms((prev) => [...prev, ...transformedRooms])
@@ -93,8 +102,8 @@ const FreetalkPeoplePage = () => {
         setRooms(transformedRooms)
       }
 
-      setCursor(response.nextCursor || null)
-      setHasMore(!!response.nextCursor)
+      setCursor(responseData.nextCursor || null)
+      setHasMore(!!responseData.nextCursor)
     } catch (err) {
       console.error('Failed to fetch rooms:', err)
       setError('채팅방 목록을 불러오는데 실패했습니다')
@@ -120,10 +129,11 @@ const FreetalkPeoplePage = () => {
         }
 
         const response = await chatRoomService.getList(params)
-        const transformedRooms = (response.rooms || []).map(transformRoomData)
+        const responseData = response.data || response
+        const transformedRooms = (responseData.rooms || []).map(transformRoomData)
         setRooms(transformedRooms)
-        setCursor(response.nextCursor || null)
-        setHasMore(!!response.nextCursor)
+        setCursor(responseData.nextCursor || null)
+        setHasMore(!!responseData.nextCursor)
       } catch (err) {
         console.error('Failed to fetch rooms:', err)
         setError('채팅방 목록을 불러오는데 실패했습니다')
@@ -165,10 +175,11 @@ const FreetalkPeoplePage = () => {
       }
 
       const response = await chatRoomService.getList(params)
-      const transformedRooms = (response.rooms || []).map(transformRoomData)
+      const responseData = response.data || response
+      const transformedRooms = (responseData.rooms || []).map(transformRoomData)
       setRooms(transformedRooms)
-      setCursor(response.nextCursor || null)
-      setHasMore(!!response.nextCursor)
+      setCursor(responseData.nextCursor || null)
+      setHasMore(!!responseData.nextCursor)
     } catch (err) {
       console.error('Failed to fetch rooms:', err)
       setError('채팅방 목록을 불러오는데 실패했습니다')
@@ -205,7 +216,8 @@ const FreetalkPeoplePage = () => {
 
     try {
       await chatRoomService.join(selectedRoom.id, selectedRoom.isPrivate ? password : undefined)
-      navigate(`/freetalk/people/room/${selectedRoom.id}`)
+      // 전역 채팅 모달 열기
+      openChatRoom(selectedRoom)
       handleCloseModal()
     } catch (err) {
       console.error('Failed to join room:', err)
@@ -213,7 +225,7 @@ const FreetalkPeoplePage = () => {
         setPasswordError('비밀번호가 일치하지 않습니다')
       } else if (err.response?.status === 409) {
         // 이미 참여중인 경우 바로 입장
-        navigate(`/freetalk/people/room/${selectedRoom.id}`)
+        openChatRoom(selectedRoom)
         handleCloseModal()
       } else {
         setPasswordError('입장에 실패했습니다. 다시 시도해주세요.')

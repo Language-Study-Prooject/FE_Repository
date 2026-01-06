@@ -13,6 +13,8 @@ import {
 import MainLayout from './layouts/MainLayout'
 import FreetalkPeoplePage from './domains/freetalk/pages/FreetalkPeoplePage'
 import ChatRoomPage from './domains/freetalk/pages/ChatRoomPage'
+import ChatRoomModal from './domains/freetalk/components/ChatRoomModal'
+import { useChat } from './contexts/ChatContext'
 
 // 임시 대시보드 페이지
 function Dashboard() {
@@ -270,26 +272,42 @@ function NotFound() {
 }
 
 function App() {
+  const { activeRoom, closeChatRoom } = useChat()
+
+  const handleRefreshRooms = () => {
+    // 채팅방 퇴장 후 목록 새로고침 (페이지에서 처리)
+  }
+
   return (
-    <Routes>
-      {/* 채팅방 페이지 (별도 레이아웃) */}
-      <Route path="/freetalk/people/room/:roomId" element={<ChatRoomPage />} />
+    <>
+      <Routes>
+        {/* 채팅방 페이지 (별도 레이아웃) */}
+        <Route path="/freetalk/people/room/:roomId" element={<ChatRoomPage />} />
 
-      {/* MainLayout 적용 라우트 */}
-      <Route element={<MainLayout />}>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/opic" element={<OpicPage />} />
-        <Route path="/freetalk/people" element={<FreetalkPeoplePage />} />
-        <Route path="/freetalk/ai" element={<FreetalkAiPage />} />
-        <Route path="/writing" element={<WritingPage />} />
-        <Route path="/reports" element={<ReportsPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-      </Route>
+        {/* MainLayout 적용 라우트 */}
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/opic" element={<OpicPage />} />
+          <Route path="/freetalk/people" element={<FreetalkPeoplePage />} />
+          <Route path="/freetalk/ai" element={<FreetalkAiPage />} />
+          <Route path="/writing" element={<WritingPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+        </Route>
 
-      {/* 404 */}
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+        {/* 404 */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+
+      {/* 전역 채팅 모달 */}
+      <ChatRoomModal
+        open={!!activeRoom}
+        onClose={closeChatRoom}
+        room={activeRoom}
+        onLeave={handleRefreshRooms}
+      />
+    </>
   )
 }
 
