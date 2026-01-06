@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
 import { Box, Typography, Container, Card, CardContent, Grid, Button, Collapse, IconButton } from '@mui/material'
 import {
-  School as EnglishIcon,
-  Chat as FreetalkIcon,
+  Mic as SpeakingIcon,
+  Create as WritingCategoryIcon,
   Headphones as OpicIcon,
   Edit as WritingIcon,
   People as PeopleIcon,
@@ -20,35 +20,35 @@ function Dashboard() {
 
   const learningModes = [
     {
-      id: 'english',
-      title: '영어공부',
-      description: 'OPIC 연습, 작문 연습으로 영어 실력 향상',
-      icon: EnglishIcon,
+      id: 'speaking',
+      title: '말하기연습',
+      description: '오픽 연습과 AI 대화로 스피킹 실력 향상',
+      icon: SpeakingIcon,
       color: '#2196f3',
       children: [
-        { id: 'opic', title: 'OPIC 연습', icon: OpicIcon, path: '/opic', description: '레벨별 맞춤 연습' },
-        { id: 'writing', title: '작문 연습', icon: WritingIcon, path: '/writing', description: '문법 교정 & 피드백' },
+        { id: 'opic', title: '오픽연습', icon: OpicIcon, path: '/opic', description: '레벨별 맞춤 연습' },
+        { id: 'ai-talk', title: 'AI와 말해보기', icon: AiIcon, path: '/freetalk/ai', description: 'AI와 자유로운 대화' },
       ],
     },
     {
-      id: 'freetalk',
-      title: '프리토킹',
-      description: '사람들과 또는 AI와 자유롭게 대화',
-      icon: FreetalkIcon,
+      id: 'writing',
+      title: '쓰기연습',
+      description: '채팅과 작문으로 라이팅 실력 향상',
+      icon: WritingCategoryIcon,
       color: '#4caf50',
       children: [
-        { id: 'freetalk-people', title: '사람들과', icon: PeopleIcon, path: '/freetalk/people', description: '다른 학습자와 대화' },
-        { id: 'freetalk-ai', title: 'AI와', icon: AiIcon, path: '/freetalk/ai', description: 'AI와 자유 대화' },
+        { id: 'chat-people', title: '사람들과 채팅하기', icon: PeopleIcon, path: '/freetalk/people', description: '다른 학습자와 대화' },
+        { id: 'writing-practice', title: '작문연습', icon: WritingIcon, path: '/writing', description: '문법 교정 & 피드백' },
       ],
     },
   ]
 
-  const handleCardClick = (mode) => {
-    if (mode.children) {
-      setExpandedCard(expandedCard === mode.id ? null : mode.id)
-    } else if (mode.path) {
-      navigate(mode.path)
-    }
+  const handleCardHover = (modeId) => {
+    setExpandedCard(modeId)
+  }
+
+  const handleCardLeave = () => {
+    setExpandedCard(null)
   }
 
   const handleSubItemClick = (path, e) => {
@@ -67,33 +67,24 @@ function Dashboard() {
         </Typography>
       </Box>
 
-      <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+      <Grid container spacing={3}>
         {learningModes.map((mode) => {
           const Icon = mode.icon
           const isExpanded = expandedCard === mode.id
           const hasChildren = mode.children && mode.children.length > 0
 
           return (
-            <Box
-              key={mode.id}
-              sx={{
-                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                width: isExpanded ? { xs: '100%', md: '500px' } : { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(33.333% - 16px)' },
-                minWidth: isExpanded ? { xs: '100%', md: '500px' } : 'auto',
-              }}
-            >
+            <Grid item xs={12} sm={6} key={mode.id}>
               <Card
-                onClick={() => handleCardClick(mode)}
+                onMouseEnter={() => handleCardHover(mode.id)}
+                onMouseLeave={handleCardLeave}
                 sx={{
-                  height: '100%',
                   cursor: 'pointer',
-                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                  transform: isExpanded ? 'scale(1.02)' : 'scale(1)',
+                  transition: 'all 0.3s ease',
                   boxShadow: isExpanded ? 8 : 1,
                   border: isExpanded ? `2px solid ${mode.color}` : '2px solid transparent',
                   '&:hover': {
-                    transform: isExpanded ? 'scale(1.02)' : 'translateY(-4px)',
-                    boxShadow: isExpanded ? 8 : 4,
+                    boxShadow: 6,
                   },
                 }}
               >
@@ -191,10 +182,10 @@ function Dashboard() {
                   )}
                 </CardContent>
               </Card>
-            </Box>
+            </Grid>
           )
         })}
-      </Box>
+      </Grid>
 
       {/* 최근 학습 */}
       <Box sx={{ mt: 6 }}>
