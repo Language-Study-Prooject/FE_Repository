@@ -34,7 +34,7 @@ const ChatRoomCard = ({ room, onClick }) => {
       onClick={() => onClick?.(room)}
       sx={{
         width: '100%',
-        height: '100%',
+        height: 160,
         display: 'flex',
         flexDirection: 'column',
         cursor: 'pointer',
