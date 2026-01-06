@@ -1,5 +1,5 @@
-import { Card, CardContent, Box, Typography, Chip } from '@mui/material'
-import { AccessTime as TimeIcon, People as PeopleIcon } from '@mui/icons-material'
+import { Card, CardContent, Box, Typography, Chip, Button } from '@mui/material'
+import { AccessTime as TimeIcon, People as PeopleIcon, Lock as LockIcon } from '@mui/icons-material'
 
 const levelColors = {
   beginner: { bg: '#e8f5e9', color: '#2e7d32', label: '초급' },
@@ -27,15 +27,18 @@ const formatDate = (date) => {
 const ChatRoomCard = ({ room, onClick }) => {
   const level = levelColors[room.level] || levelColors.beginner
 
+  const handleEnterClick = (e) => {
+    e.stopPropagation()
+    onClick?.(room)
+  }
+
   return (
     <Card
-      onClick={() => onClick?.(room)}
       sx={{
         width: 300,
-        height: 100,
+        height: 140,
         display: 'flex',
         flexDirection: 'column',
-        cursor: 'pointer',
         transition: 'all 0.2s ease-in-out',
         '&:hover': {
           transform: 'translateY(-4px)',
@@ -43,9 +46,9 @@ const ChatRoomCard = ({ room, onClick }) => {
         },
       }}
     >
-      <CardContent sx={{ p: 2.5, flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-          {/* 레벨 뱃지 */}
+      <CardContent sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
+        {/* 상단: 레벨 뱃지 + 방 이름 + 입장 버튼 */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
           <Chip
             label={level.label}
             size="small"
@@ -53,42 +56,78 @@ const ChatRoomCard = ({ room, onClick }) => {
               backgroundColor: level.bg,
               color: level.color,
               fontWeight: 600,
-              minWidth: 48,
+              fontSize: 11,
+              height: 24,
             }}
           />
 
-          {/* 채팅방 정보 */}
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="subtitle1" fontWeight={600} noWrap>
+          <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
+            {room.isPrivate && (
+              <LockIcon sx={{ fontSize: 16, color: 'warning.main' }} />
+            )}
+            <Typography variant="subtitle2" fontWeight={600} noWrap>
               {room.name}
             </Typography>
-
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1, flexWrap: 'wrap' }}>
-              {/* 인원 */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <PeopleIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                <Typography variant="body2" color="text.secondary">
-                  <Box component="span" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                    {room.currentMembers}
-                  </Box>
-                  /{room.maxMembers}
-                </Typography>
-              </Box>
-
-              {/* 마지막 대화 */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <TimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                <Typography variant="body2" color="text.secondary">
-                  {formatTimeAgo(room.lastMessageAt)}
-                </Typography>
-              </Box>
-
-              {/* 생성일 */}
-              <Typography variant="caption" color="text.secondary">
-                · 생성: {formatDate(room.createdAt)}
-              </Typography>
-            </Box>
           </Box>
+
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleEnterClick}
+            sx={{
+              minWidth: 52,
+              height: 28,
+              fontSize: 12,
+              fontWeight: 600,
+              borderRadius: 2,
+              '&:hover': {
+                backgroundColor: 'primary.main',
+                color: 'white',
+              },
+            }}
+          >
+            입장
+          </Button>
+        </Box>
+
+        {/* 중단: 소개 */}
+        {room.description && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{
+              mt: 0.5,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {room.description}
+          </Typography>
+        )}
+
+        {/* 하단: 인원, 마지막 대화, 생성일 */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 'auto' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <PeopleIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+            <Typography variant="caption" color="text.secondary">
+              <Box component="span" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                {room.currentMembers}
+              </Box>
+              /{room.maxMembers}
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <TimeIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+            <Typography variant="caption" color="text.secondary">
+              {formatTimeAgo(room.lastMessageAt)}
+            </Typography>
+          </Box>
+
+          <Typography variant="caption" color="text.secondary">
+            · 생성: {formatDate(room.createdAt)}
+          </Typography>
         </Box>
       </CardContent>
     </Card>
