@@ -1,4 +1,4 @@
-import { Card, CardContent, Box, Typography, Chip, Avatar, AvatarGroup } from '@mui/material'
+import { Card, CardContent, Box, Typography, Chip } from '@mui/material'
 import { AccessTime as TimeIcon, People as PeopleIcon } from '@mui/icons-material'
 
 const levelColors = {
@@ -33,8 +33,8 @@ const ChatRoomCard = ({ room, onClick }) => {
     <Card
       onClick={() => onClick?.(room)}
       sx={{
-        width: '100%',
-        height: 160,
+        width: 300,
+        height: 140,
         display: 'flex',
         flexDirection: 'column',
         cursor: 'pointer',
@@ -86,16 +86,8 @@ const ChatRoomCard = ({ room, onClick }) => {
               </Box>
             </Box>
 
-            {/* 참여자 아바타 & 생성일 */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1.5 }}>
-              <AvatarGroup max={4} sx={{ '& .MuiAvatar-root': { width: 28, height: 28, fontSize: 12 } }}>
-                {room.participants?.map((participant, index) => (
-                  <Avatar key={index} alt={participant.name} src={participant.avatar}>
-                    {participant.name?.[0]}
-                  </Avatar>
-                ))}
-              </AvatarGroup>
-
+            {/* 생성일 */}
+            <Box sx={{ mt: 'auto', pt: 1 }}>
               <Typography variant="caption" color="text.secondary">
                 생성: {formatDate(room.createdAt)}
               </Typography>
