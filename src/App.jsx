@@ -43,12 +43,12 @@ function Dashboard() {
     },
   ]
 
-  const handleCardClick = (mode) => {
-    if (mode.children) {
-      setExpandedCard(expandedCard === mode.id ? null : mode.id)
-    } else if (mode.path) {
-      navigate(mode.path)
-    }
+  const handleCardHover = (modeId) => {
+    setExpandedCard(modeId)
+  }
+
+  const handleCardLeave = () => {
+    setExpandedCard(null)
   }
 
   const handleSubItemClick = (path, e) => {
@@ -83,7 +83,8 @@ function Dashboard() {
               }}
             >
               <Card
-                onClick={() => handleCardClick(mode)}
+                onMouseEnter={() => handleCardHover(mode.id)}
+                onMouseLeave={handleCardLeave}
                 sx={{
                   height: '100%',
                   cursor: 'pointer',
