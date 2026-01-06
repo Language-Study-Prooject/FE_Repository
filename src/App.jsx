@@ -2,15 +2,22 @@ import { Routes, Route } from 'react-router-dom'
 import { Box, Typography, Container, Card, CardContent, Grid, Button } from '@mui/material'
 import {
   RecordVoiceOver as InterviewIcon,
-  Headphones as OpicIcon,
+  School as EnglishIcon,
   Chat as FreetalkIcon,
-  Edit as WritingIcon,
 } from '@mui/icons-material'
 import MainLayout from './layouts/MainLayout'
 
 // 임시 대시보드 페이지
 function Dashboard() {
   const learningModes = [
+    {
+      id: 'english',
+      title: '영어공부',
+      description: 'OPIC 연습, 작문 연습으로 영어 실력 향상',
+      icon: EnglishIcon,
+      color: '#2196f3',
+      path: '/opic',
+    },
     {
       id: 'interview',
       title: '면접 시뮬레이션',
@@ -20,28 +27,12 @@ function Dashboard() {
       path: '/interview',
     },
     {
-      id: 'opic',
-      title: 'OPIC 연습',
-      description: '레벨별 맞춤 문제로 실력 향상',
-      icon: OpicIcon,
-      color: '#2196f3',
-      path: '/opic',
-    },
-    {
       id: 'freetalk',
       title: '프리토킹',
-      description: 'AI와 자유롭게 영어로 대화',
+      description: '사람들과 또는 AI와 자유롭게 대화',
       icon: FreetalkIcon,
       color: '#4caf50',
-      path: '/freetalk',
-    },
-    {
-      id: 'writing',
-      title: '작문 연습',
-      description: '문법 교정과 표현 피드백',
-      icon: WritingIcon,
-      color: '#ff9800',
-      path: '/writing',
+      path: '/freetalk/ai',
     },
   ]
 
@@ -49,7 +40,7 @@ function Dashboard() {
     <Container maxWidth="lg">
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight={700} gutterBottom>
-          안녕하세요! 👋
+          안녕하세요!
         </Typography>
         <Typography variant="body1" color="text.secondary">
           오늘은 어떤 학습을 해볼까요?
@@ -136,10 +127,19 @@ function OpicPage() {
   )
 }
 
-function FreetalkPage() {
+function FreetalkPeoplePage() {
   return (
     <Container>
-      <Typography variant="h4">프리토킹</Typography>
+      <Typography variant="h4">프리토킹 - 사람들과</Typography>
+      <Typography color="text.secondary">다른 학습자와 영어로 대화</Typography>
+    </Container>
+  )
+}
+
+function FreetalkAiPage() {
+  return (
+    <Container>
+      <Typography variant="h4">프리토킹 - AI와</Typography>
       <Typography color="text.secondary">AI와 자유로운 대화</Typography>
     </Container>
   )
@@ -199,7 +199,8 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/interview" element={<InterviewPage />} />
         <Route path="/opic" element={<OpicPage />} />
-        <Route path="/freetalk" element={<FreetalkPage />} />
+        <Route path="/freetalk/people" element={<FreetalkPeoplePage />} />
+        <Route path="/freetalk/ai" element={<FreetalkAiPage />} />
         <Route path="/writing" element={<WritingPage />} />
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
