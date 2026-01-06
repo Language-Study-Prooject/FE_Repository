@@ -11,6 +11,7 @@ import {
   ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material'
 import MainLayout from './layouts/MainLayout'
+import FreetalkPeoplePage from './domains/freetalk/pages/FreetalkPeoplePage'
 
 // 임시 대시보드 페이지
 function Dashboard() {
@@ -213,29 +214,11 @@ function Dashboard() {
 }
 
 // 임시 페이지들
-function InterviewPage() {
-  return (
-    <Container>
-      <Typography variant="h4">면접 시뮬레이션</Typography>
-      <Typography color="text.secondary">AI 면접관과 실전 연습</Typography>
-    </Container>
-  )
-}
-
 function OpicPage() {
   return (
     <Container>
       <Typography variant="h4">OPIC 연습</Typography>
       <Typography color="text.secondary">레벨별 맞춤 연습</Typography>
-    </Container>
-  )
-}
-
-function FreetalkPeoplePage() {
-  return (
-    <Container>
-      <Typography variant="h4">프리토킹 - 사람들과</Typography>
-      <Typography color="text.secondary">다른 학습자와 영어로 대화</Typography>
     </Container>
   )
 }
@@ -301,7 +284,6 @@ function App() {
       <Route element={<MainLayout />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/interview" element={<InterviewPage />} />
         <Route path="/opic" element={<OpicPage />} />
         <Route path="/freetalk/people" element={<FreetalkPeoplePage />} />
         <Route path="/freetalk/ai" element={<FreetalkAiPage />} />
