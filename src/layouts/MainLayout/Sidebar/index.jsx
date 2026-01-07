@@ -29,6 +29,10 @@ import {
   SmartToy as AiIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
+  MenuBook as VocabIcon,
+  School as LearnIcon,
+  Quiz as QuizIcon,
+  LibraryBooks as WordListIcon,
 } from '@mui/icons-material'
 
 const DRAWER_WIDTH = 260
@@ -77,6 +81,34 @@ const menuItems = [
             icon: WritingIcon,
             path: '/writing',
             description: '문법 교정 & 피드백'
+          },
+        ],
+      },
+      {
+        id: 'vocab',
+        label: '단어 학습',
+        icon: VocabIcon,
+        children: [
+          {
+            id: 'vocab-daily',
+            label: '단어 외우기',
+            icon: LearnIcon,
+            path: '/vocab',
+            description: '매일 55개 단어 학습'
+          },
+          {
+            id: 'vocab-test',
+            label: '시험 보기',
+            icon: QuizIcon,
+            path: '/vocab/test',
+            description: '4지선다 퀴즈'
+          },
+          {
+            id: 'vocab-words',
+            label: '단어장',
+            icon: WordListIcon,
+            path: '/vocab/words',
+            description: '전체 단어 목록'
           },
         ],
       },
