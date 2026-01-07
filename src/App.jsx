@@ -34,6 +34,7 @@ import ChatRoomPage from './domains/freetalk/pages/ChatRoomPage'
 import ChatRoomModal from './domains/freetalk/components/ChatRoomModal'
 import VocabDashboard from './domains/vocab/pages/VocabDashboard'
 import DailyLearning from './domains/vocab/pages/DailyLearning'
+import TestPage from './domains/vocab/pages/TestPage'
 import { useChat } from './contexts/ChatContext'
 import { useSettings } from './contexts/SettingsContext'
 
@@ -364,6 +365,7 @@ function App() {
           <Route path="/writing" element={<WritingPage />} />
           <Route path="/vocab" element={<VocabDashboard />} />
           <Route path="/vocab/daily" element={<DailyLearning />} />
+          <Route path="/vocab/test" element={<TestPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
