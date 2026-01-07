@@ -376,8 +376,8 @@ export default function StatsPage() {
         voiceType: VOICE_TYPES.FEMALE,
       })
 
-      if (response?.data?.audioUrl) {
-        const audio = new Audio(response.data.audioUrl)
+      if (response?.audioUrl) {
+        const audio = new Audio(response.audioUrl)
         audio.onended = () => setPlayingWordId(null)
         audio.onerror = () => setPlayingWordId(null)
         await audio.play()

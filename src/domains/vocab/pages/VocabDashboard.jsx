@@ -80,8 +80,8 @@ export default function VocabDashboard() {
     try {
       setPlayingTTS(word.wordId)
       const response = await voiceService.synthesize(word.wordId, word.english)
-      if (response?.data?.audioUrl) {
-        const audio = new Audio(response.data.audioUrl)
+      if (response?.audioUrl) {
+        const audio = new Audio(response.audioUrl)
         audio.onended = () => setPlayingTTS(null)
         audio.onerror = () => setPlayingTTS(null)
         await audio.play()

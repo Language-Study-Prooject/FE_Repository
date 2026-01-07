@@ -103,7 +103,7 @@ export default function WordListPage() {
       if (categoryFilter) params.category = categoryFilter
 
       const response = await wordService.getWords(params)
-      const newWords = response?.data?.words || []
+      const newWords = response?.words || []
 
       // 사용자 단어 정보 조회
       const wordIds = newWords.map(w => w.wordId)
@@ -113,7 +113,7 @@ export default function WordListPage() {
             wordIds: wordIds.join(','),
           })
           const userWordMap = {}
-          ;(userWordResponse?.data?.userWords || []).forEach(uw => {
+          ;(userWordResponse?.userWords || []).forEach(uw => {
             userWordMap[uw.wordId] = uw
           })
           setUserWords(prev => reset ? userWordMap : { ...prev, ...userWordMap })
@@ -192,8 +192,8 @@ export default function WordListPage() {
         voiceType: voice,
       })
 
-      if (response?.data?.audioUrl) {
-        const audio = new Audio(response.data.audioUrl)
+      if (response?.audioUrl) {
+        const audio = new Audio(response.audioUrl)
         audio.onended = () => setPlayingWordId(null)
         audio.onerror = () => setPlayingWordId(null)
         await audio.play()

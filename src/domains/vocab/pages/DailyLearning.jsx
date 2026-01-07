@@ -55,20 +55,20 @@ export default function DailyLearning() {
       setError(null)
       const response = await dailyService.getWords(TEMP_USER_ID)
       const allWords = [
-        ...(response?.data?.newWords || []),
-        ...(response?.data?.reviewWords || []),
+        ...(response?.newWords || []),
+        ...(response?.reviewWords || []),
       ]
       setWords(allWords)
 
       // 이미 학습한 단어 체크
-      const learnedCount = response?.data?.learnedCount || 0
+      const learnedCount = response?.learnedCount || 0
       if (learnedCount > 0 && learnedCount < allWords.length) {
         const learned = new Set(allWords.slice(0, learnedCount).map(w => w.wordId))
         setLearnedIds(learned)
         setCurrentIndex(learnedCount)
       }
 
-      if (response?.data?.isCompleted) {
+      if (response?.isCompleted) {
         setIsCompleted(true)
       }
     } catch (err) {
@@ -87,8 +87,8 @@ export default function DailyLearning() {
     try {
       setIsPlayingTTS(true)
       const response = await voiceService.synthesize(word.wordId, word.english)
-      if (response?.data?.audioUrl) {
-        const audio = new Audio(response.data.audioUrl)
+      if (response?.audioUrl) {
+        const audio = new Audio(response.audioUrl)
         audio.onended = () => setIsPlayingTTS(false)
         audio.onerror = () => setIsPlayingTTS(false)
         await audio.play()

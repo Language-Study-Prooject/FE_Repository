@@ -360,7 +360,7 @@ export default function TestPage() {
   const fetchRecentResults = async () => {
     try {
       const response = await testService.getResults(TEMP_USER_ID, { limit: 5 })
-      setRecentResults(response?.data?.testResults || [])
+      setRecentResults(response?.testResults || [])
     } catch (err) {
       console.error('Fetch results error:', err)
     }
@@ -372,9 +372,9 @@ export default function TestPage() {
       setError(null)
       const response = await testService.start(TEMP_USER_ID, options)
 
-      if (response?.data) {
-        setTestId(response.data.testId)
-        setQuestions(response.data.questions || [])
+      if (response) {
+        setTestId(response.testId)
+        setQuestions(response.questions || [])
         setTimeRemaining(options.wordCount * 30) // 문제당 30초
         setAnswers({})
         setCurrentIndex(0)
@@ -416,8 +416,8 @@ export default function TestPage() {
 
       const response = await testService.submit(TEMP_USER_ID, testId, answersArray)
 
-      if (response?.data) {
-        setResult(response.data)
+      if (response) {
+        setResult(response)
         setPhase('result')
       }
     } catch (err) {
