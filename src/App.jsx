@@ -23,11 +23,16 @@ import {
   People as PeopleIcon,
   SmartToy as AiIcon,
   ChevronRight as ChevronRightIcon,
+  MenuBook as VocabIcon,
+  School as LearnIcon,
+  Quiz as QuizIcon,
+  LibraryBooks as WordListIcon,
 } from '@mui/icons-material'
 import MainLayout from './layouts/MainLayout'
 import FreetalkPeoplePage from './domains/freetalk/pages/FreetalkPeoplePage'
 import ChatRoomPage from './domains/freetalk/pages/ChatRoomPage'
 import ChatRoomModal from './domains/freetalk/components/ChatRoomModal'
+import VocabDashboard from './domains/vocab/pages/VocabDashboard'
 import { useChat } from './contexts/ChatContext'
 import { useSettings } from './contexts/SettingsContext'
 
@@ -57,6 +62,18 @@ function Dashboard() {
       children: [
         { id: 'chat-people', title: '사람들과 채팅하기', icon: PeopleIcon, path: '/freetalk/people', description: '다른 학습자와 대화' },
         { id: 'writing-practice', title: '작문연습', icon: WritingIcon, path: '/writing', description: '문법 교정 & 피드백' },
+      ],
+    },
+    {
+      id: 'vocab',
+      title: '단어 학습',
+      description: '매일 55개 단어로 어휘력 향상',
+      icon: VocabIcon,
+      color: '#9c27b0',
+      children: [
+        { id: 'vocab-daily', title: '단어 외우기', icon: LearnIcon, path: '/vocab', description: '매일 55개 단어 학습' },
+        { id: 'vocab-test', title: '시험 보기', icon: QuizIcon, path: '/vocab/test', description: '4지선다 퀴즈' },
+        { id: 'vocab-words', title: '단어장', icon: WordListIcon, path: '/vocab/words', description: '전체 단어 목록' },
       ],
     },
   ]
@@ -96,6 +113,7 @@ function Dashboard() {
               <Card
                 onMouseEnter={() => handleCardHover(mode.id)}
                 onMouseLeave={handleCardLeave}
+                onClick={() => !hasChildren && mode.path && navigate(mode.path)}
                 sx={{
                   cursor: 'pointer',
                   transition: 'all 0.3s ease',
@@ -343,6 +361,7 @@ function App() {
           <Route path="/freetalk/people" element={<FreetalkPeoplePage />} />
           <Route path="/freetalk/ai" element={<FreetalkAiPage />} />
           <Route path="/writing" element={<WritingPage />} />
+          <Route path="/vocab" element={<VocabDashboard />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
