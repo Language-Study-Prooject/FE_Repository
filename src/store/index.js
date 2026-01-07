@@ -1,17 +1,8 @@
-import { configureStore, createSlice } from '@reduxjs/toolkit'
-
-// 임시 슬라이스 (빈 store 에러 방지)
-const appSlice = createSlice({
-  name: 'app',
-  initialState: {
-    initialized: true,
-  },
-  reducers: {},
-})
+import { configureStore } from '@reduxjs/toolkit'
 
 export const store = configureStore({
   reducer: {
-    app: appSlice.reducer,
+    // 슬라이스들 추가
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
