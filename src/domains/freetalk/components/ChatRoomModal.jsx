@@ -202,8 +202,9 @@ const ChatRoomModal = ({ open, onClose, room, onLeave }) => {
       setSavedPosition(position)
       setPosition({ x: 0, y: 0 })
     } else {
-      // 최대화: 저장된 위치로 복원
+      // 최대화: 저장된 위치로 복원 후 스크롤 맨 아래로
       setPosition(savedPosition)
+      setTimeout(() => scrollToBottom(true), 100)
     }
     setMinimized(!minimized)
   }
