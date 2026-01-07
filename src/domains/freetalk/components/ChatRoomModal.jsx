@@ -176,12 +176,12 @@ const ChatRoomModal = ({ open, onClose, room, onLeave }) => {
   }
 
   // TTS 재생 (모든 메시지에서 가능)
-  const handlePlayTTS = async (messageId, text) => {
+  const handlePlayTTS = async (messageId) => {
     if (playingTTS === messageId) return
 
     setPlayingTTS(messageId)
     try {
-      const response = await voiceService.synthesize(text, settings.ttsVoice)
+      const response = await voiceService.synthesize(messageId, room.id, settings.ttsVoice)
       const responseData = response.data || response
       if (responseData.audioUrl) {
         const audio = new Audio(responseData.audioUrl)
@@ -376,7 +376,7 @@ const ChatRoomModal = ({ open, onClose, room, onLeave }) => {
                             <>
                               <IconButton
                                 size="small"
-                                onClick={() => handlePlayTTS(message.id, message.content)}
+                                onClick={() => handlePlayTTS(message.id)}
                                 disabled={playingTTS === message.id}
                                 sx={{ p: 0.25 }}
                               >
@@ -410,7 +410,7 @@ const ChatRoomModal = ({ open, onClose, room, onLeave }) => {
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
                               <IconButton
                                 size="small"
-                                onClick={() => handlePlayTTS(message.id, message.content)}
+                                onClick={() => handlePlayTTS(message.id)}
                                 disabled={playingTTS === message.id}
                                 sx={{ p: 0.25 }}
                               >
