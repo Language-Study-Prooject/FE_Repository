@@ -142,14 +142,15 @@ const ChatRoomPage = () => {
   }
 
   // TTS 재생
-  const handlePlayTTS = async (messageId, text) => {
+  const handlePlayTTS = async (messageId) => {
     if (playingTTS === messageId) return
 
     setPlayingTTS(messageId)
     try {
-      const response = await voiceService.synthesize(text)
-      if (response.audioUrl) {
-        const audio = new Audio(response.audioUrl)
+      const response = await voiceService.synthesize(messageId, roomId)
+      const responseData = response.data || response
+      if (responseData.audioUrl) {
+        const audio = new Audio(responseData.audioUrl)
         audio.onended = () => setPlayingTTS(null)
         audio.onerror = () => setPlayingTTS(null)
         await audio.play()
@@ -315,7 +316,7 @@ const ChatRoomPage = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <IconButton
                         size="small"
-                        onClick={() => handlePlayTTS(message.id, message.content)}
+                        onClick={() => handlePlayTTS(message.id)}
                         disabled={playingTTS === message.id}
                         sx={{ p: 0.5 }}
                       >
