@@ -8,6 +8,10 @@ export const wordService = {
   getList: ({ level, category, limit = 20, cursor } = {}) =>
     vocabApi.get('/vocab/words', { params: { level, category, limit, cursor } }),
 
+  // 단어 목록 조회 (alias)
+  getWords: (params) =>
+    vocabApi.get('/vocab/words', { params }),
+
   // 단어 검색
   search: ({ q, limit = 20, cursor } = {}) =>
     vocabApi.get('/vocab/words/search', { params: { q, limit, cursor } }),
@@ -38,6 +42,10 @@ export const userWordService = {
   getList: (userId, { status, limit = 20, cursor } = {}) =>
     vocabApi.get(`/vocab/users/${userId}/words`, { params: { status, limit, cursor } }),
 
+  // 사용자 단어 정보 조회 (wordIds로 조회)
+  getUserWords: (userId, params) =>
+    vocabApi.get(`/vocab/users/${userId}/words`, { params }),
+
   // 학습 결과 업데이트 (정답/오답)
   update: (userId, wordId, isCorrect) =>
     vocabApi.put(`/vocab/users/${userId}/words/${wordId}`, { isCorrect }),
@@ -45,6 +53,10 @@ export const userWordService = {
   // 단어 태그 변경 (북마크/즐겨찾기/난이도)
   updateTag: (userId, wordId, { bookmarked, favorite, difficulty }) =>
     vocabApi.put(`/vocab/users/${userId}/words/${wordId}/tag`, { bookmarked, favorite, difficulty }),
+
+  // 사용자 단어 업데이트 (alias for updateTag)
+  updateUserWord: (userId, wordId, data) =>
+    vocabApi.put(`/vocab/users/${userId}/words/${wordId}/tag`, data),
 }
 
 /**
