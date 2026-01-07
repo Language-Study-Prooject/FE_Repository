@@ -25,9 +25,9 @@ export const wordService = {
  * 일일 학습 API (#66)
  */
 export const dailyService = {
-  // 오늘의 학습 단어 조회
-  getWords: (userId) =>
-    vocabApi.get(`/vocab/daily/${userId}`),
+  // 오늘의 학습 단어 조회 (첫 호출 시 level 필수)
+  getWords: (userId, level) =>
+    vocabApi.get(`/vocab/daily/${userId}`, { params: level ? { level } : {} }),
 
   // 단어 학습 완료 표시
   markLearned: (userId, wordId, isCorrect) =>

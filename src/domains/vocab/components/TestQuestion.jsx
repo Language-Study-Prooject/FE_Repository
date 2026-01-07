@@ -57,12 +57,15 @@ export default function TestQuestion({
         }}
       >
         <Typography variant="h4" fontWeight={700}>
-          {question.question}
+          {question.english || question.question}
         </Typography>
+        {question.example && (
+          <Typography variant="body2" sx={{ mt: 1, opacity: 0.7, fontStyle: 'italic' }}>
+            "{question.example}"
+          </Typography>
+        )}
         <Typography variant="body2" sx={{ mt: 1, opacity: 0.8 }}>
-          {question.type === 'KOREAN_TO_ENGLISH'
-            ? '다음 중 올바른 영어 단어는?'
-            : '다음 중 올바른 한국어 뜻은?'}
+          다음 중 올바른 한국어 뜻은?
         </Typography>
       </Paper>
 

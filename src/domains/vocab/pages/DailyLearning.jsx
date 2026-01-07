@@ -15,6 +15,9 @@ import {
   FormControlLabel,
   ToggleButton,
   ToggleButtonGroup,
+  Card,
+  CardActionArea,
+  CardContent,
 } from '@mui/material'
 import {
   ArrowBack as BackIcon,
@@ -25,16 +28,84 @@ import {
   Check as CheckIcon,
   Close as CloseIcon,
   Celebration as CelebrationIcon,
+  School as SchoolIcon,
 } from '@mui/icons-material'
 import FlashCard from '../components/FlashCard'
 import { dailyService, userWordService, voiceService } from '../services/vocabService'
-import { DIFFICULTY, DIFFICULTY_LABELS } from '../constants/vocabConstants'
+import { LEVELS, LEVEL_LABELS, DIFFICULTY, DIFFICULTY_LABELS } from '../constants/vocabConstants'
 
 const TEMP_USER_ID = import.meta.env.VITE_TEMP_USER_ID || 'user1'
 
+// 레벨 선택 화면
+function LevelSelect({ onSelect, loading }) {
+  const levelDescriptions = {
+    [LEVELS.BEGINNER]: '기초 단어 학습',
+    [LEVELS.INTERMEDIATE]: '중급 단어 학습',
+    [LEVELS.ADVANCED]: '고급 단어 학습',
+  }
+
+  const levelColors = {
+    [LEVELS.BEGINNER]: '#4caf50',
+    [LEVELS.INTERMEDIATE]: '#ff9800',
+    [LEVELS.ADVANCED]: '#f44336',
+  }
+
+  return (
+    <Box py={4}>
+      <Box textAlign="center" mb={4}>
+        <SchoolIcon sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
+        <Typography variant="h5" fontWeight={700} gutterBottom>
+          학습 레벨 선택
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          오늘 학습할 단어 레벨을 선택해주세요
+        </Typography>
+      </Box>
+
+      <Box display="flex" flexDirection="column" gap={2}>
+        {Object.entries(LEVEL_LABELS).map(([level, label]) => (
+          <Card key={level} sx={{ border: '2px solid transparent', '&:hover': { borderColor: levelColors[level] } }}>
+            <CardActionArea onClick={() => !loading && onSelect(level)} disabled={loading}>
+              <CardContent>
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Box
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: '50%',
+                      backgroundColor: `${levelColors[level]}20`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Typography variant="h6" fontWeight={700} sx={{ color: levelColors[level] }}>
+                      {label.charAt(0)}
+                    </Typography>
+                  </Box>
+                  <Box flex={1}>
+                    <Typography variant="h6" fontWeight={600}>
+                      {label}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {levelDescriptions[level]}
+                    </Typography>
+                  </Box>
+                  {loading && <CircularProgress size={24} />}
+                </Box>
+              </CardContent>
+            </CardActionArea>
+          </Card>
+        ))}
+      </Box>
+    </Box>
+  )
+}
+
 export default function DailyLearning() {
   const navigate = useNavigate()
-  const [loading, setLoading] = useState(true)
+  const [phase, setPhase] = useState('loading') // loading, select, learning, complete
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [words, setWords] = useState([])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -42,18 +113,19 @@ export default function DailyLearning() {
   const [learnedIds, setLearnedIds] = useState(new Set())
   const [autoPlayTTS, setAutoPlayTTS] = useState(false)
   const [isPlayingTTS, setIsPlayingTTS] = useState(false)
-  const [isCompleted, setIsCompleted] = useState(false)
   const [results, setResults] = useState({ correct: 0, incorrect: 0 })
 
   useEffect(() => {
+    // 먼저 레벨 없이 시도 (기존 학습 데이터가 있으면 성공)
     fetchDailyWords()
   }, [])
 
-  const fetchDailyWords = async () => {
+  const fetchDailyWords = async (level = null) => {
     try {
       setLoading(true)
       setError(null)
-      const response = await dailyService.getWords(TEMP_USER_ID)
+      const response = await dailyService.getWords(TEMP_USER_ID, level)
+
       const allWords = [
         ...(response?.newWords || []),
         ...(response?.reviewWords || []),
@@ -69,14 +141,27 @@ export default function DailyLearning() {
       }
 
       if (response?.isCompleted) {
-        setIsCompleted(true)
+        setPhase('complete')
+      } else {
+        setPhase('learning')
       }
     } catch (err) {
       console.error('Fetch daily words error:', err)
-      setError('단어를 불러오는데 실패했습니다.')
+      // 첫 호출 시 레벨 필요 에러면 레벨 선택 화면으로
+      const errorMsg = err.response?.data?.message || ''
+      if (errorMsg.includes('level is required') || err.response?.status === 400) {
+        setPhase('select')
+      } else {
+        setError('단어를 불러오는데 실패했습니다.')
+        setPhase('select') // 에러 시에도 레벨 선택 화면으로
+      }
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleLevelSelect = (level) => {
+    fetchDailyWords(level)
   }
 
   const currentWord = words[currentIndex]
@@ -102,10 +187,10 @@ export default function DailyLearning() {
   }, [isPlayingTTS])
 
   useEffect(() => {
-    if (autoPlayTTS && currentWord && !isFlipped) {
+    if (autoPlayTTS && currentWord && !isFlipped && phase === 'learning') {
       playTTS(currentWord)
     }
-  }, [currentIndex, autoPlayTTS])
+  }, [currentIndex, autoPlayTTS, phase])
 
   const handleFlip = () => {
     setIsFlipped(!isFlipped)
@@ -143,7 +228,7 @@ export default function DailyLearning() {
     if (currentIndex < words.length - 1) {
       setCurrentIndex(prev => prev + 1)
     } else {
-      setIsCompleted(true)
+      setPhase('complete')
     }
   }
 
@@ -185,11 +270,12 @@ export default function DailyLearning() {
     setCurrentIndex(0)
     setLearnedIds(new Set())
     setIsFlipped(false)
-    setIsCompleted(false)
+    setPhase('learning')
     setResults({ correct: 0, incorrect: 0 })
   }
 
-  if (loading) {
+  // 로딩 화면
+  if (phase === 'loading') {
     return (
       <Container maxWidth="sm">
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
@@ -199,19 +285,32 @@ export default function DailyLearning() {
     )
   }
 
-  if (error) {
+  // 레벨 선택 화면
+  if (phase === 'select') {
     return (
       <Container maxWidth="sm">
-        <Box py={4}>
-          <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
-          <Button onClick={() => navigate('/vocab')}>돌아가기</Button>
+        <Box display="flex" alignItems="center" gap={1} py={2}>
+          <IconButton onClick={() => navigate('/vocab')}>
+            <BackIcon />
+          </IconButton>
+          <Typography variant="h5" fontWeight={700}>
+            오늘의 학습
+          </Typography>
         </Box>
+
+        {error && (
+          <Alert severity="info" sx={{ mb: 2 }} onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+
+        <LevelSelect onSelect={handleLevelSelect} loading={loading} />
       </Container>
     )
   }
 
   // 학습 완료 화면
-  if (isCompleted) {
+  if (phase === 'complete') {
     const totalAnswered = results.correct + results.incorrect
     const accuracy = totalAnswered > 0 ? (results.correct / totalAnswered) * 100 : 0
 
@@ -266,6 +365,7 @@ export default function DailyLearning() {
     )
   }
 
+  // 학습 화면
   return (
     <Container maxWidth="sm">
       {/* 헤더 */}
