@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Container,
   Box,
@@ -8,34 +8,29 @@ import {
   InputAdornment,
   IconButton,
   Chip,
-  List,
   CircularProgress,
   Alert,
   Paper,
   ToggleButton,
   ToggleButtonGroup,
-  Menu,
-  MenuItem,
 } from '@mui/material'
 import {
   ArrowBack as BackIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
-  FilterList as FilterIcon,
   Star as StarIcon,
+  StarBorder as StarBorderIcon,
+  VolumeUp as VolumeIcon,
+  ErrorOutline as ErrorIcon,
+  LibraryBooks as WordListIcon,
 } from '@mui/icons-material'
-import WordListItem from '../components/WordListItem'
 import WordDetailModal from '../components/WordDetailModal'
-import { wordService, userWordService, voiceService } from '../services/vocabService'
+import { myWordService, wordService, voiceService } from '../services/vocabService'
 import {
-  LEVELS,
   LEVEL_LABELS,
-  CATEGORIES,
-  CATEGORY_LABELS,
-  WORD_STATUS,
   WORD_STATUS_LABELS,
-  VOICE_TYPES,
 } from '../constants/vocabConstants'
+import { useTranslation } from '../../../contexts/SettingsContext'
 
 const TEMP_USER_ID = import.meta.env.VITE_TEMP_USER_ID || 'user1'
 const PAGE_SIZE = 20
@@ -54,39 +49,30 @@ function useDebounce(value, delay) {
 
 export default function WordListPage() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
+  const [searchParams] = useSearchParams()
   const observerRef = useRef(null)
   const loadMoreRef = useRef(null)
 
-  // 검색 & 필터
+  const initialFilter = searchParams.get('filter')
+
+  const [filterMode, setFilterMode] = useState(initialFilter || 'all')
   const [searchText, setSearchText] = useState('')
-  const [levelFilter, setLevelFilter] = useState(null)
-  const [categoryFilter, setCategoryFilter] = useState(null)
-  const [statusFilter, setStatusFilter] = useState(null)
-  const [bookmarkedOnly, setBookmarkedOnly] = useState(false)
 
-  // 필터 메뉴
-  const [categoryAnchor, setCategoryAnchor] = useState(null)
-  const [statusAnchor, setStatusAnchor] = useState(null)
-
-  // 단어 데이터
-  const [words, setWords] = useState([])
-  const [userWords, setUserWords] = useState({})
+  const [userWords, setUserWords] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [hasMore, setHasMore] = useState(true)
-  const [page, setPage] = useState(0)
+  const [cursor, setCursor] = useState(null)
 
-  // 상세 모달
   const [selectedWord, setSelectedWord] = useState(null)
   const [modalOpen, setModalOpen] = useState(false)
 
-  // TTS
   const [playingWordId, setPlayingWordId] = useState(null)
 
   const debouncedSearch = useDebounce(searchText, 300)
 
-  // 단어 목록 조회
-  const fetchWords = useCallback(async (pageNum, reset = false) => {
+  const fetchUserWords = useCallback(async (reset = false) => {
     if (loading) return
 
     try {
@@ -94,65 +80,45 @@ export default function WordListPage() {
       setError(null)
 
       const params = {
-        page: pageNum,
-        size: PAGE_SIZE,
+        limit: PAGE_SIZE,
+        cursor: reset ? undefined : cursor,
       }
 
-      if (debouncedSearch) params.keyword = debouncedSearch
-      if (levelFilter) params.level = levelFilter
-      if (categoryFilter) params.category = categoryFilter
-
-      const response = await wordService.getWords(params)
-      const newWords = response?.data?.words || []
-
-      // 사용자 단어 정보 조회
-      const wordIds = newWords.map(w => w.wordId)
-      if (wordIds.length > 0) {
-        try {
-          const userWordResponse = await userWordService.getUserWords(TEMP_USER_ID, {
-            wordIds: wordIds.join(','),
-          })
-          const userWordMap = {}
-          ;(userWordResponse?.data?.userWords || []).forEach(uw => {
-            userWordMap[uw.wordId] = uw
-          })
-          setUserWords(prev => reset ? userWordMap : { ...prev, ...userWordMap })
-        } catch (err) {
-          console.error('User words fetch error:', err)
-        }
+      if (filterMode === 'bookmarked') {
+        params.bookmarked = true
+      } else if (filterMode === 'incorrect') {
+        params.incorrectOnly = true
       }
 
-      // 필터링 (bookmarked, status는 클라이언트에서 처리)
-      let filteredWords = newWords
+      const response = await myWordService.getList(TEMP_USER_ID, params)
+      const data = response?.data || response
+      const newWords = data?.userWords || []
 
-      setWords(prev => reset ? filteredWords : [...prev, ...filteredWords])
-      setHasMore(newWords.length === PAGE_SIZE)
-      setPage(pageNum)
+      setUserWords(prev => reset ? newWords : [...prev, ...newWords])
+      setHasMore(data?.hasMore || false)
+      setCursor(data?.nextCursor || null)
     } catch (err) {
-      console.error('Fetch words error:', err)
+      console.error('Fetch user words error:', err)
       setError('단어 목록을 불러오는데 실패했습니다.')
     } finally {
       setLoading(false)
     }
-  }, [loading, debouncedSearch, levelFilter, categoryFilter])
+  }, [loading, cursor, filterMode])
 
-  // 필터 변경시 리셋
   useEffect(() => {
-    setWords([])
-    setUserWords({})
-    setPage(0)
+    setUserWords([])
+    setCursor(null)
     setHasMore(true)
-    fetchWords(0, true)
-  }, [debouncedSearch, levelFilter, categoryFilter])
+    fetchUserWords(true)
+  }, [filterMode])
 
-  // 무한 스크롤
   useEffect(() => {
     if (loading || !hasMore) return
 
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !loading) {
-          fetchWords(page + 1)
+          fetchUserWords(false)
         }
       },
       { threshold: 0.1 }
@@ -169,31 +135,26 @@ export default function WordListPage() {
         observerRef.current.disconnect()
       }
     }
-  }, [hasMore, loading, page, fetchWords])
+  }, [hasMore, loading, fetchUserWords])
 
-  // 클라이언트 필터링 (북마크, 상태)
-  const filteredWords = words.filter(word => {
-    const userWord = userWords[word.wordId]
-
-    if (bookmarkedOnly && !userWord?.bookmarked) return false
-    if (statusFilter && userWord?.status !== statusFilter) return false
-
-    return true
+  const filteredWords = userWords.filter(word => {
+    if (!debouncedSearch) return true
+    const search = debouncedSearch.toLowerCase()
+    return (
+      word.english?.toLowerCase().includes(search) ||
+      word.korean?.toLowerCase().includes(search)
+    )
   })
 
-  // TTS 재생
-  const handlePlayTTS = async (word, voice = VOICE_TYPES.FEMALE) => {
+  const handlePlayTTS = async (word) => {
     if (playingWordId) return
 
     try {
       setPlayingWordId(word.wordId)
-      const response = await voiceService.synthesize({
-        text: word.english,
-        voiceType: voice,
-      })
+      const response = await voiceService.synthesize(word.wordId, word.english)
 
-      if (response?.data?.audioUrl) {
-        const audio = new Audio(response.data.audioUrl)
+      if (response?.audioUrl) {
+        const audio = new Audio(response.audioUrl)
         audio.onended = () => setPlayingWordId(null)
         audio.onerror = () => setPlayingWordId(null)
         await audio.play()
@@ -206,112 +167,104 @@ export default function WordListPage() {
     }
   }
 
-  // 북마크 토글
   const handleToggleBookmark = async (word) => {
-    const userWord = userWords[word.wordId]
-    const newBookmarked = !userWord?.bookmarked
+    const newBookmarked = !word.bookmarked
 
     try {
-      await userWordService.updateUserWord(TEMP_USER_ID, word.wordId, {
-        bookmarked: newBookmarked,
-      })
+      await myWordService.toggleBookmark(TEMP_USER_ID, word.wordId, newBookmarked)
 
-      setUserWords(prev => ({
-        ...prev,
-        [word.wordId]: {
-          ...prev[word.wordId],
-          bookmarked: newBookmarked,
-        },
-      }))
+      setUserWords(prev =>
+        prev.map(w =>
+          w.wordId === word.wordId ? { ...w, bookmarked: newBookmarked } : w
+        )
+      )
+
+      if (filterMode === 'bookmarked' && !newBookmarked) {
+        setUserWords(prev => prev.filter(w => w.wordId !== word.wordId))
+      }
     } catch (err) {
       console.error('Bookmark toggle error:', err)
     }
   }
 
-  // 즐겨찾기 토글
-  const handleToggleFavorite = async (word) => {
-    const userWord = userWords[word.wordId]
-    const newFavorite = !userWord?.favorite
-
-    try {
-      await userWordService.updateUserWord(TEMP_USER_ID, word.wordId, {
-        favorite: newFavorite,
-      })
-
-      setUserWords(prev => ({
-        ...prev,
-        [word.wordId]: {
-          ...prev[word.wordId],
-          favorite: newFavorite,
-        },
-      }))
-    } catch (err) {
-      console.error('Favorite toggle error:', err)
-    }
-  }
-
-  // 난이도 설정
-  const handleSetDifficulty = async (word, difficulty) => {
-    try {
-      await userWordService.updateUserWord(TEMP_USER_ID, word.wordId, {
-        difficulty,
-      })
-
-      setUserWords(prev => ({
-        ...prev,
-        [word.wordId]: {
-          ...prev[word.wordId],
-          difficulty,
-        },
-      }))
-    } catch (err) {
-      console.error('Set difficulty error:', err)
-    }
-  }
-
-  // 단어 상세 열기
   const handleWordClick = (word) => {
     setSelectedWord(word)
     setModalOpen(true)
   }
 
-  // 검색 초기화
   const handleClearSearch = () => {
     setSearchText('')
   }
 
-  // 필터 초기화
-  const handleClearFilters = () => {
-    setLevelFilter(null)
-    setCategoryFilter(null)
-    setStatusFilter(null)
-    setBookmarkedOnly(false)
+  const getLevelStyle = (level) => {
+    switch (level) {
+      case 'BEGINNER':
+        return { bg: '#ecfdf5', color: '#059669' }
+      case 'INTERMEDIATE':
+        return { bg: '#fff7ed', color: '#f97316' }
+      case 'ADVANCED':
+        return { bg: '#fef2f2', color: '#ef4444' }
+      default:
+        return { bg: '#f5f5f4', color: '#57534e' }
+    }
   }
 
-  const hasActiveFilters = levelFilter || categoryFilter || statusFilter || bookmarkedOnly
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case 'MASTERED':
+        return { bg: '#ecfdf5', color: '#059669' }
+      case 'REVIEWING':
+        return { bg: '#eff6ff', color: '#3b82f6' }
+      case 'LEARNING':
+        return { bg: '#fff7ed', color: '#f97316' }
+      default:
+        return { bg: '#f5f5f4', color: '#57534e' }
+    }
+  }
 
   return (
-    <Container maxWidth="sm" sx={{ pb: 4 }}>
+    <Container maxWidth="sm" sx={{ pb: 6 }}>
       {/* 헤더 */}
-      <Box display="flex" alignItems="center" gap={1} py={2}>
-        <IconButton onClick={() => navigate('/vocab')}>
-          <BackIcon />
-        </IconButton>
-        <Typography variant="h5" fontWeight={700}>
-          단어장
-        </Typography>
+      <Box sx={{ mb: 4, pt: 2 }}>
+        <Box display="flex" alignItems="center" gap={1.5} mb={1}>
+          <IconButton onClick={() => navigate('/vocab')} sx={{ ml: -1 }}>
+            <BackIcon />
+          </IconButton>
+          <Box
+            sx={{
+              width: 44,
+              height: 44,
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 6px 12px -3px rgba(5, 150, 105, 0.3)',
+            }}
+          >
+            <WordListIcon sx={{ fontSize: 24, color: 'white' }} />
+          </Box>
+          <Box>
+            <Typography variant="h5" fontWeight={700} sx={{ lineHeight: 1.2 }}>
+              {t('wordList.title')}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {filteredWords.length} {t('wordList.wordsCount')}
+            </Typography>
+          </Box>
+        </Box>
       </Box>
 
       {/* 검색 */}
       <TextField
         fullWidth
-        placeholder="단어 검색..."
+        placeholder={t('wordList.searchPlaceholder')}
         value={searchText}
         onChange={(e) => setSearchText(e.target.value)}
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
-              <SearchIcon color="action" />
+              <SearchIcon sx={{ color: '#a8a29e' }} />
             </InputAdornment>
           ),
           endAdornment: searchText && (
@@ -322,149 +275,220 @@ export default function WordListPage() {
             </InputAdornment>
           ),
         }}
-        sx={{ mb: 2 }}
+        sx={{
+          mb: 3,
+          '& .MuiOutlinedInput-root': {
+            backgroundColor: 'white',
+          },
+        }}
       />
 
-      {/* 필터 */}
-      <Paper sx={{ p: 2, mb: 2 }}>
-        {/* 레벨 필터 */}
-        <Box mb={2}>
-          <Typography variant="caption" color="text.secondary" mb={0.5} display="block">
-            레벨
-          </Typography>
-          <ToggleButtonGroup
-            value={levelFilter}
-            exclusive
-            onChange={(e, val) => setLevelFilter(val)}
-            size="small"
-            fullWidth
-          >
-            <ToggleButton value={null}>전체</ToggleButton>
-            {Object.entries(LEVEL_LABELS).map(([key, label]) => (
-              <ToggleButton key={key} value={key}>
-                {label}
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-        </Box>
-
-        {/* 추가 필터 */}
-        <Box display="flex" gap={1} flexWrap="wrap">
-          {/* 카테고리 */}
-          <Chip
-            label={categoryFilter ? CATEGORY_LABELS[categoryFilter] : '카테고리'}
-            onClick={(e) => setCategoryAnchor(e.currentTarget)}
-            onDelete={categoryFilter ? () => setCategoryFilter(null) : undefined}
-            variant={categoryFilter ? 'filled' : 'outlined'}
-            size="small"
-          />
-          <Menu
-            anchorEl={categoryAnchor}
-            open={Boolean(categoryAnchor)}
-            onClose={() => setCategoryAnchor(null)}
-          >
-            <MenuItem onClick={() => { setCategoryFilter(null); setCategoryAnchor(null) }}>
-              전체
-            </MenuItem>
-            {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-              <MenuItem
-                key={key}
-                onClick={() => { setCategoryFilter(key); setCategoryAnchor(null) }}
-                selected={categoryFilter === key}
-              >
-                {label}
-              </MenuItem>
-            ))}
-          </Menu>
-
-          {/* 학습 상태 */}
-          <Chip
-            label={statusFilter ? WORD_STATUS_LABELS[statusFilter] : '학습 상태'}
-            onClick={(e) => setStatusAnchor(e.currentTarget)}
-            onDelete={statusFilter ? () => setStatusFilter(null) : undefined}
-            variant={statusFilter ? 'filled' : 'outlined'}
-            size="small"
-          />
-          <Menu
-            anchorEl={statusAnchor}
-            open={Boolean(statusAnchor)}
-            onClose={() => setStatusAnchor(null)}
-          >
-            <MenuItem onClick={() => { setStatusFilter(null); setStatusAnchor(null) }}>
-              전체
-            </MenuItem>
-            {Object.entries(WORD_STATUS_LABELS).map(([key, label]) => (
-              <MenuItem
-                key={key}
-                onClick={() => { setStatusFilter(key); setStatusAnchor(null) }}
-                selected={statusFilter === key}
-              >
-                {label}
-              </MenuItem>
-            ))}
-          </Menu>
-
-          {/* 북마크 */}
-          <Chip
-            icon={<StarIcon fontSize="small" />}
-            label="북마크"
-            onClick={() => setBookmarkedOnly(!bookmarkedOnly)}
-            color={bookmarkedOnly ? 'warning' : 'default'}
-            variant={bookmarkedOnly ? 'filled' : 'outlined'}
-            size="small"
-          />
-
-          {/* 필터 초기화 */}
-          {hasActiveFilters && (
-            <Chip
-              label="초기화"
-              onClick={handleClearFilters}
-              size="small"
-              color="error"
-              variant="outlined"
-            />
-          )}
-        </Box>
-      </Paper>
-
-      {/* 결과 카운트 */}
-      <Typography variant="body2" color="text.secondary" mb={1}>
-        {filteredWords.length}개의 단어
-      </Typography>
+      {/* 필터 탭 */}
+      <Box sx={{ mb: 3 }}>
+        <ToggleButtonGroup
+          value={filterMode}
+          exclusive
+          onChange={(e, val) => val && setFilterMode(val)}
+          size="small"
+          fullWidth
+          sx={{
+            '& .MuiToggleButton-root': {
+              flex: 1,
+              py: 1.5,
+              fontWeight: 600,
+              '&.Mui-selected': {
+                backgroundColor: '#059669',
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: '#047857',
+                },
+              },
+            },
+          }}
+        >
+          <ToggleButton value="all">
+            {t('wordList.filterAll')}
+          </ToggleButton>
+          <ToggleButton value="bookmarked">
+            <StarIcon fontSize="small" sx={{ mr: 0.5 }} />
+            {t('wordList.filterBookmarked')}
+          </ToggleButton>
+          <ToggleButton value="incorrect">
+            <ErrorIcon fontSize="small" sx={{ mr: 0.5 }} />
+            {t('wordList.filterIncorrect')}
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
 
       {/* 단어 목록 */}
-      <List disablePadding>
-        {filteredWords.map((word) => (
-          <WordListItem
-            key={word.wordId}
-            word={word}
-            userWord={userWords[word.wordId]}
-            onPlayTTS={() => handlePlayTTS(word)}
-            onToggleBookmark={() => handleToggleBookmark(word)}
-            onClick={() => handleWordClick(word)}
-            isPlayingTTS={playingWordId === word.wordId}
-          />
-        ))}
-      </List>
+      <Box display="flex" flexDirection="column" gap={1.5}>
+        {filteredWords.map((word) => {
+          const levelStyle = getLevelStyle(word.level)
+          const statusStyle = getStatusStyle(word.status)
+
+          return (
+            <Paper
+              key={word.wordId}
+              elevation={0}
+              onClick={() => handleWordClick(word)}
+              sx={{
+                p: 2.5,
+                cursor: 'pointer',
+                border: '2px solid transparent',
+                borderRadius: '16px',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  borderColor: '#059669',
+                  boxShadow: '0 4px 12px -4px rgba(5, 150, 105, 0.2)',
+                },
+              }}
+            >
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box flex={1} minWidth={0}>
+                  <Box display="flex" alignItems="center" gap={1} mb={0.5} flexWrap="wrap">
+                    <Typography variant="h6" fontWeight={700} sx={{ color: '#1c1917' }}>
+                      {word.english}
+                    </Typography>
+                    {word.level && (
+                      <Chip
+                        label={LEVEL_LABELS[word.level] || word.level}
+                        size="small"
+                        sx={{
+                          height: 22,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          backgroundColor: levelStyle.bg,
+                          color: levelStyle.color,
+                        }}
+                      />
+                    )}
+                    {word.status && (
+                      <Chip
+                        label={WORD_STATUS_LABELS[word.status] || word.status}
+                        size="small"
+                        sx={{
+                          height: 22,
+                          fontSize: 11,
+                          fontWeight: 500,
+                          backgroundColor: statusStyle.bg,
+                          color: statusStyle.color,
+                        }}
+                      />
+                    )}
+                  </Box>
+
+                  <Typography variant="body2" sx={{ color: '#57534e', mb: 1 }}>
+                    {word.korean}
+                  </Typography>
+
+                  {(word.correctCount > 0 || word.incorrectCount > 0) && (
+                    <Box display="flex" alignItems="center" gap={2}>
+                      <Typography variant="caption" sx={{ color: '#10b981', fontWeight: 600 }}>
+                        {t('wordList.correct')} {word.correctCount || 0}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#ef4444', fontWeight: 600 }}>
+                        {t('wordList.incorrect')} {word.incorrectCount || 0}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+
+                <Box display="flex" alignItems="center" gap={0.5} ml={2}>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handlePlayTTS(word)
+                    }}
+                    disabled={playingWordId === word.wordId}
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      backgroundColor: playingWordId === word.wordId ? '#059669' : '#f5f5f4',
+                      '&:hover': { backgroundColor: playingWordId === word.wordId ? '#047857' : '#e7e5e4' },
+                    }}
+                  >
+                    <VolumeIcon
+                      fontSize="small"
+                      sx={{ color: playingWordId === word.wordId ? 'white' : '#57534e' }}
+                    />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleToggleBookmark(word)
+                    }}
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      backgroundColor: word.bookmarked ? '#fef3c7' : '#f5f5f4',
+                      '&:hover': { backgroundColor: word.bookmarked ? '#fde68a' : '#e7e5e4' },
+                    }}
+                  >
+                    {word.bookmarked ? (
+                      <StarIcon fontSize="small" sx={{ color: '#f59e0b' }} />
+                    ) : (
+                      <StarBorderIcon fontSize="small" sx={{ color: '#78716c' }} />
+                    )}
+                  </IconButton>
+                </Box>
+              </Box>
+            </Paper>
+          )
+        })}
+      </Box>
 
       {/* 로딩 & 더보기 트리거 */}
-      <Box ref={loadMoreRef} display="flex" justifyContent="center" py={3}>
-        {loading && <CircularProgress size={32} />}
+      <Box ref={loadMoreRef} display="flex" justifyContent="center" py={4}>
+        {loading && <CircularProgress size={32} sx={{ color: '#059669' }} />}
         {!loading && !hasMore && filteredWords.length > 0 && (
           <Typography variant="body2" color="text.secondary">
-            모든 단어를 불러왔습니다
+            {t('wordList.loadedAll')}
           </Typography>
         )}
         {!loading && filteredWords.length === 0 && !error && (
-          <Typography variant="body2" color="text.secondary">
-            검색 결과가 없습니다
-          </Typography>
+          <Box textAlign="center" py={4}>
+            <Box
+              sx={{
+                width: 64,
+                height: 64,
+                borderRadius: '16px',
+                backgroundColor: '#f5f5f4',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mx: 'auto',
+                mb: 2,
+              }}
+            >
+              <WordListIcon sx={{ fontSize: 32, color: '#a8a29e' }} />
+            </Box>
+            <Typography variant="body1" color="text.secondary" fontWeight={500} mb={1}>
+              {filterMode === 'bookmarked'
+                ? t('wordList.noBookmarks')
+                : filterMode === 'incorrect'
+                ? t('wordList.noIncorrect')
+                : t('wordList.noWords')}
+            </Typography>
+            <Chip
+              label={t('wordList.startLearning')}
+              onClick={() => navigate('/vocab/daily')}
+              sx={{
+                mt: 1,
+                backgroundColor: '#059669',
+                color: 'white',
+                fontWeight: 600,
+                '&:hover': { backgroundColor: '#047857' },
+              }}
+            />
+          </Box>
         )}
       </Box>
 
@@ -473,11 +497,9 @@ export default function WordListPage() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         word={selectedWord}
-        userWord={selectedWord ? userWords[selectedWord.wordId] : null}
-        onPlayTTS={(voice) => selectedWord && handlePlayTTS(selectedWord, voice)}
+        userWord={selectedWord}
+        onPlayTTS={() => selectedWord && handlePlayTTS(selectedWord)}
         onToggleBookmark={() => selectedWord && handleToggleBookmark(selectedWord)}
-        onToggleFavorite={() => selectedWord && handleToggleFavorite(selectedWord)}
-        onSetDifficulty={(diff) => selectedWord && handleSetDifficulty(selectedWord, diff)}
         isPlayingTTS={playingWordId === selectedWord?.wordId}
       />
     </Container>

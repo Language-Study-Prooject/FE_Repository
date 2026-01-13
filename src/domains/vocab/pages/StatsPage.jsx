@@ -31,6 +31,7 @@ import {
   DIFFICULTY_LABELS,
   VOICE_TYPES,
 } from '../constants/vocabConstants'
+import { useTranslation } from '../../../contexts/SettingsContext'
 
 const TEMP_USER_ID = import.meta.env.VITE_TEMP_USER_ID || 'user1'
 
@@ -307,6 +308,7 @@ function StatCard({ title, value, subtitle, icon: Icon, color }) {
 
 export default function StatsPage() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [tab, setTab] = useState(0) // 0: 일간, 1: 주간, 2: 월간
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -376,8 +378,8 @@ export default function StatsPage() {
         voiceType: VOICE_TYPES.FEMALE,
       })
 
-      if (response?.data?.audioUrl) {
-        const audio = new Audio(response.data.audioUrl)
+      if (response?.audioUrl) {
+        const audio = new Audio(response.audioUrl)
         audio.onended = () => setPlayingWordId(null)
         audio.onerror = () => setPlayingWordId(null)
         await audio.play()
@@ -401,14 +403,14 @@ export default function StatsPage() {
   }
 
   return (
-    <Container maxWidth="sm" sx={{ pb: 4 }}>
+    <Container maxWidth="sm" sx={{ pb: 6 }}>
       {/* 헤더 */}
       <Box display="flex" alignItems="center" gap={1} py={2}>
         <IconButton onClick={() => navigate('/vocab')}>
           <BackIcon />
         </IconButton>
         <Typography variant="h5" fontWeight={700}>
-          학습 통계
+          {t('stats.title')}
         </Typography>
       </Box>
 
@@ -425,25 +427,25 @@ export default function StatsPage() {
         sx={{ mb: 3 }}
         variant="fullWidth"
       >
-        <Tab label="일간" />
-        <Tab label="주간" />
-        <Tab label="월간" />
+        <Tab label={t('stats.daily')} />
+        <Tab label={t('stats.weekly')} />
+        <Tab label={t('stats.monthly')} />
       </Tabs>
 
       {/* 요약 카드 */}
       <Grid container spacing={2} mb={3}>
         <Grid item xs={6}>
           <StatCard
-            title="총 학습 단어"
+            title={t('stats.totalLearned')}
             value={overviewStats?.totalLearned || 0}
-            subtitle={`전체 ${overviewStats?.totalWords || 0}개 중`}
+            subtitle={`${t('stats.outOf')} ${overviewStats?.totalWords || 0}`}
             icon={TrendingUpIcon}
             color="#2196f3"
           />
         </Grid>
         <Grid item xs={6}>
           <StatCard
-            title="평균 정답률"
+            title={t('stats.avgAccuracy')}
             value={`${overviewStats?.averageAccuracy?.toFixed(0) || 0}%`}
             icon={TrendingUpIcon}
             color="#4caf50"
@@ -451,17 +453,17 @@ export default function StatsPage() {
         </Grid>
         <Grid item xs={6}>
           <StatCard
-            title="연속 학습"
-            value={`${overviewStats?.streakDays || 0}일`}
+            title={t('stats.streak')}
+            value={`${overviewStats?.streakDays || 0}${t('stats.days')}`}
             icon={CalendarIcon}
             color="#ff9800"
           />
         </Grid>
         <Grid item xs={6}>
           <StatCard
-            title="취약 단어"
+            title={t('stats.weakWords')}
             value={weakWords.length}
-            subtitle="복습이 필요해요"
+            subtitle={t('stats.needReview')}
             icon={WarningIcon}
             color="#f44336"
           />
@@ -471,7 +473,7 @@ export default function StatsPage() {
       {/* 학습 캘린더 */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Typography variant="subtitle1" fontWeight={600} mb={2}>
-          학습 기록
+          {t('stats.learningHistory')}
         </Typography>
         <LearningCalendar data={calendarData} />
       </Paper>
@@ -479,7 +481,7 @@ export default function StatsPage() {
       {/* 레벨별 진행률 */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Typography variant="subtitle1" fontWeight={600} mb={2}>
-          레벨별 진행률
+          {t('stats.levelProgress')}
         </Typography>
         <LevelProgressChart data={levelProgress} />
       </Paper>
@@ -487,7 +489,7 @@ export default function StatsPage() {
       {/* 난이도 분포 */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Typography variant="subtitle1" fontWeight={600} mb={2}>
-          난이도 분포
+          {t('stats.difficultyDist')}
         </Typography>
         <DifficultyChart data={difficultyDist} />
       </Paper>
@@ -496,10 +498,10 @@ export default function StatsPage() {
       <Paper sx={{ p: 2 }}>
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
           <Typography variant="subtitle1" fontWeight={600}>
-            취약 단어 TOP 10
+            {t('stats.weakWordsTop10')}
           </Typography>
           <Chip
-            label="복습하기"
+            label={t('stats.review')}
             size="small"
             color="error"
             variant="outlined"

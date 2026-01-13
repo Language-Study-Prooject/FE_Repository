@@ -10,6 +10,9 @@ import {
   Avatar,
   Paper,
   Fade,
+  Tabs,
+  Tab,
+  useTheme,
 } from '@mui/material'
 import {
   Close as CloseIcon,
@@ -19,17 +22,17 @@ import {
   ExitToApp as ExitToAppIcon,
   Minimize as MinimizeIcon,
   OpenInFull as MaximizeIcon,
+  SportsEsports as GameIcon,
+  Chat as ChatIcon,
 } from '@mui/icons-material'
-import { chatRoomService, messageService, voiceService, TEMP_USER_ID } from '../../chat/services/chatService'
+import { chatRoomService, messageService, voiceService, gameService, TEMP_USER_ID, GAME_STATUS, MESSAGE_TYPES } from '../../chat/services/chatService'
 import { useSettings } from '../../../contexts/SettingsContext'
-
-const levelColors = {
-  beginner: { bg: '#e8f5e9', color: '#2e7d32', label: '초급' },
-  intermediate: { bg: '#fff3e0', color: '#ef6c00', label: '중급' },
-  advanced: { bg: '#fce4ec', color: '#c2185b', label: '고급' },
-}
+import { DESIGN_TOKENS, getLevelStyles, getChatStyles } from '../../../theme/theme'
+import GameModePanel from './GameModePanel'
 
 const ChatRoomModal = ({ open, onClose, room, onLeave }) => {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
   const { settings } = useSettings()
   const messagesEndRef = useRef(null)
   const dragRef = useRef(null)
@@ -45,6 +48,8 @@ const ChatRoomModal = ({ open, onClose, room, onLeave }) => {
   const [savedPosition, setSavedPosition] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [activeTab, setActiveTab] = useState(0) // 0: 채팅, 1: 게임
+  const [gameStatus, setGameStatus] = useState(GAME_STATUS.NONE)
   // 메시지 목록 조회
   const fetchMessages = useCallback(async () => {
     if (!room?.id) return
@@ -67,15 +72,58 @@ const ChatRoomModal = ({ open, onClose, room, onLeave }) => {
     }
   }, [room?.id])
 
+  // 게임 상태 조회
+  const fetchGameStatus = useCallback(async () => {
+    if (!room?.id) return
+    try {
+      const response = await gameService.getStatus(room.id)
+      const data = response.data || response
+      setGameStatus(data.gameStatus || GAME_STATUS.NONE)
+      // 게임 중이면 게임 탭으로 전환
+      if (data.gameStatus === GAME_STATUS.PLAYING) {
+        setActiveTab(1)
+      }
+    } catch (err) {
+      console.error('Failed to fetch game status:', err)
+    }
+  }, [room?.id])
+
   // 초기 로드
   useEffect(() => {
     if (open && room?.id) {
       setLoading(true)
       setMessages([])
       setMinimized(false)
-      fetchMessages().finally(() => setLoading(false))
+      setActiveTab(0)
+      Promise.all([
+        fetchMessages(),
+        fetchGameStatus(),
+      ]).finally(() => setLoading(false))
     }
-  }, [open, room?.id, fetchMessages])
+  }, [open, room?.id, fetchMessages, fetchGameStatus])
+
+  // 게임 메시지 처리
+  const handleGameMessage = (gameMessage) => {
+    const systemMessage = {
+      id: `game-${Date.now()}`,
+      content: gameMessage.content,
+      userId: 'SYSTEM',
+      messageType: gameMessage.type,
+      createdAt: new Date(),
+      isOwn: false,
+      isSystem: true,
+    }
+    setMessages((prev) => [...prev, systemMessage])
+
+    // 게임 시작 시 게임 탭으로 전환
+    if (gameMessage.type === MESSAGE_TYPES.GAME_START) {
+      setGameStatus(GAME_STATUS.PLAYING)
+      setActiveTab(1)
+    } else if (gameMessage.type === MESSAGE_TYPES.GAME_END) {
+      setGameStatus(GAME_STATUS.NONE)
+      setActiveTab(0)
+    }
+  }
 
   // 스크롤 맨 아래로
   const scrollToBottom = (instant = false) => {
@@ -243,12 +291,13 @@ const ChatRoomModal = ({ open, onClose, room, onLeave }) => {
           top: position.y ? position.y : 'auto',
           width: 380,
           height: minimized ? 'auto' : 500,
-          borderRadius: 2,
+          borderRadius: `${DESIGN_TOKENS.borderRadius.lg}px`,
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           zIndex: 1300,
           cursor: isDragging ? 'grabbing' : 'default',
+          border: isDark ? '1px solid rgba(255,255,255,0.1)' : 'none',
         }}
       >
         {/* 헤더 - 드래그 가능 */}
@@ -271,7 +320,7 @@ const ChatRoomModal = ({ open, onClose, room, onLeave }) => {
             </Typography>
             {room?.level && (
               <Chip
-                label={levelColors[room.level]?.label}
+                label={DESIGN_TOKENS.level[room.level]?.label || room.level}
                 size="small"
                 sx={{
                   height: 18,
@@ -300,6 +349,30 @@ const ChatRoomModal = ({ open, onClose, room, onLeave }) => {
 
         {!minimized && (
           <>
+            {/* 탭 (채팅/게임) */}
+            <Tabs
+              value={activeTab}
+              onChange={(e, v) => setActiveTab(v)}
+              variant="fullWidth"
+              sx={{
+                minHeight: 36,
+                '& .MuiTab-root': { minHeight: 36, py: 0.5 },
+              }}
+            >
+              <Tab
+                icon={<ChatIcon sx={{ fontSize: 16 }} />}
+                iconPosition="start"
+                label="채팅"
+                sx={{ fontSize: '0.75rem' }}
+              />
+              <Tab
+                icon={<GameIcon sx={{ fontSize: 16 }} />}
+                iconPosition="start"
+                label="캐치마인드"
+                sx={{ fontSize: '0.75rem' }}
+              />
+            </Tabs>
+
             {/* 에러 메시지 */}
             {error && (
               <Alert severity="error" onClose={() => setError(null)} sx={{ borderRadius: 0 }}>
@@ -307,132 +380,175 @@ const ChatRoomModal = ({ open, onClose, room, onLeave }) => {
               </Alert>
             )}
 
-            {/* 메시지 영역 */}
-            {loading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1, bgcolor: '#b2c7d9' }}>
-                <CircularProgress />
+            {/* 게임 모드 */}
+            {activeTab === 1 && (
+              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <GameModePanel roomId={room?.id} onGameMessage={handleGameMessage} />
               </Box>
-            ) : (
-              <Box
-                sx={{
-                  flex: 1,
-                  overflow: 'auto',
-                  p: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 0.5,
-                  bgcolor: '#b2c7d9',
-                  // 스크롤바 숨김 (hover 시만 표시)
-                  '&::-webkit-scrollbar': {
-                    width: 6,
-                  },
-                  '&::-webkit-scrollbar-thumb': {
-                    bgcolor: 'transparent',
-                    borderRadius: 3,
-                  },
-                  '&:hover::-webkit-scrollbar-thumb': {
-                    bgcolor: 'rgba(0,0,0,0.2)',
-                  },
-                }}
-              >
-                {messages.length === 0 ? (
-                  <Box sx={{ textAlign: 'center', py: 4 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      첫 메시지를 보내보세요!
-                    </Typography>
-                  </Box>
-                ) : (
-                  messages.map((message) => (
-                    <Box
-                      key={message.id}
-                      sx={{
-                        display: 'flex',
-                        flexDirection: message.isOwn ? 'row-reverse' : 'row',
-                        alignItems: 'flex-end',
-                        gap: 0.5,
-                      }}
-                    >
-                      {!message.isOwn && (
-                        <Avatar sx={{ width: 26, height: 26, bgcolor: 'primary.main', fontSize: '0.75rem' }}>
-                          {message.userId?.charAt(0)?.toUpperCase() || 'U'}
-                        </Avatar>
-                      )}
+            )}
 
+            {/* 채팅 모드 - 메시지 영역 */}
+            {activeTab === 0 && (
+              loading ? (
+                <Box sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  flex: 1,
+                  bgcolor: isDark ? DESIGN_TOKENS.chat.background.dark : DESIGN_TOKENS.chat.background.light,
+                }}>
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <Box
+                  sx={{
+                    flex: 1,
+                    overflow: 'auto',
+                    p: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 0.5,
+                    bgcolor: isDark ? DESIGN_TOKENS.chat.background.dark : DESIGN_TOKENS.chat.background.light,
+                    // 스크롤바 숨김 (hover 시만 표시)
+                    '&::-webkit-scrollbar': {
+                      width: 6,
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      bgcolor: 'transparent',
+                      borderRadius: 3,
+                    },
+                    '&:hover::-webkit-scrollbar-thumb': {
+                      bgcolor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+                    },
+                  }}
+                >
+                  {messages.length === 0 ? (
+                    <Box sx={{ textAlign: 'center', py: 4 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        첫 메시지를 보내보세요!
+                      </Typography>
+                    </Box>
+                  ) : (
+                    messages.map((message) => (
                       <Box
+                        key={message.id}
                         sx={{
                           display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: message.isOwn ? 'flex-end' : 'flex-start',
-                          maxWidth: '70%',
+                          flexDirection: message.isSystem ? 'row' : (message.isOwn ? 'row-reverse' : 'row'),
+                          alignItems: 'flex-end',
+                          justifyContent: message.isSystem ? 'center' : 'flex-start',
+                          gap: 0.5,
                         }}
                       >
-                        {!message.isOwn && (
-                          <Typography variant="caption" sx={{ mb: 0.25, ml: 0.5, fontSize: '0.6rem' }}>
-                            {message.userId}
-                          </Typography>
-                        )}
-
-                        <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 0.25 }}>
-                          {message.isOwn && (
-                            <>
-                              <IconButton
-                                size="small"
-                                onClick={() => handlePlayTTS(message.id)}
-                                disabled={playingTTS === message.id}
-                                sx={{ p: 0.25 }}
-                              >
-                                {playingTTS === message.id ? (
-                                  <CircularProgress size={12} />
-                                ) : (
-                                  <VolumeUpIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                                )}
-                              </IconButton>
-                              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.55rem' }}>
-                                {formatTime(message.createdAt)}
-                              </Typography>
-                            </>
-                          )}
-
-                          <Paper
-                            elevation={0}
+                        {/* 시스템 메시지 */}
+                        {message.isSystem ? (
+                          <Chip
+                            label={message.content}
+                            size="small"
                             sx={{
-                              px: 1,
+                              bgcolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                              fontSize: '0.7rem',
+                              whiteSpace: 'pre-wrap',
+                              height: 'auto',
                               py: 0.5,
-                              bgcolor: message.isOwn ? '#fee500' : '#ffffff',
-                              borderRadius: message.isOwn ? '8px 8px 0 8px' : '8px 8px 8px 0',
+                              '& .MuiChip-label': { whiteSpace: 'pre-wrap' },
                             }}
-                          >
-                            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', fontSize: '0.8rem' }}>
-                              {message.content}
-                            </Typography>
-                          </Paper>
+                          />
+                        ) : (
+                          <>
+                            {!message.isOwn && (
+                              <Avatar sx={{ width: 26, height: 26, bgcolor: 'primary.main', fontSize: '0.75rem' }}>
+                                {message.userId?.charAt(0)?.toUpperCase() || 'U'}
+                              </Avatar>
+                            )}
 
-                          {!message.isOwn && (
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-                              <IconButton
-                                size="small"
-                                onClick={() => handlePlayTTS(message.id)}
-                                disabled={playingTTS === message.id}
-                                sx={{ p: 0.25 }}
-                              >
-                                {playingTTS === message.id ? (
-                                  <CircularProgress size={12} />
-                                ) : (
-                                  <VolumeUpIcon sx={{ fontSize: 14 }} />
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: message.isOwn ? 'flex-end' : 'flex-start',
+                                maxWidth: '70%',
+                              }}
+                            >
+                              {!message.isOwn && (
+                                <Typography variant="caption" sx={{ mb: 0.25, ml: 0.5, fontSize: '0.6rem' }}>
+                                  {message.userId}
+                                </Typography>
+                              )}
+
+                              <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 0.25 }}>
+                                {message.isOwn && (
+                                  <>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handlePlayTTS(message.id)}
+                                      disabled={playingTTS === message.id}
+                                      sx={{ p: 0.25 }}
+                                    >
+                                      {playingTTS === message.id ? (
+                                        <CircularProgress size={12} />
+                                      ) : (
+                                        <VolumeUpIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                                      )}
+                                    </IconButton>
+                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.55rem' }}>
+                                      {formatTime(message.createdAt)}
+                                    </Typography>
+                                  </>
                                 )}
-                              </IconButton>
-                              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.55rem' }}>
-                                {formatTime(message.createdAt)}
-                              </Typography>
+
+                                <Paper
+                                  elevation={0}
+                                  sx={{
+                                    px: 1,
+                                    py: 0.5,
+                                    ...getChatStyles(message.isOwn, isDark),
+                                    borderRadius: message.isOwn
+                                      ? `${DESIGN_TOKENS.borderRadius.sm}px ${DESIGN_TOKENS.borderRadius.sm}px 0 ${DESIGN_TOKENS.borderRadius.sm}px`
+                                      : `${DESIGN_TOKENS.borderRadius.sm}px ${DESIGN_TOKENS.borderRadius.sm}px ${DESIGN_TOKENS.borderRadius.sm}px 0`,
+                                  }}
+                                >
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      whiteSpace: 'pre-wrap',
+                                      fontSize: '0.8rem',
+                                      color: message.isOwn ? '#1c1917' : 'text.primary',
+                                    }}
+                                  >
+                                    {message.content}
+                                  </Typography>
+                                </Paper>
+
+                                {!message.isOwn && (
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handlePlayTTS(message.id)}
+                                      disabled={playingTTS === message.id}
+                                      sx={{ p: 0.25 }}
+                                    >
+                                      {playingTTS === message.id ? (
+                                        <CircularProgress size={12} />
+                                      ) : (
+                                        <VolumeUpIcon sx={{ fontSize: 14 }} />
+                                      )}
+                                    </IconButton>
+                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.55rem' }}>
+                                      {formatTime(message.createdAt)}
+                                    </Typography>
+                                  </Box>
+                                )}
+                              </Box>
                             </Box>
-                          )}
-                        </Box>
+                          </>
+                        )}
                       </Box>
-                    </Box>
-                  ))
-                )}
-                <div ref={messagesEndRef} />
-              </Box>
+                    ))
+                  )}
+                  <div ref={messagesEndRef} />
+                </Box>
+              )
             )}
 
             {/* 입력 영역 */}

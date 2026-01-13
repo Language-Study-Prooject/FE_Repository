@@ -3,10 +3,14 @@ import { Outlet } from 'react-router-dom'
 import { Box, useTheme, useMediaQuery } from '@mui/material'
 import Header from './Header'
 import Sidebar from './Sidebar'
+import HorizontalNav from './HorizontalNav'
 import Footer from './Footer'
 
-const DRAWER_WIDTH = 260
-const DRAWER_WIDTH_COLLAPSED = 72
+const DRAWER_WIDTH = 280
+const DRAWER_WIDTH_COLLAPSED = 76
+
+// 가로 네비게이션 사용 여부 (true: 가로 네비게이션, false: 사이드바)
+const USE_HORIZONTAL_NAV = true
 
 const MainLayout = () => {
   const theme = useTheme()
@@ -38,7 +42,13 @@ const MainLayout = () => {
     setCollapsed(!collapsed)
   }
 
-  const drawerWidth = isMobile ? 0 : (collapsed ? DRAWER_WIDTH_COLLAPSED : DRAWER_WIDTH)
+  // 가로 네비게이션 사용 시 사이드바 너비는 0
+  const drawerWidth = USE_HORIZONTAL_NAV
+    ? 0
+    : (isMobile ? 0 : (collapsed ? DRAWER_WIDTH_COLLAPSED : DRAWER_WIDTH))
+
+  // 헤더 + 가로 네비게이션 높이 (64 + 56)
+  const topOffset = USE_HORIZONTAL_NAV && !isMobile ? 120 : 64
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
@@ -48,13 +58,18 @@ const MainLayout = () => {
         sidebarOpen={mobileOpen}
       />
 
-      {/* Sidebar */}
-      <Sidebar
-        open={mobileOpen}
-        collapsed={collapsed}
-        onToggleCollapse={handleCollapseToggle}
-        onClose={handleMobileClose}
-      />
+      {/* 가로 네비게이션 (데스크톱) */}
+      {USE_HORIZONTAL_NAV && <HorizontalNav />}
+
+      {/* 사이드바 (모바일에서만 사용하거나 USE_HORIZONTAL_NAV가 false일 때) */}
+      {(!USE_HORIZONTAL_NAV || isMobile) && (
+        <Sidebar
+          open={mobileOpen}
+          collapsed={collapsed}
+          onToggleCollapse={handleCollapseToggle}
+          onClose={handleMobileClose}
+        />
+      )}
 
       {/* Main Content */}
       <Box
@@ -71,8 +86,8 @@ const MainLayout = () => {
           }),
         }}
       >
-        {/* Toolbar 높이만큼 여백 */}
-        <Box sx={{ height: 64 }} />
+        {/* 상단 여백 (헤더 + 가로 네비게이션) */}
+        <Box sx={{ height: topOffset }} />
 
         {/* 콘텐츠 영역 */}
         <Box

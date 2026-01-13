@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Container,
@@ -6,19 +6,11 @@ import {
   Typography,
   Button,
   Paper,
-  ToggleButton,
-  ToggleButtonGroup,
-  RadioGroup,
-  Radio,
-  FormControlLabel,
-  FormControl,
-  FormLabel,
   LinearProgress,
   IconButton,
   Chip,
   Card,
   CardContent,
-  CardActionArea,
   CircularProgress,
   Alert,
 } from '@mui/material'
@@ -28,134 +20,160 @@ import {
   Timer as TimerIcon,
   NavigateNext as NextIcon,
   NavigateBefore as PrevIcon,
+  Quiz as QuizIcon,
+  EmojiEvents as TrophyIcon,
+  AutoAwesome as SparkleIcon,
 } from '@mui/icons-material'
 import TestQuestion from '../components/TestQuestion'
 import { testService } from '../services/vocabService'
-import { LEVELS, LEVEL_LABELS, TEST_TYPES, TEST_TYPE_LABELS } from '../constants/vocabConstants'
+import { useTranslation } from '../../../contexts/SettingsContext'
 
 const TEMP_USER_ID = import.meta.env.VITE_TEMP_USER_ID || 'user1'
+const QUESTION_TIME_LIMIT = 5
 
-// 시험 설정 화면
-function TestSetup({ onStart, recentResults, loading }) {
-  const [wordCount, setWordCount] = useState(20)
-  const [level, setLevel] = useState(null)
-  const [type, setType] = useState(TEST_TYPES.ENGLISH_TO_KOREAN)
-
-  const handleStart = () => {
-    onStart({ wordCount, level, type })
-  }
-
+// Test Setup Screen
+function TestSetup({ onStart, recentResults, loading, t }) {
   return (
     <Box>
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" fontWeight={600} gutterBottom>
-          시험 설정
+      <Paper
+        elevation={0}
+        sx={{
+          p: 5,
+          mb: 4,
+          textAlign: 'center',
+          background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+          borderRadius: '24px',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Decorative elements */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: -40,
+            right: -40,
+            width: 150,
+            height: 150,
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.1)',
+          }}
+        />
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: -30,
+            left: 30,
+            width: 100,
+            height: 100,
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.05)',
+          }}
+        />
+
+        <Box
+          sx={{
+            width: 80,
+            height: 80,
+            borderRadius: '24px',
+            backgroundColor: 'rgba(255,255,255,0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            mx: 'auto',
+            mb: 3,
+          }}
+        >
+          <QuizIcon sx={{ fontSize: 44, color: 'white' }} />
+        </Box>
+
+        <Typography variant="h4" fontWeight={800} sx={{ color: 'white', mb: 1 }}>
+          {t('test.title')}
         </Typography>
-
-        {/* 문제 수 */}
-        <Box mb={3}>
-          <Typography variant="body2" color="text.secondary" mb={1}>
-            문제 수
-          </Typography>
-          <ToggleButtonGroup
-            value={wordCount}
-            exclusive
-            onChange={(e, val) => val && setWordCount(val)}
-            fullWidth
-          >
-            <ToggleButton value={10}>10개</ToggleButton>
-            <ToggleButton value={20}>20개</ToggleButton>
-            <ToggleButton value={30}>30개</ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
-
-        {/* 레벨 */}
-        <Box mb={3}>
-          <Typography variant="body2" color="text.secondary" mb={1}>
-            레벨
-          </Typography>
-          <ToggleButtonGroup
-            value={level}
-            exclusive
-            onChange={(e, val) => setLevel(val)}
-            fullWidth
-          >
-            <ToggleButton value={null}>전체</ToggleButton>
-            {Object.entries(LEVEL_LABELS).map(([key, label]) => (
-              <ToggleButton key={key} value={key}>
-                {label}
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-        </Box>
-
-        {/* 출제 유형 */}
-        <Box mb={3}>
-          <FormControl component="fieldset">
-            <FormLabel component="legend" sx={{ fontSize: 14, color: 'text.secondary' }}>
-              출제 유형
-            </FormLabel>
-            <RadioGroup
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-            >
-              {Object.entries(TEST_TYPE_LABELS).map(([key, label]) => (
-                <FormControlLabel
-                  key={key}
-                  value={key}
-                  control={<Radio />}
-                  label={label}
-                />
-              ))}
-            </RadioGroup>
-          </FormControl>
-        </Box>
+        <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.8)', mb: 4 }}>
+          {t('test.subtitle')}
+        </Typography>
 
         <Button
           variant="contained"
           size="large"
-          fullWidth
           startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <PlayIcon />}
-          onClick={handleStart}
+          onClick={onStart}
           disabled={loading}
+          sx={{
+            backgroundColor: 'white',
+            color: '#059669',
+            fontWeight: 700,
+            px: 5,
+            py: 1.5,
+            '&:hover': {
+              backgroundColor: 'rgba(255,255,255,0.95)',
+            },
+          }}
         >
-          시험 시작하기
+          {t('test.startButton')}
         </Button>
       </Paper>
 
-      {/* 최근 시험 기록 */}
+      {/* Recent Results */}
       {recentResults.length > 0 && (
         <Box>
-          <Typography variant="h6" fontWeight={600} gutterBottom>
-            최근 시험 기록
+          <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
+            {t('test.recentResults')}
           </Typography>
-          {recentResults.map((result, index) => (
-            <Card key={result.testId || index} sx={{ mb: 1 }}>
-              <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      {new Date(result.completedAt).toLocaleDateString()}
-                    </Typography>
-                    <Typography variant="body1">
-                      {result.totalQuestions}문제
-                    </Typography>
+          <Box display="flex" flexDirection="column" gap={1.5}>
+            {recentResults.map((result, index) => (
+              <Card key={result.testId || index} elevation={0} sx={{ border: '1px solid #e7e5e4' }}>
+                <CardContent sx={{ py: 2, px: 3, '&:last-child': { pb: 2 } }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <Box>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                        {result.completedAt ? new Date(result.completedAt).toLocaleDateString() : '-'}
+                      </Typography>
+                      <Typography variant="body1" fontWeight={600}>
+                        {result.totalQuestions || 0} {t('test.question')}
+                      </Typography>
+                    </Box>
+                    <Box
+                      sx={{
+                        px: 2,
+                        py: 1,
+                        borderRadius: '10px',
+                        backgroundColor:
+                          result.successRate >= 80
+                            ? '#ecfdf5'
+                            : result.successRate >= 60
+                            ? '#fff7ed'
+                            : '#fef2f2',
+                      }}
+                    >
+                      <Typography
+                        variant="h6"
+                        fontWeight={700}
+                        sx={{
+                          color:
+                            result.successRate >= 80
+                              ? '#059669'
+                              : result.successRate >= 60
+                              ? '#f97316'
+                              : '#ef4444',
+                        }}
+                      >
+                        {result.successRate?.toFixed(0) || 0}%
+                      </Typography>
+                    </Box>
                   </Box>
-                  <Chip
-                    label={`${result.successRate?.toFixed(0) || 0}%`}
-                    color={result.successRate >= 80 ? 'success' : result.successRate >= 60 ? 'warning' : 'error'}
-                  />
-                </Box>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            ))}
+          </Box>
         </Box>
       )}
     </Box>
   )
 }
 
-// 시험 진행 화면
+// Test In Progress Screen
 function TestInProgress({
   questions,
   currentIndex,
@@ -165,94 +183,130 @@ function TestInProgress({
   onNext,
   onPrev,
   onSubmit,
+  t,
 }) {
   const currentQuestion = questions[currentIndex]
   const progress = ((currentIndex + 1) / questions.length) * 100
-  const minutes = Math.floor(timeRemaining / 60)
-  const seconds = timeRemaining % 60
+  const timerProgress = (timeRemaining / QUESTION_TIME_LIMIT) * 100
+
+  if (!currentQuestion) return null
 
   return (
     <Box>
-      {/* 헤더 */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h6" fontWeight={600}>
-          문제 {currentIndex + 1} / {questions.length}
+      {/* Header */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Typography variant="h6" fontWeight={700}>
+          {currentIndex + 1} / {questions.length}
         </Typography>
-        <Chip
-          icon={<TimerIcon />}
-          label={`${minutes}:${seconds.toString().padStart(2, '0')}`}
-          color={timeRemaining < 60 ? 'error' : 'default'}
-        />
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            px: 2,
+            py: 1,
+            borderRadius: '12px',
+            backgroundColor: timeRemaining <= 2 ? '#fef2f2' : '#f5f5f4',
+          }}
+        >
+          <TimerIcon sx={{ fontSize: 20, color: timeRemaining <= 2 ? '#ef4444' : '#57534e' }} />
+          <Typography
+            variant="h6"
+            fontWeight={700}
+            sx={{ color: timeRemaining <= 2 ? '#ef4444' : '#1c1917', minWidth: 24, textAlign: 'center' }}
+          >
+            {timeRemaining}
+          </Typography>
+        </Box>
       </Box>
 
-      {/* 진행률 */}
+      {/* Timer Progress */}
+      <LinearProgress
+        variant="determinate"
+        value={timerProgress}
+        sx={{
+          height: 4,
+          borderRadius: 2,
+          mb: 1,
+          backgroundColor: '#e7e5e4',
+          '& .MuiLinearProgress-bar': {
+            borderRadius: 2,
+            backgroundColor: timeRemaining <= 2 ? '#ef4444' : '#059669',
+            transition: 'width 1s linear',
+          },
+        }}
+      />
+
+      {/* Overall Progress */}
       <LinearProgress
         variant="determinate"
         value={progress}
-        sx={{ height: 8, borderRadius: 4, mb: 3 }}
+        sx={{
+          height: 8,
+          borderRadius: 4,
+          mb: 4,
+          backgroundColor: '#e7e5e4',
+          '& .MuiLinearProgress-bar': {
+            borderRadius: 4,
+            background: 'linear-gradient(90deg, #059669 0%, #10b981 100%)',
+          },
+        }}
       />
 
-      {/* 문제 */}
+      {/* Question */}
       <TestQuestion
         question={currentQuestion}
-        selectedAnswer={answers[currentQuestion.questionId]}
-        onSelect={(answer) => onAnswer(currentQuestion.questionId, answer)}
+        selectedAnswer={answers[currentQuestion.wordId]}
+        onSelect={(answer) => onAnswer(currentQuestion.wordId, answer)}
       />
 
-      {/* 네비게이션 */}
+      {/* Navigation */}
       <Box display="flex" justifyContent="space-between" mt={4}>
         <Button
+          variant="text"
           startIcon={<PrevIcon />}
           onClick={onPrev}
           disabled={currentIndex === 0}
+          sx={{ color: 'text.secondary' }}
         >
-          이전
+          {t('common.previous')}
         </Button>
 
         {currentIndex === questions.length - 1 ? (
-          <Button
-            variant="contained"
-            onClick={onSubmit}
-            disabled={Object.keys(answers).length !== questions.length}
-          >
-            제출하기
+          <Button variant="contained" onClick={onSubmit} sx={{ px: 4 }}>
+            {t('common.submit')}
           </Button>
         ) : (
-          <Button
-            variant="contained"
-            endIcon={<NextIcon />}
-            onClick={onNext}
-          >
-            다음
+          <Button variant="contained" endIcon={<NextIcon />} onClick={onNext} sx={{ px: 4 }}>
+            {t('common.next')}
           </Button>
         )}
       </Box>
 
-      {/* 문제 번호 표시 */}
-      <Box display="flex" justifyContent="center" gap={0.5} mt={3} flexWrap="wrap">
+      {/* Question Indicators */}
+      <Box display="flex" justifyContent="center" gap={1} mt={4} flexWrap="wrap">
         {questions.map((q, idx) => (
           <Box
-            key={q.questionId}
+            key={q.wordId}
             sx={{
-              width: 28,
-              height: 28,
-              borderRadius: '50%',
+              width: 32,
+              height: 32,
+              borderRadius: '10px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: 12,
-              fontWeight: 600,
-              cursor: 'pointer',
-              backgroundColor: answers[q.questionId]
-                ? 'primary.main'
+              fontWeight: 700,
+              backgroundColor: answers[q.wordId]
+                ? '#059669'
                 : idx === currentIndex
-                ? 'primary.light'
-                : 'grey.200',
-              color: answers[q.questionId] || idx === currentIndex ? 'white' : 'text.secondary',
+                ? '#10b981'
+                : '#f5f5f4',
+              color: answers[q.wordId] || idx === currentIndex ? 'white' : '#57534e',
+              transition: 'all 0.2s ease',
             }}
-            onClick={() => onNext(idx - currentIndex)}
           >
-            {idx + 1}
+            {answers[q.wordId] ? '✓' : idx + 1}
           </Box>
         ))}
       </Box>
@@ -260,61 +314,136 @@ function TestInProgress({
   )
 }
 
-// 결과 화면
-function TestResult({ result, onRetry, onHome }) {
-  const navigate = useNavigate()
+// Result Screen
+function TestResult({ result, onRetry, onHome, t }) {
+  const score = result.successRate || 0
+  const isGreat = score >= 80
+  const isGood = score >= 60
 
   return (
     <Box textAlign="center" py={4}>
-      <Typography variant="h2" fontWeight={700} color="primary.main" gutterBottom>
-        {result.successRate?.toFixed(0)}점
+      <Box
+        sx={{
+          width: 100,
+          height: 100,
+          borderRadius: '28px',
+          background: isGreat
+            ? 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)'
+            : isGood
+            ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
+            : 'linear-gradient(135deg, #f97316 0%, #fb923c 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          mx: 'auto',
+          mb: 3,
+          boxShadow: isGreat
+            ? '0 16px 32px -8px rgba(251, 191, 36, 0.5)'
+            : isGood
+            ? '0 16px 32px -8px rgba(5, 150, 105, 0.4)'
+            : '0 16px 32px -8px rgba(249, 115, 22, 0.4)',
+        }}
+      >
+        <TrophyIcon sx={{ fontSize: 52, color: 'white' }} />
+      </Box>
+
+      <Typography variant="h2" fontWeight={800} sx={{ mb: 1 }}>
+        {score.toFixed(0)}{t('test.score')}
       </Typography>
-      <Typography variant="h6" color="text.secondary" mb={4}>
-        {result.correctCount} / {result.totalQuestions} 정답
+      <Typography variant="body1" color="text.secondary" mb={4}>
+        {result.totalQuestions || 0} {t('test.question')} / {result.correctCount || 0} {t('test.correct')}
       </Typography>
 
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Box display="flex" justifyContent="center" gap={4}>
+      <Paper elevation={0} sx={{ p: 4, mb: 4, backgroundColor: '#fafaf9', borderRadius: '20px' }}>
+        <Box display="flex" justifyContent="center" gap={6} mb={3}>
           <Box textAlign="center">
-            <Typography variant="h4" color="success.main" fontWeight={700}>
-              {result.correctCount}
+            <Typography variant="h3" sx={{ color: '#10b981', fontWeight: 800 }}>
+              {result.correctCount || 0}
             </Typography>
-            <Typography variant="body2" color="text.secondary">정답</Typography>
+            <Typography variant="body2" color="text.secondary" fontWeight={500}>
+              {t('test.correct')}
+            </Typography>
           </Box>
           <Box textAlign="center">
-            <Typography variant="h4" color="error.main" fontWeight={700}>
-              {result.incorrectCount}
+            <Typography variant="h3" sx={{ color: '#ef4444', fontWeight: 800 }}>
+              {result.incorrectCount || 0}
             </Typography>
-            <Typography variant="body2" color="text.secondary">오답</Typography>
+            <Typography variant="body2" color="text.secondary" fontWeight={500}>
+              {t('test.incorrect')}
+            </Typography>
           </Box>
+        </Box>
+
+        <Box
+          sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 1,
+            px: 3,
+            py: 1.5,
+            borderRadius: '12px',
+            backgroundColor: isGreat ? '#fef3c7' : isGood ? '#ecfdf5' : '#fff7ed',
+          }}
+        >
+          <SparkleIcon sx={{ color: isGreat ? '#f59e0b' : isGood ? '#059669' : '#f97316' }} />
+          <Typography
+            variant="body1"
+            fontWeight={700}
+            sx={{ color: isGreat ? '#92400e' : isGood ? '#047857' : '#c2410c' }}
+          >
+            {isGreat ? t('test.excellent') : isGood ? t('test.good') : t('test.needPractice')}
+          </Typography>
         </Box>
       </Paper>
 
-      {/* 틀린 문제 */}
-      {result.results?.filter(r => !r.isCorrect).length > 0 && (
+      {/* Wrong Answers */}
+      {result.results?.filter((r) => !r.isCorrect).length > 0 && (
         <Box mb={4} textAlign="left">
-          <Typography variant="h6" fontWeight={600} gutterBottom>
-            틀린 문제
+          <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
+            {t('test.reviewWrong')}
           </Typography>
-          {result.results.filter(r => !r.isCorrect).map((r, idx) => (
-            <Paper key={idx} sx={{ p: 2, mb: 1 }}>
-              <Typography variant="body2" color="text.secondary">
-                내 답: <span style={{ color: '#d32f2f' }}>{r.userAnswer}</span>
-              </Typography>
-              <Typography variant="body1" fontWeight={600}>
-                정답: <span style={{ color: '#2e7d32' }}>{r.correctAnswer}</span>
-              </Typography>
-            </Paper>
-          ))}
+          <Box display="flex" flexDirection="column" gap={1.5}>
+            {result.results
+              .filter((r) => !r.isCorrect)
+              .map((r, idx) => (
+                <Paper
+                  key={idx}
+                  elevation={0}
+                  sx={{ p: 2.5, border: '1px solid #fecaca', borderRadius: '14px', backgroundColor: '#fef2f2' }}
+                >
+                  <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
+                    {r.english}
+                  </Typography>
+                  <Box display="flex" gap={3}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        {t('test.myAnswer')}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#ef4444', fontWeight: 600 }}>
+                        {r.userAnswer || t('test.noAnswer')}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        {t('test.correctAnswer')}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#059669', fontWeight: 600 }}>
+                        {r.correctAnswer}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Paper>
+              ))}
+          </Box>
         </Box>
       )}
 
       <Box display="flex" gap={2} justifyContent="center">
-        <Button variant="outlined" onClick={onRetry}>
-          다시 보기
+        <Button variant="outlined" size="large" onClick={onRetry} sx={{ px: 4 }}>
+          {t('test.retake')}
         </Button>
-        <Button variant="contained" onClick={onHome}>
-          대시보드로
+        <Button variant="contained" size="large" onClick={onHome} sx={{ px: 4 }}>
+          {t('test.toDashboard')}
         </Button>
       </Box>
     </Box>
@@ -323,12 +452,12 @@ function TestResult({ result, onRetry, onHome }) {
 
 export default function TestPage() {
   const navigate = useNavigate()
-  const [phase, setPhase] = useState('setup') // setup, testing, result
+  const { t } = useTranslation()
+  const [phase, setPhase] = useState('setup')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [recentResults, setRecentResults] = useState([])
 
-  // 시험 상태
   const [testId, setTestId] = useState(null)
   const [questions, setQuestions] = useState([])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -340,84 +469,92 @@ export default function TestPage() {
     fetchRecentResults()
   }, [])
 
-  // 타이머
   useEffect(() => {
-    if (phase !== 'testing' || timeRemaining <= 0) return
+    if (phase !== 'testing' || questions.length === 0) return
+
+    setTimeRemaining(QUESTION_TIME_LIMIT)
 
     const timer = setInterval(() => {
-      setTimeRemaining(prev => {
+      setTimeRemaining((prev) => {
         if (prev <= 1) {
-          handleSubmit()
-          return 0
+          if (currentIndex < questions.length - 1) {
+            setCurrentIndex((idx) => idx + 1)
+          } else {
+            handleSubmit()
+          }
+          return QUESTION_TIME_LIMIT
         }
         return prev - 1
       })
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [phase, timeRemaining])
+  }, [phase, currentIndex, questions.length])
 
   const fetchRecentResults = async () => {
     try {
       const response = await testService.getResults(TEMP_USER_ID, { limit: 5 })
-      setRecentResults(response?.data?.testResults || [])
+      setRecentResults(response?.testResults || [])
     } catch (err) {
       console.error('Fetch results error:', err)
     }
   }
 
-  const handleStart = async (options) => {
+  const handleStart = async () => {
     try {
       setLoading(true)
       setError(null)
-      const response = await testService.start(TEMP_USER_ID, options)
+      const response = await testService.start(TEMP_USER_ID, 'DAILY')
 
-      if (response?.data) {
-        setTestId(response.data.testId)
-        setQuestions(response.data.questions || [])
-        setTimeRemaining(options.wordCount * 30) // 문제당 30초
+      const testData = response?.data || response
+      if (testData?.testId) {
+        setTestId(testData.testId)
+        setQuestions(testData.questions || [])
+        setTimeRemaining(QUESTION_TIME_LIMIT)
         setAnswers({})
         setCurrentIndex(0)
         setPhase('testing')
+      } else {
+        setError('시험 데이터를 불러오지 못했습니다.')
       }
     } catch (err) {
       console.error('Start test error:', err)
-      setError('시험을 시작할 수 없습니다.')
+      const errorMsg = err.response?.data?.message || '시험을 시작할 수 없습니다.'
+      setError(errorMsg)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleAnswer = (questionId, answer) => {
-    setAnswers(prev => ({ ...prev, [questionId]: answer }))
+  const handleAnswer = (wordId, answer) => {
+    setAnswers((prev) => ({ ...prev, [wordId]: answer }))
   }
 
-  const handleNext = (offset = 1) => {
-    const newIndex = currentIndex + offset
-    if (newIndex >= 0 && newIndex < questions.length) {
-      setCurrentIndex(newIndex)
+  const handleNext = () => {
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex((prev) => prev + 1)
     }
   }
 
   const handlePrev = () => {
     if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1)
+      setCurrentIndex((prev) => prev - 1)
     }
   }
 
   const handleSubmit = async () => {
     try {
       setLoading(true)
-      const answersArray = questions.map(q => ({
-        questionId: q.questionId,
+      const answersArray = questions.map((q) => ({
         wordId: q.wordId,
-        answer: answers[q.questionId] || '',
+        answer: answers[q.wordId] || '',
       }))
 
       const response = await testService.submit(TEMP_USER_ID, testId, answersArray)
 
-      if (response?.data) {
-        setResult(response.data)
+      const resultData = response?.data || response
+      if (resultData) {
+        setResult(resultData)
         setPhase('result')
       }
     } catch (err) {
@@ -438,50 +575,41 @@ export default function TestPage() {
   }
 
   return (
-    <Container maxWidth="sm">
-      {/* 헤더 */}
-      <Box display="flex" alignItems="center" gap={1} py={2}>
+    <Container maxWidth="sm" sx={{ pb: 6 }}>
+      {/* Header */}
+      <Box display="flex" alignItems="center" gap={1} py={2} mb={2}>
         <IconButton onClick={() => navigate('/vocab')}>
           <BackIcon />
         </IconButton>
         <Typography variant="h5" fontWeight={700}>
-          단어 시험
+          {t('test.title')}
         </Typography>
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
 
-      {phase === 'setup' && (
-        <TestSetup
-          onStart={handleStart}
-          recentResults={recentResults}
-          loading={loading}
-        />
-      )}
+      {phase === 'setup' && <TestSetup onStart={handleStart} recentResults={recentResults} loading={loading} t={t} />}
 
-      {phase === 'testing' && (
+      {phase === 'testing' && questions.length > 0 && (
         <TestInProgress
           questions={questions}
           currentIndex={currentIndex}
           answers={answers}
           timeRemaining={timeRemaining}
           onAnswer={handleAnswer}
-          onNext={() => handleNext(1)}
+          onNext={handleNext}
           onPrev={handlePrev}
           onSubmit={handleSubmit}
+          t={t}
         />
       )}
 
       {phase === 'result' && result && (
-        <TestResult
-          result={result}
-          onRetry={handleRetry}
-          onHome={() => navigate('/vocab')}
-        />
+        <TestResult result={result} onRetry={handleRetry} onHome={() => navigate('/vocab')} t={t} />
       )}
     </Container>
   )
