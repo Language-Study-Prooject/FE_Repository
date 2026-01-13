@@ -1,6 +1,9 @@
-import { Box, Typography, Link, Container, Divider } from '@mui/material'
+import { Box, Typography, Link, Container } from '@mui/material'
+import { useTranslation } from '../../../contexts/SettingsContext'
 
 const Footer = () => {
+  const { t } = useTranslation()
+
   return (
     <Box
       component="footer"
@@ -23,12 +26,12 @@ const Footer = () => {
             gap: 2,
           }}
         >
-          {/* 저작권 */}
+          {/* Copyright */}
           <Typography variant="body2" color="text.secondary">
-            © 2026 AI Language Learning. All rights reserved.
+            {t('footer.copyright')}
           </Typography>
 
-          {/* 링크 */}
+          {/* Links */}
           <Box
             sx={{
               display: 'flex',
@@ -43,7 +46,7 @@ const Footer = () => {
               underline="hover"
               variant="body2"
             >
-              이용약관
+              {t('footer.terms')}
             </Link>
             <Link
               href="/privacy"
@@ -51,7 +54,7 @@ const Footer = () => {
               underline="hover"
               variant="body2"
             >
-              개인정보처리방침
+              {t('footer.privacy')}
             </Link>
             <Link
               href="/contact"
@@ -59,7 +62,7 @@ const Footer = () => {
               underline="hover"
               variant="body2"
             >
-              고객센터
+              {t('footer.contact')}
             </Link>
           </Box>
         </Box>

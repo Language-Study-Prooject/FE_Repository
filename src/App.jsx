@@ -27,6 +27,7 @@ import {
   School as LearnIcon,
   Quiz as QuizIcon,
   LibraryBooks as WordListIcon,
+  WavingHand as WaveIcon,
 } from '@mui/icons-material'
 import MainLayout from './layouts/MainLayout'
 import FreetalkPeoplePage from './domains/freetalk/pages/FreetalkPeoplePage'
@@ -40,44 +41,48 @@ import StatsPage from './domains/vocab/pages/StatsPage'
 import { useChat } from './contexts/ChatContext'
 import { useSettings } from './contexts/SettingsContext'
 
-// 임시 대시보드 페이지
+// Dashboard Page
 function Dashboard() {
   const navigate = useNavigate()
   const [expandedCard, setExpandedCard] = useState(null)
+  const { t } = useSettings()
 
   const learningModes = [
     {
       id: 'speaking',
-      title: '말하기연습',
-      description: '오픽 연습과 AI 대화로 스피킹 실력 향상',
+      title: t('dashboard.speakingTitle'),
+      description: t('dashboard.speakingDesc'),
       icon: SpeakingIcon,
-      color: '#2196f3',
+      color: '#3b82f6',
+      bgColor: '#eff6ff',
       children: [
-        { id: 'opic', title: '오픽연습', icon: OpicIcon, path: '/opic', description: '레벨별 맞춤 연습' },
-        { id: 'ai-talk', title: 'AI와 말해보기', icon: AiIcon, path: '/freetalk/ai', description: 'AI와 자유로운 대화' },
+        { id: 'opic', title: t('dashboard.opicTitle'), icon: OpicIcon, path: '/opic', description: t('dashboard.opicDesc') },
+        { id: 'ai-talk', title: t('dashboard.aiTalkTitle'), icon: AiIcon, path: '/freetalk/ai', description: t('dashboard.aiTalkDesc') },
       ],
     },
     {
       id: 'writing',
-      title: '쓰기연습',
-      description: '채팅과 작문으로 라이팅 실력 향상',
+      title: t('dashboard.writingTitle'),
+      description: t('dashboard.writingDesc'),
       icon: WritingCategoryIcon,
-      color: '#4caf50',
+      color: '#10b981',
+      bgColor: '#ecfdf5',
       children: [
-        { id: 'chat-people', title: '사람들과 채팅하기', icon: PeopleIcon, path: '/freetalk/people', description: '다른 학습자와 대화' },
-        { id: 'writing-practice', title: '작문연습', icon: WritingIcon, path: '/writing', description: '문법 교정 & 피드백' },
+        { id: 'chat-people', title: t('dashboard.chatTitle'), icon: PeopleIcon, path: '/freetalk/people', description: t('dashboard.chatDesc') },
+        { id: 'writing-practice', title: t('dashboard.compositionTitle'), icon: WritingIcon, path: '/writing', description: t('dashboard.compositionDesc') },
       ],
     },
     {
       id: 'vocab',
-      title: '단어 학습',
-      description: '매일 55개 단어로 어휘력 향상',
+      title: t('dashboard.vocabTitle'),
+      description: t('dashboard.vocabDesc'),
       icon: VocabIcon,
-      color: '#9c27b0',
+      color: '#f97316',
+      bgColor: '#fff7ed',
       children: [
-        { id: 'vocab-daily', title: '단어 외우기', icon: LearnIcon, path: '/vocab', description: '매일 55개 단어 학습' },
-        { id: 'vocab-test', title: '시험 보기', icon: QuizIcon, path: '/vocab/test', description: '4지선다 퀴즈' },
-        { id: 'vocab-words', title: '단어장', icon: WordListIcon, path: '/vocab/words', description: '전체 단어 목록' },
+        { id: 'vocab-daily', title: t('dashboard.dailyWordsTitle'), icon: LearnIcon, path: '/vocab', description: t('dashboard.dailyWordsDesc') },
+        { id: 'vocab-test', title: t('dashboard.quizTitle'), icon: QuizIcon, path: '/vocab/test', description: t('dashboard.quizDesc') },
+        { id: 'vocab-words', title: t('dashboard.wordListTitle'), icon: WordListIcon, path: '/vocab/words', description: t('dashboard.wordListDesc') },
       ],
     },
   ]
@@ -96,16 +101,36 @@ function Dashboard() {
   }
 
   return (
-    <Container maxWidth="lg">
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight={700} gutterBottom>
-          안녕하세요!
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          오늘은 어떤 학습을 해볼까요?
-        </Typography>
+    <Container maxWidth="lg" sx={{ pb: 6 }}>
+      {/* Header */}
+      <Box sx={{ mb: 5, pt: 2 }}>
+        <Box display="flex" alignItems="center" gap={1.5} mb={1}>
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: '14px',
+              background: 'linear-gradient(135deg, #f97316 0%, #fb923c 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 8px 16px -4px rgba(249, 115, 22, 0.3)',
+            }}
+          >
+            <WaveIcon sx={{ fontSize: 28, color: 'white' }} />
+          </Box>
+          <Box>
+            <Typography variant="h4" fontWeight={800} sx={{ lineHeight: 1.2 }}>
+              {t('dashboard.greeting')}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {t('dashboard.subtitle')}
+            </Typography>
+          </Box>
+        </Box>
       </Box>
 
+      {/* Learning Mode Cards */}
       <Grid container spacing={3}>
         {learningModes.map((mode) => {
           const Icon = mode.icon
@@ -113,43 +138,49 @@ function Dashboard() {
           const hasChildren = mode.children && mode.children.length > 0
 
           return (
-            <Grid item xs={12} sm={6} key={mode.id}>
+            <Grid item xs={12} md={6} key={mode.id}>
               <Card
                 onMouseEnter={() => handleCardHover(mode.id)}
                 onMouseLeave={handleCardLeave}
                 onClick={() => !hasChildren && mode.path && navigate(mode.path)}
                 sx={{
                   cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  boxShadow: isExpanded ? 8 : 1,
-                  border: isExpanded ? `2px solid ${mode.color}` : '2px solid transparent',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  border: '2px solid transparent',
+                  borderColor: isExpanded ? mode.color : 'transparent',
+                  transform: isExpanded ? 'translateY(-4px)' : 'translateY(0)',
+                  boxShadow: isExpanded
+                    ? `0 20px 40px -12px ${mode.color}30`
+                    : '0 1px 3px 0 rgb(0 0 0 / 0.1)',
                   '&:hover': {
-                    boxShadow: 6,
+                    borderColor: mode.color,
                   },
+                  height: 'auto',
+                  minHeight: isExpanded ? 'auto' : 140,
                 }}
               >
                 <CardContent sx={{ p: 3 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                    {/* 메인 아이콘 */}
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2.5 }}>
+                    {/* Icon */}
                     <Box
                       sx={{
-                        width: 64,
-                        height: 64,
-                        borderRadius: '50%',
-                        backgroundColor: `${mode.color}15`,
+                        width: 56,
+                        height: 56,
+                        borderRadius: '16px',
+                        backgroundColor: mode.bgColor,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         flexShrink: 0,
                       }}
                     >
-                      <Icon sx={{ fontSize: 32, color: mode.color }} />
+                      <Icon sx={{ fontSize: 28, color: mode.color }} />
                     </Box>
 
-                    {/* 텍스트 */}
+                    {/* Text */}
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Typography variant="h6" fontWeight={600}>
+                        <Typography variant="h6" fontWeight={700}>
                           {mode.title}
                         </Typography>
                         {hasChildren && (
@@ -162,22 +193,23 @@ function Dashboard() {
                           />
                         )}
                       </Box>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                         {mode.description}
                       </Typography>
                     </Box>
                   </Box>
 
-                  {/* 하위 카테고리 - 애니메이션으로 펼쳐짐 */}
+                  {/* Sub-items */}
                   {hasChildren && (
-                    <Collapse in={isExpanded} timeout={400}>
+                    <Collapse in={isExpanded} timeout={300}>
                       <Box
                         sx={{
-                          display: 'flex',
+                          display: 'grid',
+                          gridTemplateColumns: mode.children.length > 2 ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)',
                           gap: 2,
                           mt: 3,
                           pt: 3,
-                          borderTop: 1,
+                          borderTop: '1px solid',
                           borderColor: 'divider',
                         }}
                       >
@@ -188,32 +220,46 @@ function Dashboard() {
                               key={child.id}
                               onClick={(e) => handleSubItemClick(child.path, e)}
                               sx={{
-                                flex: 1,
                                 p: 2,
-                                borderRadius: 2,
-                                backgroundColor: 'action.hover',
+                                borderRadius: '14px',
+                                backgroundColor: mode.bgColor,
                                 cursor: 'pointer',
-                                transition: 'all 0.3s',
-                                transform: isExpanded ? 'translateX(0)' : 'translateX(-20px)',
+                                transition: 'all 0.2s ease',
+                                transform: isExpanded ? 'translateY(0)' : 'translateY(-8px)',
                                 opacity: isExpanded ? 1 : 0,
-                                transitionDelay: `${index * 100}ms`,
+                                transitionDelay: `${index * 50}ms`,
                                 '&:hover': {
                                   backgroundColor: `${mode.color}20`,
                                   transform: 'scale(1.02)',
                                 },
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                textAlign: 'center',
+                                minHeight: 100,
                               }}
                             >
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                <ChildIcon sx={{ color: mode.color, fontSize: 24 }} />
-                                <Box>
-                                  <Typography variant="subtitle2" fontWeight={600}>
-                                    {child.title}
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {child.description}
-                                  </Typography>
-                                </Box>
+                              <Box
+                                sx={{
+                                  width: 40,
+                                  height: 40,
+                                  borderRadius: '12px',
+                                  backgroundColor: 'white',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  mb: 1.5,
+                                  boxShadow: '0 2px 8px -2px rgba(0,0,0,0.1)',
+                                }}
+                              >
+                                <ChildIcon sx={{ color: mode.color, fontSize: 22 }} />
                               </Box>
+                              <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5 }}>
+                                {child.title}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.3 }}>
+                                {child.description}
+                              </Typography>
                             </Box>
                           )
                         })}
@@ -227,16 +273,41 @@ function Dashboard() {
         })}
       </Grid>
 
-      {/* 최근 학습 */}
+      {/* Recent Activity */}
       <Box sx={{ mt: 6 }}>
-        <Typography variant="h5" fontWeight={600} gutterBottom>
-          최근 학습
+        <Typography variant="h5" fontWeight={700} gutterBottom sx={{ mb: 3 }}>
+          {t('dashboard.recentActivity')}
         </Typography>
         <Card>
-          <CardContent>
-            <Typography color="text.secondary" textAlign="center" py={4}>
-              아직 학습 기록이 없습니다. 학습을 시작해보세요!
+          <CardContent sx={{ py: 6, textAlign: 'center' }}>
+            <Box
+              sx={{
+                width: 64,
+                height: 64,
+                borderRadius: '16px',
+                backgroundColor: '#f5f5f4',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mx: 'auto',
+                mb: 2,
+              }}
+            >
+              <LearnIcon sx={{ fontSize: 32, color: '#a8a29e' }} />
+            </Box>
+            <Typography color="text.secondary" variant="body1" fontWeight={500}>
+              {t('dashboard.noHistory')}
             </Typography>
+            <Typography color="text.disabled" variant="body2" sx={{ mt: 0.5 }}>
+              {t('dashboard.startLearning')}
+            </Typography>
+            <Button
+              variant="contained"
+              sx={{ mt: 3 }}
+              onClick={() => navigate('/vocab')}
+            >
+              {t('dashboard.startButton')}
+            </Button>
           </CardContent>
         </Card>
       </Box>
@@ -244,100 +315,275 @@ function Dashboard() {
   )
 }
 
-// 임시 페이지들
+// Placeholder Pages
 function OpicPage() {
   return (
-    <Container>
-      <Typography variant="h4">OPIC 연습</Typography>
-      <Typography color="text.secondary">레벨별 맞춤 연습</Typography>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Typography variant="h4" fontWeight={700}>OPIC Practice</Typography>
+      <Typography color="text.secondary">Level-based training</Typography>
     </Container>
   )
 }
 
 function FreetalkAiPage() {
   return (
-    <Container>
-      <Typography variant="h4">프리토킹 - AI와</Typography>
-      <Typography color="text.secondary">AI와 자유로운 대화</Typography>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Typography variant="h4" fontWeight={700}>AI Conversation</Typography>
+      <Typography color="text.secondary">Free conversation with AI</Typography>
     </Container>
   )
 }
 
 function WritingPage() {
   return (
-    <Container>
-      <Typography variant="h4">작문 연습</Typography>
-      <Typography color="text.secondary">문법 교정 & 피드백</Typography>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Typography variant="h4" fontWeight={700}>Writing Practice</Typography>
+      <Typography color="text.secondary">Grammar correction & feedback</Typography>
     </Container>
   )
 }
 
 function ReportsPage() {
   return (
-    <Container>
-      <Typography variant="h4">내 리포트</Typography>
-      <Typography color="text.secondary">학습 결과 분석</Typography>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Typography variant="h4" fontWeight={700}>My Reports</Typography>
+      <Typography color="text.secondary">Learning analytics</Typography>
     </Container>
   )
 }
 
 function SettingsPage() {
-  const { settings, setTtsVoice } = useSettings()
+  const { settings, setTtsVoice, setLanguage, t } = useSettings()
+
+  const languageOptions = [
+    { value: 'ko', label: '한국어', flag: '🇰🇷' },
+    { value: 'en', label: 'English', flag: '🇺🇸' },
+  ]
 
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="md" sx={{ py: 4 }}>
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight={700} gutterBottom>
-          설정
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          앱 설정을 변경할 수 있습니다
-        </Typography>
+        <Box display="flex" alignItems="center" gap={2} mb={1}>
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: '14px',
+              background: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 6px 12px -3px rgba(107, 114, 128, 0.3)',
+            }}
+          >
+            <VocabIcon sx={{ fontSize: 26, color: 'white' }} />
+          </Box>
+          <Box>
+            <Typography variant="h4" fontWeight={800} sx={{ lineHeight: 1.2 }}>
+              {t('settings.title')}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {t('settings.subtitle')}
+            </Typography>
+          </Box>
+        </Box>
       </Box>
 
-      <Card>
-        <CardContent>
-          <FormControl component="fieldset">
-            <FormLabel component="legend" sx={{ fontWeight: 600, mb: 1 }}>
-              TTS 음성 선택
-            </FormLabel>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              채팅에서 메시지를 읽어줄 음성을 선택하세요
+      <Box display="flex" flexDirection="column" gap={3}>
+        {/* Language Settings */}
+        <Card sx={{ borderRadius: '20px', overflow: 'hidden' }}>
+          <Box
+            sx={{
+              p: 3,
+              background: 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)',
+            }}
+          >
+            <Typography variant="h6" fontWeight={700} sx={{ color: 'white' }}>
+              {t('settings.language')}
             </Typography>
-            <RadioGroup
-              value={settings.ttsVoice}
-              onChange={(e) => setTtsVoice(e.target.value)}
-            >
-              <FormControlLabel
-                value="FEMALE"
-                control={<Radio />}
-                label="여성 음성"
-              />
-              <FormControlLabel
-                value="MALE"
-                control={<Radio />}
-                label="남성 음성"
-              />
-            </RadioGroup>
-          </FormControl>
-        </CardContent>
-      </Card>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+              {t('settings.languageDesc')}
+            </Typography>
+          </Box>
+          <CardContent sx={{ p: 3 }}>
+            <Grid container spacing={2}>
+              {languageOptions.map((option) => (
+                <Grid item xs={6} key={option.value}>
+                  <Box
+                    onClick={() => setLanguage(option.value)}
+                    sx={{
+                      p: 2.5,
+                      borderRadius: '16px',
+                      border: '2px solid',
+                      borderColor: settings.language === option.value ? '#3b82f6' : 'divider',
+                      backgroundColor: settings.language === option.value ? '#eff6ff' : 'transparent',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      textAlign: 'center',
+                      '&:hover': {
+                        borderColor: '#3b82f6',
+                        backgroundColor: '#eff6ff',
+                      },
+                    }}
+                  >
+                    <Typography variant="h4" sx={{ mb: 1 }}>
+                      {option.flag}
+                    </Typography>
+                    <Typography
+                      variant="body1"
+                      fontWeight={settings.language === option.value ? 700 : 500}
+                      color={settings.language === option.value ? '#3b82f6' : 'text.primary'}
+                    >
+                      {option.label}
+                    </Typography>
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
+          </CardContent>
+        </Card>
+
+        {/* TTS Voice Settings */}
+        <Card sx={{ borderRadius: '20px', overflow: 'hidden' }}>
+          <Box
+            sx={{
+              p: 3,
+              background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+            }}
+          >
+            <Typography variant="h6" fontWeight={700} sx={{ color: 'white' }}>
+              {t('settings.ttsVoice')}
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+              {t('settings.ttsVoiceDesc')}
+            </Typography>
+          </Box>
+          <CardContent sx={{ p: 3 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <Box
+                  onClick={() => setTtsVoice('FEMALE')}
+                  sx={{
+                    p: 2.5,
+                    borderRadius: '16px',
+                    border: '2px solid',
+                    borderColor: settings.ttsVoice === 'FEMALE' ? '#059669' : 'divider',
+                    backgroundColor: settings.ttsVoice === 'FEMALE' ? '#ecfdf5' : 'transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    textAlign: 'center',
+                    '&:hover': {
+                      borderColor: '#059669',
+                      backgroundColor: '#ecfdf5',
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: '50%',
+                      backgroundColor: settings.ttsVoice === 'FEMALE' ? '#059669' : '#f5f5f4',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mx: 'auto',
+                      mb: 1.5,
+                    }}
+                  >
+                    <Typography sx={{ fontSize: 24 }}>👩</Typography>
+                  </Box>
+                  <Typography
+                    variant="body1"
+                    fontWeight={settings.ttsVoice === 'FEMALE' ? 700 : 500}
+                    color={settings.ttsVoice === 'FEMALE' ? '#059669' : 'text.primary'}
+                  >
+                    {t('settings.femaleVoice')}
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={6}>
+                <Box
+                  onClick={() => setTtsVoice('MALE')}
+                  sx={{
+                    p: 2.5,
+                    borderRadius: '16px',
+                    border: '2px solid',
+                    borderColor: settings.ttsVoice === 'MALE' ? '#059669' : 'divider',
+                    backgroundColor: settings.ttsVoice === 'MALE' ? '#ecfdf5' : 'transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    textAlign: 'center',
+                    '&:hover': {
+                      borderColor: '#059669',
+                      backgroundColor: '#ecfdf5',
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: '50%',
+                      backgroundColor: settings.ttsVoice === 'MALE' ? '#059669' : '#f5f5f4',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mx: 'auto',
+                      mb: 1.5,
+                    }}
+                  >
+                    <Typography sx={{ fontSize: 24 }}>👨</Typography>
+                  </Box>
+                  <Typography
+                    variant="body1"
+                    fontWeight={settings.ttsVoice === 'MALE' ? 700 : 500}
+                    color={settings.ttsVoice === 'MALE' ? '#059669' : 'text.primary'}
+                  >
+                    {t('settings.maleVoice')}
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      </Box>
     </Container>
   )
 }
 
 function NotFound() {
+  const navigate = useNavigate()
+  const { t } = useSettings()
+
   return (
-    <Container>
-      <Box textAlign="center" py={8}>
-        <Typography variant="h1" fontWeight={700} color="primary">
+    <Container maxWidth="sm">
+      <Box textAlign="center" py={12}>
+        <Typography
+          variant="h1"
+          sx={{
+            fontWeight: 800,
+            fontSize: '8rem',
+            background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            lineHeight: 1,
+          }}
+        >
           404
         </Typography>
-        <Typography variant="h5" gutterBottom>
-          페이지를 찾을 수 없습니다
+        <Typography variant="h5" fontWeight={600} sx={{ mt: 2, mb: 1 }}>
+          {t('notFound.title')}
         </Typography>
-        <Button variant="contained" href="/" sx={{ mt: 2 }}>
-          홈으로 돌아가기
+        <Typography color="text.secondary" sx={{ mb: 4 }}>
+          {t('notFound.message')}
+        </Typography>
+        <Button
+          variant="contained"
+          size="large"
+          onClick={() => navigate('/')}
+        >
+          {t('notFound.backHome')}
         </Button>
       </Box>
     </Container>
@@ -348,16 +594,16 @@ function App() {
   const { activeRoom, closeChatRoom } = useChat()
 
   const handleRefreshRooms = () => {
-    // 채팅방 퇴장 후 목록 새로고침 (페이지에서 처리)
+    // Refresh rooms list after leaving a room
   }
 
   return (
     <>
       <Routes>
-        {/* 채팅방 페이지 (별도 레이아웃) */}
+        {/* Chat room page (separate layout) */}
         <Route path="/freetalk/people/room/:roomId" element={<ChatRoomPage />} />
 
-        {/* MainLayout 적용 라우트 */}
+        {/* MainLayout routes */}
         <Route element={<MainLayout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
@@ -378,7 +624,7 @@ function App() {
         <Route path="*" element={<NotFound />} />
       </Routes>
 
-      {/* 전역 채팅 모달 */}
+      {/* Global chat modal */}
       <ChatRoomModal
         open={!!activeRoom}
         onClose={closeChatRoom}

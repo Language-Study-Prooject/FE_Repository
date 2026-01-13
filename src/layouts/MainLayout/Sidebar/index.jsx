@@ -14,6 +14,7 @@ import {
   Collapse,
   useTheme,
   useMediaQuery,
+  LinearProgress,
 } from '@mui/material'
 import {
   ChevronLeft as ChevronLeftIcon,
@@ -33,130 +34,153 @@ import {
   School as LearnIcon,
   Quiz as QuizIcon,
   LibraryBooks as WordListIcon,
+  TrendingUp as TrendingIcon,
 } from '@mui/icons-material'
+import { useThemeMode } from '../../../contexts/ThemeContext'
+import { useTranslation } from '../../../contexts/SettingsContext'
 
-const DRAWER_WIDTH = 260
-const DRAWER_WIDTH_COLLAPSED = 72
-
-const menuItems = [
-  {
-    category: '학습 모드',
-    items: [
-      {
-        id: 'speaking',
-        label: '말하기연습',
-        icon: SpeakingIcon,
-        children: [
-          {
-            id: 'opic',
-            label: '오픽연습',
-            icon: OpicIcon,
-            path: '/opic',
-            description: '레벨별 맞춤 연습'
-          },
-          {
-            id: 'ai-talk',
-            label: 'AI와 말해보기',
-            icon: AiIcon,
-            path: '/freetalk/ai',
-            description: 'AI와 자유로운 대화'
-          },
-        ],
-      },
-      {
-        id: 'writing',
-        label: '쓰기연습',
-        icon: WritingCategoryIcon,
-        children: [
-          {
-            id: 'chat-people',
-            label: '사람들과 채팅하기',
-            icon: PeopleIcon,
-            path: '/freetalk/people',
-            description: '다른 학습자와 대화'
-          },
-          {
-            id: 'writing-practice',
-            label: '작문연습',
-            icon: WritingIcon,
-            path: '/writing',
-            description: '문법 교정 & 피드백'
-          },
-        ],
-      },
-      {
-        id: 'vocab',
-        label: '단어 학습',
-        icon: VocabIcon,
-        children: [
-          {
-            id: 'vocab-daily',
-            label: '단어 외우기',
-            icon: LearnIcon,
-            path: '/vocab',
-            description: '매일 55개 단어 학습'
-          },
-          {
-            id: 'vocab-test',
-            label: '시험 보기',
-            icon: QuizIcon,
-            path: '/vocab/test',
-            description: '4지선다 퀴즈'
-          },
-          {
-            id: 'vocab-words',
-            label: '단어장',
-            icon: WordListIcon,
-            path: '/vocab/words',
-            description: '전체 단어 목록'
-          },
-        ],
-      },
-    ],
-  },
-  {
-    category: '기타',
-    items: [
-      {
-        id: 'dashboard',
-        label: '대시보드',
-        icon: DashboardIcon,
-        path: '/dashboard',
-        description: '학습 현황 요약'
-      },
-      {
-        id: 'reports',
-        label: '내 리포트',
-        icon: ReportIcon,
-        path: '/reports',
-        description: '학습 결과 분석'
-      },
-      {
-        id: 'settings',
-        label: '설정',
-        icon: SettingsIcon,
-        path: '/settings',
-        description: '계정 및 앱 설정'
-      },
-    ],
-  },
-]
+const DRAWER_WIDTH = 280
+const DRAWER_WIDTH_COLLAPSED = 76
 
 const Sidebar = ({ open, collapsed, onToggleCollapse, onClose }) => {
   const theme = useTheme()
+  const { mode } = useThemeMode()
   const location = useLocation()
   const navigate = useNavigate()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  const { t } = useTranslation()
 
-  // 펼침 상태 (localStorage 저장)
   const [expandedMenus, setExpandedMenus] = useState(() => {
     const saved = localStorage.getItem('expandedMenus')
-    return saved ? JSON.parse(saved) : { speaking: true, writing: true }
+    return saved ? JSON.parse(saved) : { speaking: true, writing: true, vocab: true }
   })
 
   useEffect(() => {
     localStorage.setItem('expandedMenus', JSON.stringify(expandedMenus))
   }, [expandedMenus])
+
+  const menuItems = [
+    {
+      category: t('sidebar.learningMode'),
+      items: [
+        {
+          id: 'speaking',
+          label: t('sidebar.speaking'),
+          icon: SpeakingIcon,
+          color: '#3b82f6',
+          bgColor: '#eff6ff',
+          children: [
+            {
+              id: 'opic',
+              label: t('sidebar.opicPractice'),
+              icon: OpicIcon,
+              path: '/opic',
+              description: t('sidebar.opicDesc'),
+            },
+            {
+              id: 'ai-talk',
+              label: t('sidebar.aiTalk'),
+              icon: AiIcon,
+              path: '/freetalk/ai',
+              description: t('sidebar.aiTalkDesc'),
+            },
+          ],
+        },
+        {
+          id: 'writing',
+          label: t('sidebar.writing'),
+          icon: WritingCategoryIcon,
+          color: '#8b5cf6',
+          bgColor: '#f5f3ff',
+          children: [
+            {
+              id: 'chat-people',
+              label: t('sidebar.chatPeople'),
+              icon: PeopleIcon,
+              path: '/freetalk/people',
+              description: t('sidebar.chatPeopleDesc'),
+            },
+            {
+              id: 'writing-practice',
+              label: t('sidebar.writingPractice'),
+              icon: WritingIcon,
+              path: '/writing',
+              description: t('sidebar.writingPracticeDesc'),
+            },
+          ],
+        },
+        {
+          id: 'vocab',
+          label: t('sidebar.vocab'),
+          icon: VocabIcon,
+          color: '#059669',
+          bgColor: '#ecfdf5',
+          children: [
+            {
+              id: 'vocab-daily',
+              label: t('sidebar.vocabLearn'),
+              icon: LearnIcon,
+              path: '/vocab',
+              description: t('sidebar.vocabLearnDesc'),
+            },
+            {
+              id: 'vocab-test',
+              label: t('sidebar.vocabTest'),
+              icon: QuizIcon,
+              path: '/vocab/test',
+              description: t('sidebar.vocabTestDesc'),
+            },
+            {
+              id: 'vocab-words',
+              label: t('sidebar.vocabWords'),
+              icon: WordListIcon,
+              path: '/vocab/words',
+              description: t('sidebar.vocabWordsDesc'),
+            },
+            {
+              id: 'vocab-stats',
+              label: t('vocabDash.viewStats'),
+              icon: TrendingIcon,
+              path: '/vocab/stats',
+              description: t('sidebar.reportsDesc'),
+            },
+          ],
+        },
+      ],
+    },
+    {
+      category: t('sidebar.other'),
+      items: [
+        {
+          id: 'dashboard',
+          label: t('nav.dashboard'),
+          icon: DashboardIcon,
+          path: '/dashboard',
+          description: t('sidebar.dashboardDesc'),
+          color: '#f97316',
+          bgColor: '#fff7ed',
+        },
+        {
+          id: 'reports',
+          label: t('nav.reports'),
+          icon: ReportIcon,
+          path: '/reports',
+          description: t('sidebar.reportsDesc'),
+          color: '#ec4899',
+          bgColor: '#fdf2f8',
+        },
+        {
+          id: 'settings',
+          label: t('nav.settings'),
+          icon: SettingsIcon,
+          path: '/settings',
+          description: t('sidebar.settingsDesc'),
+          color: '#6b7280',
+          bgColor: '#f3f4f6',
+        },
+      ],
+    },
+  ]
 
   const drawerWidth = collapsed ? DRAWER_WIDTH_COLLAPSED : DRAWER_WIDTH
 
@@ -182,6 +206,8 @@ const Sidebar = ({ open, collapsed, onToggleCollapse, onClose }) => {
     const hasChildren = item.children && item.children.length > 0
     const active = item.path ? isActive(item.path) : isParentActive(item.children)
     const expanded = expandedMenus[item.id]
+    const itemColor = item.color || '#059669'
+    const itemBgColor = item.bgColor || '#ecfdf5'
 
     return (
       <Box key={item.id}>
@@ -195,17 +221,23 @@ const Sidebar = ({ open, collapsed, onToggleCollapse, onClose }) => {
               }
             }}
             sx={{
-              borderRadius: 2,
-              minHeight: 48,
+              borderRadius: '14px',
+              minHeight: collapsed ? 48 : 52,
               justifyContent: collapsed ? 'center' : 'flex-start',
-              px: collapsed ? 1 : 2,
-              pl: isChild && !collapsed ? 4 : (collapsed ? 1 : 2),
-              backgroundColor: active && !hasChildren ? 'primary.main' : 'transparent',
-              color: active && !hasChildren ? 'white' : 'text.primary',
+              px: collapsed ? 1.5 : 2,
+              pl: isChild && !collapsed ? 3.5 : (collapsed ? 1.5 : 2),
+              mx: 1,
+              backgroundColor: active && !hasChildren
+                ? itemBgColor
+                : 'transparent',
+              border: '2px solid',
+              borderColor: active && !hasChildren ? itemColor : 'transparent',
+              transition: 'all 0.2s ease',
               '&:hover': {
                 backgroundColor: active && !hasChildren
-                  ? 'primary.dark'
-                  : 'action.hover',
+                  ? itemBgColor
+                  : mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                borderColor: active && !hasChildren ? itemColor : 'transparent',
               },
             }}
           >
@@ -213,39 +245,67 @@ const Sidebar = ({ open, collapsed, onToggleCollapse, onClose }) => {
               sx={{
                 minWidth: collapsed ? 0 : 40,
                 justifyContent: 'center',
-                color: active && !hasChildren ? 'white' : 'primary.main',
               }}
             >
-              <Icon fontSize={isChild ? 'small' : 'medium'} />
+              <Box
+                sx={{
+                  width: isChild ? 32 : 36,
+                  height: isChild ? 32 : 36,
+                  borderRadius: '10px',
+                  backgroundColor: active && !hasChildren ? itemColor : (hasChildren && active ? `${itemColor}15` : 'transparent'),
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <Icon
+                  fontSize={isChild ? 'small' : 'medium'}
+                  sx={{
+                    color: active && !hasChildren ? 'white' : (active ? itemColor : 'text.secondary'),
+                  }}
+                />
+              </Box>
             </ListItemIcon>
 
             {!collapsed && (
               <>
                 <ListItemText
                   primary={item.label}
-                  secondary={!hasChildren ? item.description : null}
                   primaryTypographyProps={{
                     fontSize: isChild ? 13 : 14,
-                    fontWeight: active ? 600 : 500,
-                  }}
-                  secondaryTypographyProps={{
-                    fontSize: 11,
-                    color: active && !hasChildren ? 'rgba(255,255,255,0.7)' : 'text.secondary',
+                    fontWeight: active ? 700 : 500,
+                    color: active && !hasChildren ? itemColor : 'text.primary',
                   }}
                 />
                 {hasChildren && (
-                  expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />
+                  <Box
+                    sx={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: '8px',
+                      backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {expanded ? (
+                      <ExpandLessIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                    ) : (
+                      <ExpandMoreIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                    )}
+                  </Box>
                 )}
               </>
             )}
           </ListItemButton>
         </ListItem>
 
-        {/* 하위 메뉴 */}
         {hasChildren && !collapsed && (
-          <Collapse in={expanded} timeout="auto" unmountOnExit>
+          <Collapse in={expanded} timeout={200} unmountOnExit>
             <List disablePadding>
-              {item.children.map((child) => renderMenuItem(child, true))}
+              {item.children.map((child) => renderMenuItem({ ...child, color: itemColor, bgColor: itemBgColor }, true))}
             </List>
           </Collapse>
         )}
@@ -254,34 +314,58 @@ const Sidebar = ({ open, collapsed, onToggleCollapse, onClose }) => {
   }
 
   const drawerContent = (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* 헤더 영역 - Toolbar 높이만큼 여백 */}
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: mode === 'dark' ? 'background.paper' : 'white',
+      }}
+    >
+      {/* Header spacing */}
       <Box sx={{ height: 64 }} />
 
-      {/* 접기/펼치기 버튼 */}
+      {/* Collapse toggle */}
       {!isMobile && (
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1 }}>
-          <IconButton onClick={onToggleCollapse} size="small">
-            {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 1.5, py: 1 }}>
+          <IconButton
+            onClick={onToggleCollapse}
+            size="small"
+            sx={{
+              width: 32,
+              height: 32,
+              borderRadius: '10px',
+              backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+              '&:hover': {
+                backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+              },
+            }}
+          >
+            {collapsed ? (
+              <ChevronRightIcon fontSize="small" />
+            ) : (
+              <ChevronLeftIcon fontSize="small" />
+            )}
           </IconButton>
         </Box>
       )}
 
-      {/* 메뉴 리스트 */}
-      <Box sx={{ flex: 1, overflow: 'auto', px: 1 }}>
+      {/* Menu list */}
+      <Box sx={{ flex: 1, overflow: 'auto', py: 1 }}>
         {menuItems.map((category, categoryIndex) => (
           <Box key={category.category} sx={{ mb: 2 }}>
             {!collapsed && (
               <Typography
                 variant="caption"
                 sx={{
-                  px: 2,
-                  py: 1,
+                  px: 3,
+                  py: 1.5,
                   display: 'block',
-                  color: 'text.secondary',
-                  fontWeight: 600,
+                  color: 'text.disabled',
+                  fontWeight: 700,
                   textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
+                  letterSpacing: '1px',
+                  fontSize: 10,
                 }}
               >
                 {category.category}
@@ -293,27 +377,68 @@ const Sidebar = ({ open, collapsed, onToggleCollapse, onClose }) => {
             </List>
 
             {categoryIndex < menuItems.length - 1 && !collapsed && (
-              <Divider sx={{ my: 2 }} />
+              <Divider sx={{ my: 2, mx: 2 }} />
             )}
           </Box>
         ))}
       </Box>
 
-      {/* 하단 정보 */}
+      {/* Bottom stats */}
       {!collapsed && (
-        <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
-          <Typography variant="caption" color="text.secondary">
-            오늘의 학습 시간
+        <Box
+          sx={{
+            p: 2.5,
+            mx: 2,
+            mb: 2,
+            borderRadius: '16px',
+            background: mode === 'dark'
+              ? 'linear-gradient(135deg, rgba(5, 150, 105, 0.15) 0%, rgba(16, 185, 129, 0.08) 100%)'
+              : 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
+          }}
+        >
+          <Typography variant="caption" color="text.secondary" fontWeight={500}>
+            {t('sidebar.todayStudyTime')}
           </Typography>
-          <Typography variant="h6" color="primary.main" fontWeight={600}>
-            1시간 23분
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: 800,
+              color: '#059669',
+              mt: 0.5,
+              fontFamily: '"Outfit", sans-serif',
+            }}
+          >
+            1h 23m
           </Typography>
+          <Box sx={{ mt: 1.5 }}>
+            <Box display="flex" justifyContent="space-between" mb={0.5}>
+              <Typography variant="caption" color="text.secondary">
+                {t('vocabDash.todayProgress')}
+              </Typography>
+              <Typography variant="caption" fontWeight={600} color="#059669">
+                68%
+              </Typography>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={68}
+              sx={{
+                height: 6,
+                borderRadius: 3,
+                backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(5, 150, 105, 0.15)',
+                '& .MuiLinearProgress-bar': {
+                  borderRadius: 3,
+                  background: 'linear-gradient(90deg, #059669 0%, #10b981 100%)',
+                },
+              }}
+            />
+          </Box>
         </Box>
       )}
     </Box>
   )
 
-  // 모바일: 임시 Drawer
+  // Mobile: Temporary Drawer
   if (isMobile) {
     return (
       <Drawer
@@ -325,6 +450,8 @@ const Sidebar = ({ open, collapsed, onToggleCollapse, onClose }) => {
           '& .MuiDrawer-paper': {
             width: DRAWER_WIDTH,
             boxSizing: 'border-box',
+            borderRight: 'none',
+            boxShadow: '4px 0 24px -4px rgba(0,0,0,0.1)',
           },
         }}
       >
@@ -333,7 +460,7 @@ const Sidebar = ({ open, collapsed, onToggleCollapse, onClose }) => {
     )
   }
 
-  // 데스크톱: 고정 Drawer
+  // Desktop: Permanent Drawer
   return (
     <Drawer
       variant="permanent"
@@ -343,6 +470,8 @@ const Sidebar = ({ open, collapsed, onToggleCollapse, onClose }) => {
         '& .MuiDrawer-paper': {
           width: drawerWidth,
           boxSizing: 'border-box',
+          borderRight: '1px solid',
+          borderColor: mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
           transition: theme.transitions.create('width', {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.enteringScreen,
