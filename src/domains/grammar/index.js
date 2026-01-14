@@ -10,6 +10,10 @@ export { default as SessionSidebar } from './components/SessionSidebar'
 
 // Services
 export * from './services/grammarService'
+export * from './services/grammarStreamService'
+
+// Hooks
+export { useGrammarStream } from './hooks/useGrammarStream'
 
 // Constants
 export * from './constants/grammarConstants'
