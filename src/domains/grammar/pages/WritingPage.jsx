@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Box,
   Typography,
@@ -18,6 +18,7 @@ import ChatMessage from '../components/ChatMessage'
 import ChatInput from '../components/ChatInput'
 import SessionSidebar from '../components/SessionSidebar'
 import { conversationService, sessionService } from '../services/grammarService'
+import { useGrammarStream } from '../hooks/useGrammarStream'
 import { GRAMMAR_LEVELS } from '../constants/grammarConstants'
 
 export default function WritingPage() {
@@ -34,17 +35,87 @@ export default function WritingPage() {
   const [sessionsLoading, setSessionsLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  // 스트리밍 상태
+  const [streamingMessageId, setStreamingMessageId] = useState(null)
+
   const messagesEndRef = useRef(null)
+
+  // WebSocket 스트리밍 훅
+  const {
+    isStreaming,
+    streamingText,
+    result: streamResult,
+    error: streamError,
+    sendMessage: sendStreamMessage,
+    connect: connectStream,
+    grammarCheck: streamGrammarCheck,
+    conversationTip: streamConversationTip,
+  } = useGrammarStream()
+
+  // 컴포넌트 마운트 시 WebSocket 연결
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken')
+    connectStream(token)
+  }, [connectStream])
 
   // Load sessions on mount
   useEffect(() => {
     loadSessions()
   }, [])
 
-  // Scroll to bottom when messages change
+  // Scroll to bottom when messages change or streaming text updates
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages, streamingText])
+
+  // 스트리밍 완료 시 메시지 업데이트
+  useEffect(() => {
+    if (streamResult && streamingMessageId) {
+      // 사용자 메시지에 문법 검사 결과 추가
+      setMessages((prev) =>
+        prev.map((msg) => {
+          if (msg.id === streamingMessageId) {
+            return {
+              ...msg,
+              correctedContent: streamResult.grammarCheck?.correctedSentence,
+              grammarScore: streamResult.grammarCheck?.score,
+              errors: streamResult.grammarCheck?.errors || [],
+            }
+          }
+          return msg
+        })
+      )
+
+      // AI 응답 메시지 추가
+      const aiMessage = {
+        id: `ai-${Date.now()}`,
+        content: streamResult.aiResponse,
+        aiResponse: streamResult.aiResponse,
+        conversationTip: streamResult.conversationTip,
+        isUser: false,
+        createdAt: new Date().toISOString(),
+      }
+      setMessages((prev) => [...prev, aiMessage])
+
+      // 세션 ID 업데이트
+      if (!currentSessionId && streamResult.sessionId) {
+        setCurrentSessionId(streamResult.sessionId)
+        loadSessions()
+      }
+
+      setStreamingMessageId(null)
+      setLoading(false)
+    }
+  }, [streamResult, streamingMessageId, currentSessionId])
+
+  // 스트리밍 에러 처리
+  useEffect(() => {
+    if (streamError) {
+      setError(streamError)
+      setStreamingMessageId(null)
+      setLoading(false)
+    }
+  }, [streamError])
 
   const loadSessions = async () => {
     try {
@@ -114,63 +185,36 @@ export default function WritingPage() {
     }
   }
 
-  const handleSendMessage = async (message) => {
+  // 스트리밍 모드로 메시지 전송
+  const handleSendMessage = useCallback(async (message) => {
     try {
       setLoading(true)
       setError(null)
 
-      // Add user message immediately
+      // 사용자 메시지 즉시 추가
+      const userMessageId = `user-${Date.now()}`
       const userMessage = {
-        id: `temp-${Date.now()}`,
+        id: userMessageId,
         content: message,
         isUser: true,
         createdAt: new Date().toISOString(),
       }
       setMessages((prev) => [...prev, userMessage])
+      setStreamingMessageId(userMessageId)
 
-      // Send to API
-      const response = await conversationService.send(message, currentSessionId, level)
-
-      // Update session ID if new
-      if (!currentSessionId && response.sessionId) {
-        setCurrentSessionId(response.sessionId)
-        // Reload sessions to show new one
-        loadSessions()
-      }
-
-      // Update user message with grammar check results
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === userMessage.id
-            ? {
-                ...msg,
-                correctedContent: response.grammarCheck?.correctedSentence,
-                grammarScore: response.grammarCheck?.score,
-                errors: response.grammarCheck?.errors || [],
-              }
-            : msg
-        )
-      )
-
-      // Add AI response
-      const aiMessage = {
-        id: `ai-${Date.now()}`,
-        content: response.aiResponse,
-        aiResponse: response.aiResponse,
-        conversationTip: response.conversationTip,
-        isUser: false,
-        createdAt: new Date().toISOString(),
-      }
-      setMessages((prev) => [...prev, aiMessage])
+      // WebSocket 스트리밍 시작
+      sendStreamMessage(message, {
+        level,
+        sessionId: currentSessionId,
+      })
     } catch (err) {
       console.error('Failed to send message:', err)
       setError(isKorean ? '메시지 전송에 실패했습니다' : 'Failed to send message')
-      // Remove temporary user message on error
-      setMessages((prev) => prev.filter((msg) => !msg.id.startsWith('temp-')))
-    } finally {
+      setMessages((prev) => prev.filter((msg) => !msg.id.startsWith('user-')))
+      setStreamingMessageId(null)
       setLoading(false)
     }
-  }
+  }, [level, currentSessionId, sendStreamMessage, isKorean])
 
   const sidebarContent = (
     <SessionSidebar
@@ -279,7 +323,7 @@ export default function WritingPage() {
             </Alert>
           )}
 
-          {messages.length === 0 ? (
+          {messages.length === 0 && !isStreaming ? (
             <Box
               sx={{
                 height: '100%',
@@ -346,6 +390,21 @@ export default function WritingPage() {
               {messages.map((msg) => (
                 <ChatMessage key={msg.id} message={msg} isUser={msg.isUser} />
               ))}
+
+              {/* 스트리밍 중인 AI 응답 */}
+              {isStreaming && streamingText && (
+                <ChatMessage
+                  message={{
+                    id: 'streaming',
+                    content: streamingText,
+                    aiResponse: streamingText,
+                  }}
+                  isUser={false}
+                  isStreaming={true}
+                  streamingText={streamingText}
+                />
+              )}
+
               <div ref={messagesEndRef} />
             </>
           )}
@@ -354,7 +413,7 @@ export default function WritingPage() {
         {/* Input Area */}
         <ChatInput
           onSend={handleSendMessage}
-          loading={loading}
+          loading={loading || isStreaming}
           level={level}
           onLevelChange={setLevel}
         />

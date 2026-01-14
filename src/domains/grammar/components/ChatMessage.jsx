@@ -1,4 +1,4 @@
-import { Box, Typography, Chip, Collapse, IconButton } from '@mui/material'
+import { Box, Typography, Chip, Collapse, IconButton, keyframes } from '@mui/material'
 import {
   SmartToy as AiIcon,
   Person as PersonIcon,
@@ -14,7 +14,18 @@ import {
   getScoreColor,
 } from '../constants/grammarConstants'
 
-export default function ChatMessage({ message, isUser = false }) {
+// 커서 깜빡임 애니메이션
+const blink = keyframes`
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+`
+
+export default function ChatMessage({
+  message,
+  isUser = false,
+  isStreaming = false,
+  streamingText = '',
+}) {
   const { t, isKorean } = useSettings()
   const [showDetails, setShowDetails] = useState(false)
 
@@ -29,6 +40,9 @@ export default function ChatMessage({ message, isUser = false }) {
 
   const hasErrors = errors && errors.length > 0
   const scoreColor = grammarScore ? getScoreColor(grammarScore) : '#059669'
+
+  // 스트리밍 중일 때 표시할 텍스트
+  const displayText = isStreaming ? streamingText : (aiResponse || content)
 
   if (isUser) {
     return (
@@ -226,15 +240,34 @@ export default function ChatMessage({ message, isUser = false }) {
             borderRadius: '20px 20px 20px 4px',
             backgroundColor: '#f3f4f6',
             border: '1px solid #e5e7eb',
+            minHeight: isStreaming ? 48 : 'auto',
           }}
         >
-          <Typography sx={{ fontSize: '1rem', lineHeight: 1.6, color: '#374151' }}>
-            {aiResponse || content}
+          <Typography
+            component="div"
+            sx={{ fontSize: '1rem', lineHeight: 1.6, color: '#374151' }}
+          >
+            {displayText}
+            {/* 스트리밍 커서 */}
+            {isStreaming && (
+              <Box
+                component="span"
+                sx={{
+                  display: 'inline-block',
+                  width: 2,
+                  height: '1.2em',
+                  backgroundColor: '#3b82f6',
+                  ml: 0.5,
+                  verticalAlign: 'text-bottom',
+                  animation: `${blink} 1s infinite`,
+                }}
+              />
+            )}
           </Typography>
         </Box>
 
-        {/* Conversation Tip */}
-        {conversationTip && (
+        {/* Conversation Tip - 스트리밍 완료 후에만 표시 */}
+        {!isStreaming && conversationTip && (
           <Box
             sx={{
               mt: 1.5,
