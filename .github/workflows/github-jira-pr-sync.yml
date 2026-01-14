@@ -1,0 +1,134 @@
+name: PR-Jira Sync
+
+on:
+  pull_request_target:
+    types: [opened, reopened]
+    branches:
+      - develop
+      - main
+  
+  # 수동 트리거 추가
+  workflow_dispatch:
+    inputs:
+      process_all_open_prs:
+        description: 'Process all open PRs'
+        type: boolean
+        default: true
+
+jobs:
+  sync-pr-to-jira:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Login to Jira
+        uses: atlassian/gajira-login@v3
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+
+      - name: Determine Issue Type
+        id: issue-type
+        run: |
+          TITLE='${{ github.event.pull_request.title }}'
+          
+          if echo "$TITLE" | grep -qiE "^\[EPIC\]"; then
+            echo "type=Epic" >> $GITHUB_OUTPUT
+          elif echo "$TITLE" | grep -qiE "^\[STORY\]"; then
+            echo "type=Story" >> $GITHUB_OUTPUT
+          elif echo "$TITLE" | grep -qiE "^fix:|^hotfix:"; then
+            echo "type=Bug" >> $GITHUB_OUTPUT
+          else
+            echo "type=Task" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Convert to Jira Syntax
+        uses: peter-evans/jira2md@v1
+        id: md2jira
+        with:
+          input-text: |
+            h3. GitHub PR
+            ${{ github.event.pull_request.html_url }}
+            
+            h3. Author
+            ${{ github.event.pull_request.user.login }}
+            
+            h3. Branch
+            ${{ github.head_ref }} -> ${{ github.base_ref }}
+            
+            ----
+            ${{ github.event.pull_request.body }}
+          mode: md2jira
+
+      - name: Create Jira Issue
+        id: create-jira
+        uses: atlassian/gajira-create@v3
+        with:
+          project: MESP
+          issuetype: ${{ steps.issue-type.outputs.type }}
+          summary: '[PR-#${{ github.event.pull_request.number }}] ${{ github.event.pull_request.title }}'
+          description: '${{ steps.md2jira.outputs.output-text }}'
+
+      - name: Add Jira Link Comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const jiraKey = '${{ steps.create-jira.outputs.issue }}';
+            const jiraUrl = '${{ secrets.JIRA_BASE_URL }}/browse/' + jiraKey;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: `Jira: [${jiraKey}](${jiraUrl})`
+            });
+
+  # 추가: 열린 PR 일괄 처리
+  sync-all-open-prs:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Open PRs
+        id: get-prs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prs = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open'
+            });
+            return prs.data;
+
+      - name: Login to Jira
+        uses: atlassian/gajira-login@v3
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+
+      - name: Process Each PR
+        uses: actions/github-script@v7
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+        with:
+          script: |
+            const prs = ${{ steps.get-prs.outputs.result }};
+            
+            for (const pr of prs) {
+              // 이미 Jira 링크가 있는지 확인
+              const comments = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number
+              });
+              
+              const hasJiraLink = comments.data.some(c => c.body.includes('Jira:'));
+              if (hasJiraLink) {
+                console.log(`PR #${pr.number} already has Jira link, skipping`);
+                continue;
+              }
+              
+              console.log(`Processing PR #${pr.number}: ${pr.title}`);
+              // 여기서 Jira 생성 로직 호출
+            }
