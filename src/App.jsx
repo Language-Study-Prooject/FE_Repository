@@ -338,8 +338,7 @@ function FreetalkAiPage() {
 
 
 function ReportsPage() {
-  const { t, isKorean } = useSettings()
-  const navigate = useNavigate()
+  const { isKorean } = useSettings()
 
   // 더미 통계 데이터
   const stats = {
@@ -482,17 +481,6 @@ function ReportsPage() {
 
       {/* 배지 섹션 */}
       <BadgeSection />
-
-      {/* 상세 통계 링크 */}
-      <Box sx={{ mt: 4, textAlign: 'center' }}>
-        <Button
-          variant="outlined"
-          onClick={() => navigate('/vocab/stats')}
-          sx={{ borderRadius: '12px', px: 4 }}
-        >
-          {isKorean ? '상세 통계 보기' : 'View Detailed Stats'}
-        </Button>
-      </Box>
     </Container>
   )
 }
