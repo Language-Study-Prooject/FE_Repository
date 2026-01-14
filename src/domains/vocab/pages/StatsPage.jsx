@@ -32,6 +32,7 @@ import {
   VOICE_TYPES,
 } from '../constants/vocabConstants'
 import { useTranslation } from '../../../contexts/SettingsContext'
+import { BadgeSection } from '../../badge'
 
 const TEMP_USER_ID = import.meta.env.VITE_TEMP_USER_ID || 'user1'
 
@@ -495,7 +496,7 @@ export default function StatsPage() {
       </Paper>
 
       {/* 취약 단어 */}
-      <Paper sx={{ p: 2 }}>
+      <Paper sx={{ p: 2, mb: 3 }}>
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
           <Typography variant="subtitle1" fontWeight={600}>
             {t('stats.weakWordsTop10')}
@@ -514,6 +515,9 @@ export default function StatsPage() {
           playingWordId={playingWordId}
         />
       </Paper>
+
+      {/* 배지 섹션 */}
+      <BadgeSection />
     </Container>
   )
 }

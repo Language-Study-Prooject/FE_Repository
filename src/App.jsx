@@ -39,6 +39,7 @@ import TestPage from './domains/vocab/pages/TestPage'
 import WordListPage from './domains/vocab/pages/WordListPage'
 import StatsPage from './domains/vocab/pages/StatsPage'
 import { WritingPage } from './domains/grammar'
+import { BadgeSection } from './domains/badge'
 import { useChat } from './contexts/ChatContext'
 import { useSettings } from './contexts/SettingsContext'
 
@@ -337,10 +338,149 @@ function FreetalkAiPage() {
 
 
 function ReportsPage() {
+  const { isKorean } = useSettings()
+
+  // 더미 통계 데이터
+  const stats = {
+    totalStudyDays: 15,
+    totalWords: 285,
+    totalTests: 12,
+    averageScore: 82,
+    currentStreak: 5,
+    bestStreak: 8,
+  }
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" fontWeight={700}>My Reports</Typography>
-      <Typography color="text.secondary">Learning analytics</Typography>
+      {/* 헤더 */}
+      <Box sx={{ mb: 4 }}>
+        <Box display="flex" alignItems="center" gap={2} mb={1}>
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: '14px',
+              background: 'linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 8px 16px -4px rgba(139, 92, 246, 0.3)',
+            }}
+          >
+            <QuizIcon sx={{ fontSize: 26, color: 'white' }} />
+          </Box>
+          <Box>
+            <Typography variant="h4" fontWeight={800}>
+              {isKorean ? '학습 리포트' : 'Learning Report'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {isKorean ? '나의 학습 현황을 확인하세요' : 'Check your learning progress'}
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+
+      {/* 통계 요약 카드 */}
+      <Grid container spacing={2} sx={{ mb: 4 }}>
+        <Grid item xs={6} md={3}>
+          <Card sx={{ p: 2.5, borderRadius: '16px', height: '100%' }}>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              {isKorean ? '총 학습일' : 'Study Days'}
+            </Typography>
+            <Typography variant="h4" fontWeight={800} color="#3b82f6">
+              {stats.totalStudyDays}
+            </Typography>
+            <Typography variant="caption" color="text.disabled">
+              {isKorean ? '일' : 'days'}
+            </Typography>
+          </Card>
+        </Grid>
+        <Grid item xs={6} md={3}>
+          <Card sx={{ p: 2.5, borderRadius: '16px', height: '100%' }}>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              {isKorean ? '학습한 단어' : 'Words Learned'}
+            </Typography>
+            <Typography variant="h4" fontWeight={800} color="#10b981">
+              {stats.totalWords}
+            </Typography>
+            <Typography variant="caption" color="text.disabled">
+              {isKorean ? '개' : 'words'}
+            </Typography>
+          </Card>
+        </Grid>
+        <Grid item xs={6} md={3}>
+          <Card sx={{ p: 2.5, borderRadius: '16px', height: '100%' }}>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              {isKorean ? '테스트 완료' : 'Tests Taken'}
+            </Typography>
+            <Typography variant="h4" fontWeight={800} color="#f97316">
+              {stats.totalTests}
+            </Typography>
+            <Typography variant="caption" color="text.disabled">
+              {isKorean ? '회' : 'tests'}
+            </Typography>
+          </Card>
+        </Grid>
+        <Grid item xs={6} md={3}>
+          <Card sx={{ p: 2.5, borderRadius: '16px', height: '100%' }}>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              {isKorean ? '평균 점수' : 'Average Score'}
+            </Typography>
+            <Typography variant="h4" fontWeight={800} color="#8b5cf6">
+              {stats.averageScore}%
+            </Typography>
+            <Typography variant="caption" color="text.disabled">
+              {isKorean ? '정확도' : 'accuracy'}
+            </Typography>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* 연속 학습 */}
+      <Card sx={{ p: 3, borderRadius: '20px', mb: 4 }}>
+        <Typography variant="h6" fontWeight={700} gutterBottom>
+          {isKorean ? '연속 학습 기록' : 'Study Streak'}
+        </Typography>
+        <Grid container spacing={3}>
+          <Grid item xs={6}>
+            <Box
+              sx={{
+                p: 2,
+                borderRadius: '12px',
+                backgroundColor: '#fff7ed',
+                textAlign: 'center',
+              }}
+            >
+              <Typography variant="h3" fontWeight={800} color="#f97316">
+                {stats.currentStreak}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {isKorean ? '현재 연속' : 'Current Streak'}
+              </Typography>
+            </Box>
+          </Grid>
+          <Grid item xs={6}>
+            <Box
+              sx={{
+                p: 2,
+                borderRadius: '12px',
+                backgroundColor: '#ecfdf5',
+                textAlign: 'center',
+              }}
+            >
+              <Typography variant="h3" fontWeight={800} color="#10b981">
+                {stats.bestStreak}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {isKorean ? '최고 기록' : 'Best Streak'}
+              </Typography>
+            </Box>
+          </Grid>
+        </Grid>
+      </Card>
+
+      {/* 배지 섹션 */}
+      <BadgeSection />
     </Container>
   )
 }
