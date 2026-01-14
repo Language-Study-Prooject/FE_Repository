@@ -38,6 +38,7 @@ import DailyLearning from './domains/vocab/pages/DailyLearning'
 import TestPage from './domains/vocab/pages/TestPage'
 import WordListPage from './domains/vocab/pages/WordListPage'
 import StatsPage from './domains/vocab/pages/StatsPage'
+import { WritingPage } from './domains/grammar'
 import { useChat } from './contexts/ChatContext'
 import { useSettings } from './contexts/SettingsContext'
 
@@ -334,14 +335,6 @@ function FreetalkAiPage() {
   )
 }
 
-function WritingPage() {
-  return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" fontWeight={700}>Writing Practice</Typography>
-      <Typography color="text.secondary">Grammar correction & feedback</Typography>
-    </Container>
-  )
-}
 
 function ReportsPage() {
   return (
