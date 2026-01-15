@@ -8,6 +8,8 @@ import {
     Fade,
     IconButton,
     Paper,
+    Popover,
+    Slider,
     Tab,
     Tabs,
     TextField,
@@ -19,6 +21,7 @@ import {
     Close as CloseIcon,
     ExitToApp as ExitToAppIcon,
     Minimize as MinimizeIcon,
+    Opacity as OpacityIcon,
     OpenInFull as MaximizeIcon,
     Refresh as RefreshIcon,
     Send as SendIcon,
@@ -58,6 +61,8 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
     const [dragOffset, setDragOffset] = useState({x: 0, y: 0})
     const [activeTab, setActiveTab] = useState(0) // 0: 채팅, 1: 게임
     const [gameStatus, setGameStatus] = useState(GAME_STATUS.NONE)
+    const [opacity, setOpacity] = useState(100)
+    const [opacityAnchorEl, setOpacityAnchorEl] = useState(null)
     // 메시지 목록 조회
     const fetchMessages = useCallback(async () => {
         if (!room?.id) return
@@ -306,9 +311,11 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                     zIndex: 1300,
                     cursor: isDragging ? 'grabbing' : 'default',
                     border: isDark ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                    opacity: opacity / 100,
+                    pointerEvents: opacity < 50 ? 'none' : 'auto',
                 }}
             >
-                {/* 헤더 - 드래그 가능 */}
+                {/* 헤더 - 드래그 가능, 항상 조작 가능 */}
                 <Box
                     onMouseDown={handleMouseDown}
                     sx={{
@@ -320,6 +327,7 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                         justifyContent: 'space-between',
                         cursor: 'grab',
                         userSelect: 'none',
+                        pointerEvents: 'auto',
                     }}
                 >
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1, flex: 1, minWidth: 0}}>
@@ -340,6 +348,39 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                         )}
                     </Box>
                     <Box sx={{display: 'flex'}}>
+                        <IconButton
+                            size="small"
+                            onClick={(e) => setOpacityAnchorEl(e.currentTarget)}
+                            sx={{color: 'white'}}
+                            title="투명도"
+                        >
+                            <OpacityIcon fontSize="small"/>
+                        </IconButton>
+                        <Popover
+                            open={Boolean(opacityAnchorEl)}
+                            anchorEl={opacityAnchorEl}
+                            onClose={() => setOpacityAnchorEl(null)}
+                            anchorOrigin={{vertical: 'top', horizontal: 'center'}}
+                            transformOrigin={{vertical: 'bottom', horizontal: 'center'}}
+                            slotProps={{
+                                paper: {
+                                    sx: {pointerEvents: 'auto'}
+                                }
+                            }}
+                        >
+                            <Box sx={{width: 150, px: 2, py: 1}}>
+                                <Typography variant="caption" color="text.secondary">
+                                    투명도: {opacity}%
+                                </Typography>
+                                <Slider
+                                    value={opacity}
+                                    onChange={(e, v) => setOpacity(v)}
+                                    min={10}
+                                    max={100}
+                                    size="small"
+                                />
+                            </Box>
+                        </Popover>
                         <IconButton size="small" onClick={fetchMessages} sx={{color: 'white'}} title="새로고침">
                             <RefreshIcon fontSize="small"/>
                         </IconButton>
@@ -584,7 +625,7 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                             )
                         )}
 
-                        {/* 입력 영역 */}
+                        {/* 입력 영역 - 항상 조작 가능 */}
                         <Box
                             sx={{
                                 p: 1,
@@ -594,6 +635,7 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                                 borderTop: 1,
                                 borderColor: 'divider',
                                 bgcolor: 'background.paper',
+                                pointerEvents: 'auto',
                             }}
                         >
                             <TextField
