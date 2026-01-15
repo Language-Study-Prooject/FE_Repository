@@ -312,6 +312,7 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                     cursor: isDragging ? 'grabbing' : 'default',
                     border: isDark ? '1px solid rgba(255,255,255,0.1)' : 'none',
                     opacity: opacity / 100,
+                    transition: 'opacity 0.2s ease',
                     pointerEvents: opacity < 50 ? 'none' : 'auto',
                 }}
             >
