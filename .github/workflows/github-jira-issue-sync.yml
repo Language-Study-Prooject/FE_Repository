@@ -2,8 +2,8 @@ name: Issue-Jira Sync
 
 on:
   issues:
-    types: [opened, reopened]
-  
+    types: [ opened, reopened ]
+
   workflow_dispatch:
     inputs:
       process_all_open_issues:
@@ -212,45 +212,45 @@ jobs:
                 repo: context.repo.repo,
                 issue_number: issue.number
               });
-              
+            
               const hasJiraLink = comments.data.some(c => c.body.includes('Jira:'));
               if (hasJiraLink) {
                 console.log(`Issue #${issue.number} already has Jira link, skipping`);
                 continue;
               }
-              
+            
               console.log(`Processing Issue #${issue.number}: ${issue.title}`);
-              
+            
               const labels = issue.labels.map(l => l.name);
               const title = issue.title;
               const body = issue.body || '';
-              
+            
               // Jira Type 결정
               let jiraType = 'Task';
               if (labels.includes('epic') || /^\[EPIC\]/i.test(title)) jiraType = 'Epic';
               else if (labels.includes('story') || /^\[STORY\]/i.test(title)) jiraType = 'Story';
               else if (labels.includes('bug') || /^\[BUG\]/i.test(title)) jiraType = 'Bug';
-              
+            
               // 템플릿 타입 판단
               let templateType = 'task';
               if (labels.includes('epic') || /^\[EPIC\]/i.test(title)) templateType = 'epic';
               else if (labels.includes('story') || /^\[STORY\]/i.test(title)) templateType = 'story';
               else if (labels.includes('change-request') || /^\[CR\]/i.test(title)) templateType = 'cr';
               else if (labels.includes('spike') || /^\[SPIKE\]/i.test(title)) templateType = 'spike';
-              
+            
               // 섹션 파싱
               const parseSection = (label) => {
                 const regex = new RegExp(`### ${label}\\s*\\n([\\s\\S]*?)(?=###|$)`);
                 const match = body.match(regex);
                 return match ? match[1].trim() : '-';
               };
-              
+            
               // description 구성
               const descContent = [
                 { type: 'paragraph', content: [{ type: 'text', text: `GitHub Issue: ${issue.html_url}` }] },
                 { type: 'paragraph', content: [{ type: 'text', text: `Author: ${issue.user.login}` }] }
               ];
-              
+            
               switch (templateType) {
                 case 'epic':
                   descContent.push(
@@ -292,7 +292,7 @@ jobs:
                     { type: 'paragraph', content: [{ type: 'text', text: parseSection('작업 범위') }] }
                   );
               }
-              
+            
               const jiraResponse = await fetch(
                 `${process.env.JIRA_BASE_URL}/rest/api/3/issue`,
                 {
@@ -315,9 +315,9 @@ jobs:
                   })
                 }
               );
-              
+            
               const jiraData = await jiraResponse.json();
-              
+            
               if (jiraData.key) {
                 await github.rest.issues.createComment({
                   owner: context.repo.owner,
@@ -329,6 +329,6 @@ jobs:
               } else {
                 console.log(`Failed to create Jira for Issue #${issue.number}:`, jiraData);
               }
-              
+            
               await new Promise(resolve => setTimeout(resolve, 1000));
             }

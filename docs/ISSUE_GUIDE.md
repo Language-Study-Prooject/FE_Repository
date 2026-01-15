@@ -12,52 +12,56 @@ Epic (에픽)
         └── Task (태스크)
 ```
 
-| 계층 | 설명 | 예시 |
-|------|------|------|
-| **Epic** | 대규모 기능 단위 (1~2주 이상) | 메인 레이아웃 구현, 인증 시스템 구축 |
+| 계층        | 설명                   | 예시                       |
+|-----------|----------------------|--------------------------|
+| **Epic**  | 대규모 기능 단위 (1~2주 이상)  | 메인 레이아웃 구현, 인증 시스템 구축    |
 | **Story** | 사용자 관점의 기능 단위 (2~5일) | Header 컴포넌트 개발, 로그인 폼 구현 |
-| **Task** | 개발자 작업 단위 (1일 이내) | 로고 배치, 네비게이션 메뉴 구현 |
+| **Task**  | 개발자 작업 단위 (1일 이내)    | 로고 배치, 네비게이션 메뉴 구현       |
 
 ---
 
 ## 이슈 라벨
 
 ### 계층 라벨 (필수)
-| 라벨 | 색상 | 설명 |
-|------|------|------|
-| `epic` | `#6B21A8` (보라) | 에픽 이슈 |
+
+| 라벨      | 색상             | 설명     |
+|---------|----------------|--------|
+| `epic`  | `#6B21A8` (보라) | 에픽 이슈  |
 | `story` | `#2563EB` (파랑) | 스토리 이슈 |
-| `task` | `#16A34A` (초록) | 태스크 이슈 |
+| `task`  | `#16A34A` (초록) | 태스크 이슈 |
 
 ### 타입 라벨
-| 라벨 | 설명 |
-|------|------|
-| `feature` | 새 기능 |
-| `bug` | 버그 수정 |
-| `enhancement` | 개선 |
-| `docs` | 문서 |
-| `refactor` | 리팩토링 |
-| `style` | UI/스타일 |
+
+| 라벨            | 설명     |
+|---------------|--------|
+| `feature`     | 새 기능   |
+| `bug`         | 버그 수정  |
+| `enhancement` | 개선     |
+| `docs`        | 문서     |
+| `refactor`    | 리팩토링   |
+| `style`       | UI/스타일 |
 
 ### 도메인 라벨
-| 라벨 | 설명 |
-|------|------|
-| `domain:auth` | 인증 |
-| `domain:user` | 회원 |
-| `domain:profile` | 프로필 |
-| `domain:chat` | 채팅 |
-| `domain:interview` | 면접 |
-| `domain:opic` | OPIC |
-| `domain:freetalk` | 프리토킹 |
-| `domain:writing` | 작문 |
-| `domain:report` | 리포트 |
-| `domain:layout` | 레이아웃 |
+
+| 라벨                 | 설명   |
+|--------------------|------|
+| `domain:auth`      | 인증   |
+| `domain:user`      | 회원   |
+| `domain:profile`   | 프로필  |
+| `domain:chat`      | 채팅   |
+| `domain:interview` | 면접   |
+| `domain:opic`      | OPIC |
+| `domain:freetalk`  | 프리토킹 |
+| `domain:writing`   | 작문   |
+| `domain:report`    | 리포트  |
+| `domain:layout`    | 레이아웃 |
 
 ---
 
 ## 이슈 템플릿
 
 ### Epic 템플릿
+
 ```markdown
 ## Epic: [에픽 제목]
 
@@ -79,6 +83,7 @@ Epic (에픽)
 ```
 
 ### Story 템플릿
+
 ```markdown
 ## Story: [스토리 제목]
 
@@ -102,6 +107,7 @@ Epic (에픽)
 ```
 
 ### Task 템플릿
+
 ```markdown
 ## Task: [태스크 제목]
 
@@ -125,6 +131,7 @@ Epic (에픽)
 ## 이슈 발행 CLI 명령어
 
 ### 라벨 생성 (최초 1회)
+
 ```bash
 # 계층 라벨
 gh label create "epic" --color "6B21A8" --description "에픽 이슈"
@@ -143,6 +150,7 @@ gh label create "domain:chat" --color "BBF7D0" --description "채팅"
 ```
 
 ### Epic 발행
+
 ```bash
 gh issue create \
   --title "[Epic] 메인 레이아웃 구현" \
@@ -169,6 +177,7 @@ gh issue create \
 ```
 
 ### Story 발행
+
 ```bash
 gh issue create \
   --title "[Story] Header 컴포넌트 개발" \
@@ -192,6 +201,7 @@ gh issue create \
 ```
 
 ### Task 발행
+
 ```bash
 gh issue create \
   --title "[Task] 네비게이션 메뉴 구현" \
@@ -222,6 +232,7 @@ feature/{에픽번호}/{스토리번호}/{태스크번호}/{브랜치명}
 ```
 
 ### 예시
+
 ```
 main
   └── develop
@@ -235,6 +246,7 @@ main
 ```
 
 ### 브랜치 생성 명령어
+
 ```bash
 # develop 브랜치에서 시작
 git checkout develop
@@ -270,6 +282,7 @@ gh pr create \
 ## 커밋 메시지 컨벤션
 
 ### 형식
+
 ```
 {타입}({스코프}): {제목} (#{이슈번호})
 
@@ -277,20 +290,23 @@ gh pr create \
 ```
 
 ### 타입
-| 타입 | 설명 |
-|------|------|
-| `feat` | 새 기능 |
-| `fix` | 버그 수정 |
-| `docs` | 문서 수정 |
-| `style` | 포맷팅, 세미콜론 등 |
-| `refactor` | 리팩토링 |
-| `test` | 테스트 추가 |
-| `chore` | 빌드, 설정 등 |
+
+| 타입         | 설명          |
+|------------|-------------|
+| `feat`     | 새 기능        |
+| `fix`      | 버그 수정       |
+| `docs`     | 문서 수정       |
+| `style`    | 포맷팅, 세미콜론 등 |
+| `refactor` | 리팩토링        |
+| `test`     | 테스트 추가      |
+| `chore`    | 빌드, 설정 등    |
 
 ### 스코프 (도메인)
+
 `layout`, `auth`, `user`, `profile`, `chat`, `interview`, `opic`, `freetalk`, `writing`, `report`
 
 ### 예시
+
 ```bash
 # 기능 추가
 git commit -m "feat(layout): Header 컴포넌트 구현 (#3)"
@@ -351,6 +367,7 @@ git commit -m "refactor(chat): WebSocket 연결 로직 개선 (#22)"
 ```
 
 ### 대응 브랜치
+
 ```
 feature/1/2/5/logo-title
 feature/1/2/6/navigation-menu
