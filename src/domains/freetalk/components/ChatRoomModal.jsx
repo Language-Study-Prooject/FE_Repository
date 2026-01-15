@@ -296,6 +296,7 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
             <Paper
                 ref={dragRef}
                 elevation={8}
+                style={{opacity: opacity / 100}}
                 sx={{
                     position: 'fixed',
                     bottom: position.y || 20,
@@ -311,8 +312,6 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                     zIndex: 1300,
                     cursor: isDragging ? 'grabbing' : 'default',
                     border: isDark ? '1px solid rgba(255,255,255,0.1)' : 'none',
-                    opacity: opacity / 100,
-                    transition: 'opacity 0.2s ease',
                     pointerEvents: opacity < 50 ? 'none' : 'auto',
                 }}
             >
