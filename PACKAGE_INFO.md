@@ -7,45 +7,51 @@ AI 기반 음성 인터뷰·언어 연습 시스템 프론트엔드
 ## NPM Dependencies
 
 ### Core
-| 패키지 | 버전 | 설명 |
-|--------|------|------|
-| `react` | ^19.0.0 | UI 라이브러리 |
-| `react-dom` | ^19.0.0 | React DOM 렌더링 |
-| `react-router-dom` | ^7.0.0 | 클라이언트 사이드 라우팅 |
+
+| 패키지                | 버전      | 설명            |
+|--------------------|---------|---------------|
+| `react`            | ^19.0.0 | UI 라이브러리      |
+| `react-dom`        | ^19.0.0 | React DOM 렌더링 |
+| `react-router-dom` | ^7.0.0  | 클라이언트 사이드 라우팅 |
 
 ### State Management
-| 패키지 | 버전 | 설명 |
-|--------|------|------|
+
+| 패키지                | 버전     | 설명                           |
+|--------------------|--------|------------------------------|
 | `@reduxjs/toolkit` | ^2.0.0 | Redux 상태관리 (slice, thunk 포함) |
-| `react-redux` | ^9.0.0 | React-Redux 바인딩 |
+| `react-redux`      | ^9.0.0 | React-Redux 바인딩              |
 
 ### UI Framework
-| 패키지 | 버전 | 설명 |
-|--------|------|------|
-| `@mui/material` | ^7.0.0 | Material UI 컴포넌트 |
-| `@mui/icons-material` | ^7.0.0 | Material 아이콘 |
-| `@mui/x-date-pickers` | ^8.0.0 | 날짜/시간 선택 컴포넌트 |
-| `@emotion/react` | ^11.14.0 | CSS-in-JS (MUI 의존성) |
-| `@emotion/styled` | ^11.14.0 | Styled components (MUI 의존성) |
+
+| 패키지                   | 버전       | 설명                          |
+|-----------------------|----------|-----------------------------|
+| `@mui/material`       | ^7.0.0   | Material UI 컴포넌트            |
+| `@mui/icons-material` | ^7.0.0   | Material 아이콘                |
+| `@mui/x-date-pickers` | ^8.0.0   | 날짜/시간 선택 컴포넌트               |
+| `@emotion/react`      | ^11.14.0 | CSS-in-JS (MUI 의존성)         |
+| `@emotion/styled`     | ^11.14.0 | Styled components (MUI 의존성) |
 
 ### HTTP & API
-| 패키지 | 버전 | 설명 |
-|--------|------|------|
+
+| 패키지     | 버전     | 설명                       |
+|---------|--------|--------------------------|
 | `axios` | ^1.7.0 | HTTP 클라이언트 (REST API 호출) |
 
 ### Utilities
-| 패키지 | 버전 | 설명 |
-|--------|------|------|
+
+| 패키지        | 버전     | 설명         |
+|------------|--------|------------|
 | `date-fns` | ^4.1.0 | 날짜 처리 유틸리티 |
 
 ### Dev Dependencies
-| 패키지 | 버전 | 설명 |
-|--------|------|------|
-| `vite` | ^6.0.0 | 빌드 도구 & 개발 서버 |
-| `@vitejs/plugin-react` | ^5.0.0 | Vite React 플러그인 |
-| `eslint` | ^9.0.0 | 코드 린팅 |
-| `eslint-plugin-react-hooks` | ^5.0.0 | React Hooks 규칙 검사 |
-| `eslint-plugin-react-refresh` | ^0.4.0 | Fast Refresh 지원 |
+
+| 패키지                           | 버전     | 설명                |
+|-------------------------------|--------|-------------------|
+| `vite`                        | ^6.0.0 | 빌드 도구 & 개발 서버     |
+| `@vitejs/plugin-react`        | ^5.0.0 | Vite React 플러그인   |
+| `eslint`                      | ^9.0.0 | 코드 린팅             |
+| `eslint-plugin-react-hooks`   | ^5.0.0 | React Hooks 규칙 검사 |
+| `eslint-plugin-react-refresh` | ^0.4.0 | Fast Refresh 지원   |
 
 ---
 
@@ -73,17 +79,20 @@ src/
 ## Folder Details
 
 ### `/api`
+
 ```
 api/
 └── axios.js          # Axios 인스턴스 설정, 인터셉터 (토큰 주입, 에러 처리)
 ```
 
 ### `/assets`
+
 ```
 assets/               # 이미지, 폰트, 오디오 등 정적 파일
 ```
 
 ### `/components` - 공통 컴포넌트
+
 ```
 components/
 ├── common/           # 범용 UI (Button, Modal, Card, Loading 등)
@@ -93,11 +102,13 @@ components/
 ```
 
 ### `/contexts`
+
 ```
 contexts/             # React Context (AuthContext, ThemeContext 등)
 ```
 
 ### `/domains` - 도메인별 기능 (핵심)
+
 ```
 domains/
 ├── auth/             # 인증/인가
@@ -156,6 +167,7 @@ domains/
 ```
 
 #### 도메인 관계도
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                        auth (인증)                          │
@@ -177,6 +189,7 @@ domains/
 ```
 
 ### `/hooks` - 공통 커스텀 훅
+
 ```
 hooks/
 ├── useAudio.js       # 오디오 재생/녹음 제어
@@ -187,6 +200,7 @@ hooks/
 ```
 
 ### `/layouts`
+
 ```
 layouts/
 ├── MainLayout/       # 메인 레이아웃 (헤더, 사이드바, 푸터)
@@ -194,6 +208,7 @@ layouts/
 ```
 
 ### `/pages`
+
 ```
 pages/
 ├── Home/             # 랜딩 페이지
@@ -203,6 +218,7 @@ pages/
 ```
 
 ### `/services` - 외부 서비스 연동
+
 ```
 services/
 ├── api/              # API 공통 래퍼
@@ -212,23 +228,27 @@ services/
 ```
 
 ### `/store`
+
 ```
 store/
 └── index.js          # Redux store 설정, 미들웨어, 슬라이스 결합
 ```
 
 ### `/styles`
+
 ```
 styles/               # 글로벌 CSS, CSS 변수, 애니메이션
 ```
 
 ### `/theme`
+
 ```
 theme/
 └── theme.js          # MUI 테마 설정 (색상, 타이포그래피, 컴포넌트 스타일)
 ```
 
 ### `/utils`
+
 ```
 utils/                # 유틸리티 함수 (formatDate, validateEmail, etc.)
 ```
@@ -237,15 +257,15 @@ utils/                # 유틸리티 함수 (formatDate, validateEmail, etc.)
 
 ## AWS Service Integration Map
 
-| 프론트 기능 | 연동 서비스 | 파일 위치 |
-|-------------|-------------|-----------|
-| 로그인/회원가입 | Cognito | `domains/auth/services/` |
-| REST API 호출 | API Gateway | `api/axios.js` |
-| 실시간 채팅 | WebSocket API | `services/chat/` |
-| 음성 재생 (TTS) | Polly | `services/audio/` |
-| 음성 녹음 (STT) | Transcribe + S3 | `services/audio/` |
-| AI 대화/피드백 | Bedrock/Claude | `services/ai/` |
-| 정적 파일 | S3 + CloudFront | 빌드 배포 |
+| 프론트 기능      | 연동 서비스          | 파일 위치                    |
+|-------------|-----------------|--------------------------|
+| 로그인/회원가입    | Cognito         | `domains/auth/services/` |
+| REST API 호출 | API Gateway     | `api/axios.js`           |
+| 실시간 채팅      | WebSocket API   | `services/chat/`         |
+| 음성 재생 (TTS) | Polly           | `services/audio/`        |
+| 음성 녹음 (STT) | Transcribe + S3 | `services/audio/`        |
+| AI 대화/피드백   | Bedrock/Claude  | `services/ai/`           |
+| 정적 파일       | S3 + CloudFront | 빌드 배포                    |
 
 ---
 
@@ -262,10 +282,10 @@ npm run lint     # ESLint 검사
 
 ## Environment Variables
 
-| 변수명 | 설명 | 예시 |
-|--------|------|------|
-| `VITE_API_URL` | REST API 엔드포인트 | `https://api.example.com` |
-| `VITE_WS_URL` | WebSocket 엔드포인트 | `wss://ws.example.com` |
-| `VITE_COGNITO_POOL_ID` | Cognito User Pool ID | `ap-northeast-2_xxxxx` |
-| `VITE_COGNITO_CLIENT_ID` | Cognito App Client ID | `xxxxxxxxxxxxxxxxxx` |
-| `VITE_S3_BUCKET` | S3 버킷 URL | `https://bucket.s3.amazonaws.com` |
+| 변수명                      | 설명                    | 예시                                |
+|--------------------------|-----------------------|-----------------------------------|
+| `VITE_API_URL`           | REST API 엔드포인트        | `https://api.example.com`         |
+| `VITE_WS_URL`            | WebSocket 엔드포인트       | `wss://ws.example.com`            |
+| `VITE_COGNITO_POOL_ID`   | Cognito User Pool ID  | `ap-northeast-2_xxxxx`            |
+| `VITE_COGNITO_CLIENT_ID` | Cognito App Client ID | `xxxxxxxxxxxxxxxxxx`              |
+| `VITE_S3_BUCKET`         | S3 버킷 URL             | `https://bucket.s3.amazonaws.com` |
