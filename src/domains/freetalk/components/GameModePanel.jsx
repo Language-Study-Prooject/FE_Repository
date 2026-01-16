@@ -15,7 +15,7 @@ import {DESIGN_TOKENS} from '../../../theme/theme'
 const CANVAS_WIDTH = 340
 const CANVAS_HEIGHT = 200
 
-const GameModePanel = ({roomId, onGameMessage, initialGameStatus}) => {
+const GameModePanel = ({roomId, onGameMessage, initialGameStatus, onStartGame, onStopGame}) => {
     const theme = useTheme()
     const isDark = theme.palette.mode === 'dark'
     const {user} = useAuth()
@@ -91,39 +91,47 @@ const GameModePanel = ({roomId, onGameMessage, initialGameStatus}) => {
         return () => clearInterval(interval)
     }, [isGameActive, gameState.roundStartTime, gameState.roundTimeLimit])
 
-    // 게임 시작
-    const handleStartGame = async () => {
-        setLoading(true)
-        try {
-            const response = await gameService.start(roomId)
-            const data = response.data || response
-            setGameState(data)
-            onGameMessage?.({
-                type: 'game_start',
-                content: `🎮 게임 시작! 총 ${data.totalRounds}라운드\n출제자: ${data.currentDrawerId}`,
-            })
-        } catch (err) {
-            console.error('Failed to start game:', err)
-        } finally {
-            setLoading(false)
+    // 게임 시작 - WebSocket을 통해 /start 명령어 전송 (서버에서 인원 검증)
+    const handleStartGame = () => {
+        if (onStartGame) {
+            // WebSocket으로 /start 명령어 전송 (채팅창에서 /start 입력과 동일)
+            onStartGame()
+        } else {
+            // fallback: REST API 사용 (WebSocket 미연결 시)
+            setLoading(true)
+            gameService.start(roomId)
+                .then(response => {
+                    const data = response.data || response
+                    setGameState(data)
+                    onGameMessage?.({
+                        type: 'game_start',
+                        content: `🎮 게임 시작! 총 ${data.totalRounds}라운드\n출제자: ${data.currentDrawerId}`,
+                    })
+                })
+                .catch(err => console.error('Failed to start game:', err))
+                .finally(() => setLoading(false))
         }
     }
 
-    // 게임 종료
-    const handleStopGame = async () => {
-        setLoading(true)
-        try {
-            const response = await gameService.stop(roomId)
-            const data = response.data || response
-            setGameState(prev => ({...prev, gameStatus: GAME_STATUS.NONE}))
-            onGameMessage?.({
-                type: 'game_end',
-                content: `🎮 게임 종료!\n${data.message}`,
-            })
-        } catch (err) {
-            console.error('Failed to stop game:', err)
-        } finally {
-            setLoading(false)
+    // 게임 종료 - WebSocket을 통해 /stop 명령어 전송
+    const handleStopGame = () => {
+        if (onStopGame) {
+            // WebSocket으로 /stop 명령어 전송 (채팅창에서 /stop 입력과 동일)
+            onStopGame()
+        } else {
+            // fallback: REST API 사용 (WebSocket 미연결 시)
+            setLoading(true)
+            gameService.stop(roomId)
+                .then(response => {
+                    const data = response.data || response
+                    setGameState(prev => ({...prev, gameStatus: GAME_STATUS.NONE}))
+                    onGameMessage?.({
+                        type: 'game_end',
+                        content: `🎮 게임 종료!\n${data.message}`,
+                    })
+                })
+                .catch(err => console.error('Failed to stop game:', err))
+                .finally(() => setLoading(false))
         }
     }
 
