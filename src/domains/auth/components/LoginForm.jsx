@@ -1,27 +1,22 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import {useState} from 'react';
+import {useNavigate} from 'react-router-dom';
 import {
-    Box,
-    TextField,
-    Button,
-    Typography,
     Alert,
-    InputAdornment,
-    IconButton,
+    Box,
+    Button,
     CircularProgress,
+    IconButton,
+    InputAdornment,
     Link,
+    TextField,
+    Typography,
 } from '@mui/material';
-import {
-    Email as EmailIcon,
-    Lock as LockIcon,
-    Visibility,
-    VisibilityOff,
-} from '@mui/icons-material';
-import { useAuth } from '../../../contexts/AuthContext';
+import {Email as EmailIcon, Lock as LockIcon, Visibility, VisibilityOff,} from '@mui/icons-material';
+import {useAuth} from '../../../contexts/AuthContext';
 
-export default function LoginForm({ onSwitchToSignUp }) {
+export default function LoginForm({onSwitchToSignUp}) {
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const {login} = useAuth();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -58,7 +53,7 @@ export default function LoginForm({ onSwitchToSignUp }) {
                 AI 언어 학습 시스템에 오신 것을 환영합니다
             </Typography>
 
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            {error && <Alert severity="error" sx={{mb: 2}}>{error}</Alert>}
 
             <TextField
                 fullWidth
@@ -67,10 +62,10 @@ export default function LoginForm({ onSwitchToSignUp }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
-                sx={{ mb: 2 }}
+                sx={{mb: 2}}
                 InputProps={{
                     startAdornment: (
-                        <InputAdornment position="start"><EmailIcon color="action" /></InputAdornment>
+                        <InputAdornment position="start"><EmailIcon color="action"/></InputAdornment>
                     ),
                 }}
             />
@@ -82,15 +77,15 @@ export default function LoginForm({ onSwitchToSignUp }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
-                sx={{ mb: 3 }}
+                sx={{mb: 3}}
                 InputProps={{
                     startAdornment: (
-                        <InputAdornment position="start"><LockIcon color="action" /></InputAdornment>
+                        <InputAdornment position="start"><LockIcon color="action"/></InputAdornment>
                     ),
                     endAdornment: (
                         <InputAdornment position="end">
                             <IconButton onClick={() => setShowPassword(!showPassword)}>
-                                {showPassword ? <VisibilityOff /> : <Visibility />}
+                                {showPassword ? <VisibilityOff/> : <Visibility/>}
                             </IconButton>
                         </InputAdornment>
                     ),
@@ -103,14 +98,14 @@ export default function LoginForm({ onSwitchToSignUp }) {
                 fullWidth
                 size="large"
                 disabled={isLoading}
-                sx={{ mb: 2 }}
+                sx={{mb: 2}}
             >
-                {isLoading ? <CircularProgress size={24} color="inherit" /> : '로그인'}
+                {isLoading ? <CircularProgress size={24} color="inherit"/> : '로그인'}
             </Button>
 
             <Typography textAlign="center">
                 계정이 없으신가요?{' '}
-                <Link component="button" type="button" onClick={onSwitchToSignUp} sx={{ fontWeight: 600 }}>
+                <Link component="button" type="button" onClick={onSwitchToSignUp} sx={{fontWeight: 600}}>
                     회원가입
                 </Link>
             </Typography>

@@ -203,7 +203,8 @@ export default function VocabDashboard() {
                         <CardContent sx={{p: 3, position: 'relative', zIndex: 1}}>
                             <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
                                 <Box>
-                                    <Typography variant="overline" sx={{color: 'rgba(255,255,255,0.8)', letterSpacing: 1}}>
+                                    <Typography variant="overline"
+                                                sx={{color: 'rgba(255,255,255,0.8)', letterSpacing: 1}}>
                                         {isKorean ? '오늘의 학습' : "Today's Learning"}
                                     </Typography>
                                     <Box display="flex" alignItems="baseline" gap={1}>
@@ -692,7 +693,8 @@ export default function VocabDashboard() {
                                                 <VolumeIcon fontSize="small"/>
                                             </IconButton>
                                         </Tooltip>
-                                        <Tooltip title={word.bookmarked ? (isKorean ? '북마크 해제' : 'Unbookmark') : (isKorean ? '북마크' : 'Bookmark')}>
+                                        <Tooltip
+                                            title={word.bookmarked ? (isKorean ? '북마크 해제' : 'Unbookmark') : (isKorean ? '북마크' : 'Bookmark')}>
                                             <IconButton size="small" onClick={() => handleToggleBookmark(word)}>
                                                 {word.bookmarked ? (
                                                     <StarIcon fontSize="small" sx={{color: '#fbbf24'}}/>

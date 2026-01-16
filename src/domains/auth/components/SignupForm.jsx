@@ -1,31 +1,30 @@
-import { useState } from 'react';
+import {useState} from 'react';
 import {
-    Box,
-    TextField,
-    Button,
-    Typography,
     Alert,
-    InputAdornment,
-    IconButton,
+    Box,
+    Button,
     CircularProgress,
-    Link,
     Divider,
-    LinearProgress,
+    IconButton,
+    InputAdornment,
+    Link,
+    TextField,
+    Typography,
 } from '@mui/material';
 import {
+    Check as CheckIcon,
+    Close as CloseIcon,
     Email as EmailIcon,
     Lock as LockIcon,
     Visibility,
     VisibilityOff,
-    Check as CheckIcon,
-    Close as CloseIcon,
 } from '@mui/icons-material';
-import { useAuth } from '../../../contexts/AuthContext';
+import {useAuth} from '../../../contexts/AuthContext';
 import EmailVerification from './EmailVerification'
 
-export default function SignupForm({ onSwitchToLogin }) {
+export default function SignupForm({onSwitchToLogin}) {
 
-    const { register } = useAuth()
+    const {register} = useAuth()
 
     const [step, setStep] = useState('form')
 
@@ -48,8 +47,8 @@ export default function SignupForm({ onSwitchToLogin }) {
     };
 
     const handleChange = (e) => {
-        const { name, value } = e.target
-        setFormData((prev) => ({ ...prev, [name]: value }))
+        const {name, value} = e.target
+        setFormData((prev) => ({...prev, [name]: value}))
         setError('')
     }
 
@@ -62,7 +61,7 @@ export default function SignupForm({ onSwitchToLogin }) {
         setSuccess('')
         setIsLoading(true)
 
-        // 유효성 검사 
+        // 유효성 검사
         if (!formData.email || !formData.password || !formData.confirmPassword) {
             setError('모든 필드를 입력해주세요.')
             setIsLoading(false)
@@ -126,7 +125,7 @@ export default function SignupForm({ onSwitchToLogin }) {
             }}
         >
             {/* 타이틀 */}
-            <Box sx={{ textAlign: 'center', mb: 2 }}>
+            <Box sx={{textAlign: 'center', mb: 2}}>
                 <Typography
                     variant="h4"
                     sx={{
@@ -147,12 +146,12 @@ export default function SignupForm({ onSwitchToLogin }) {
 
             {/* 에러/성공 메시지 */}
             {error && (
-                <Alert severity="error" sx={{ borderRadius: 2 }}>
+                <Alert severity="error" sx={{borderRadius: 2}}>
                     {error}
                 </Alert>
             )}
             {success && (
-                <Alert severity="success" sx={{ borderRadius: 2 }}>
+                <Alert severity="success" sx={{borderRadius: 2}}>
                     {success}
                 </Alert>
             )}
@@ -170,7 +169,7 @@ export default function SignupForm({ onSwitchToLogin }) {
                 InputProps={{
                     startAdornment: (
                         <InputAdornment position="start">
-                            <EmailIcon color="action" />
+                            <EmailIcon color="action"/>
                         </InputAdornment>
                     ),
                 }}
@@ -190,7 +189,7 @@ export default function SignupForm({ onSwitchToLogin }) {
                     InputProps={{
                         startAdornment: (
                             <InputAdornment position="start">
-                                <LockIcon color="action" />
+                                <LockIcon color="action"/>
                             </InputAdornment>
                         ),
                         endAdornment: (
@@ -200,7 +199,7 @@ export default function SignupForm({ onSwitchToLogin }) {
                                     edge="end"
                                     size="small"
                                 >
-                                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                                    {showPassword ? <VisibilityOff/> : <Visibility/>}
                                 </IconButton>
                             </InputAdornment>
                         ),
@@ -208,11 +207,11 @@ export default function SignupForm({ onSwitchToLogin }) {
                 />
 
                 {formData.password && (
-                    <Box sx={{ mt: 1.5 }}>
+                    <Box sx={{mt: 1.5}}>
                         {/* 세그먼트 바 + 강도 텍스트 */}
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5, mb: 1}}>
                             {/* 20칸 세그먼트 바 */}
-                            <Box sx={{ display: 'flex', gap: '2px', flex: 1 }}>
+                            <Box sx={{display: 'flex', gap: '2px', flex: 1}}>
                                 {[...Array(20)].map((_, index) => (
                                     <Box
                                         key={index}
@@ -249,11 +248,11 @@ export default function SignupForm({ onSwitchToLogin }) {
                             </Typography>
                         </Box>
                         {/* 체크 항목 */}
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                            <PasswordCheck checked={passwordChecks.length} label="8자 이상" />
-                            <PasswordCheck checked={passwordChecks.lowercase} label="소문자" />
-                            <PasswordCheck checked={passwordChecks.number} label="숫자" />
-                            <PasswordCheck checked={passwordChecks.special} label="특수문자" />
+                        <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 1}}>
+                            <PasswordCheck checked={passwordChecks.length} label="8자 이상"/>
+                            <PasswordCheck checked={passwordChecks.lowercase} label="소문자"/>
+                            <PasswordCheck checked={passwordChecks.number} label="숫자"/>
+                            <PasswordCheck checked={passwordChecks.special} label="특수문자"/>
                         </Box>
                     </Box>
                 )}
@@ -279,7 +278,7 @@ export default function SignupForm({ onSwitchToLogin }) {
                 InputProps={{
                     startAdornment: (
                         <InputAdornment position="start">
-                            <LockIcon color="action" />
+                            <LockIcon color="action"/>
                         </InputAdornment>
                     ),
                     endAdornment: (
@@ -289,7 +288,7 @@ export default function SignupForm({ onSwitchToLogin }) {
                                 edge="end"
                                 size="small"
                             >
-                                {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                                {showConfirmPassword ? <VisibilityOff/> : <Visibility/>}
                             </IconButton>
                         </InputAdornment>
                     ),
@@ -313,28 +312,28 @@ export default function SignupForm({ onSwitchToLogin }) {
                 }}
             >
                 {isLoading ? (
-                    <CircularProgress size={24} color="inherit" />
+                    <CircularProgress size={24} color="inherit"/>
                 ) : (
                     '인증 코드 받기'
                 )}
             </Button>
 
             {/* 구분선 */}
-            <Divider sx={{ my: 1 }}>
+            <Divider sx={{my: 1}}>
                 <Typography variant="caption" color="text.secondary">
                     또는
                 </Typography>
             </Divider>
 
             {/* 로그인 안내 */}
-            <Box sx={{ textAlign: 'center' }}>
+            <Box sx={{textAlign: 'center'}}>
                 <Typography variant="body2" color="text.secondary">
                     이미 계정이 있으신가요?{' '}
                     <Link
                         component="button"
                         type="button"
                         onClick={onSwitchToLogin}
-                        sx={{ fontWeight: 600, textDecoration: 'none' }}
+                        sx={{fontWeight: 600, textDecoration: 'none'}}
                     >
                         로그인
                     </Link>
@@ -345,7 +344,7 @@ export default function SignupForm({ onSwitchToLogin }) {
 }
 
 // 비밀번호 체크 아이템 컴포넌트
-function PasswordCheck({ checked, label }) {
+function PasswordCheck({checked, label}) {
     return (
         <Box
             sx={{
@@ -357,9 +356,9 @@ function PasswordCheck({ checked, label }) {
             }}
         >
             {checked ? (
-                <CheckIcon sx={{ fontSize: 14 }} />
+                <CheckIcon sx={{fontSize: 14}}/>
             ) : (
-                <CloseIcon sx={{ fontSize: 14 }} />
+                <CloseIcon sx={{fontSize: 14}}/>
             )}
             {label}
         </Box>

@@ -1,22 +1,10 @@
-import { useState, useRef, useEffect } from 'react'
-import {
-    Box,
-    TextField,
-    Button,
-    Typography,
-    Alert,
-    CircularProgress,
-    Link,
-} from '@mui/material'
-import {
-    ArrowBack as ArrowBackIcon,
-    Email as EmailIcon,
-    Refresh as RefreshIcon,
-} from '@mui/icons-material'
-import { useAuth } from '../../../contexts/AuthContext'
+import {useEffect, useRef, useState} from 'react'
+import {Alert, Box, Button, CircularProgress, Link, TextField, Typography,} from '@mui/material'
+import {ArrowBack as ArrowBackIcon, Email as EmailIcon, Refresh as RefreshIcon,} from '@mui/icons-material'
+import {useAuth} from '../../../contexts/AuthContext'
 
-export default function EmailVerification({ email, onComplete, onBack }) {
-    const { confirmEmail, resendCode } = useAuth()
+export default function EmailVerification({email, onComplete, onBack}) {
+    const {confirmEmail, resendCode} = useAuth()
 
     const [code, setCode] = useState(['', '', '', '', '', ''])
     const [isLoading, setIsLoading] = useState(false)
@@ -151,15 +139,15 @@ export default function EmailVerification({ email, onComplete, onBack }) {
         >
             {/* 뒤로가기 */}
             <Button
-                startIcon={<ArrowBackIcon />}
+                startIcon={<ArrowBackIcon/>}
                 onClick={onBack}
-                sx={{ alignSelf: 'flex-start', ml: -1 }}
+                sx={{alignSelf: 'flex-start', ml: -1}}
             >
                 돌아가기
             </Button>
 
             {/* 타이틀 */}
-            <Box sx={{ textAlign: 'center' }}>
+            <Box sx={{textAlign: 'center'}}>
                 <Box
                     sx={{
                         width: 64,
@@ -173,26 +161,26 @@ export default function EmailVerification({ email, onComplete, onBack }) {
                         mb: 2,
                     }}
                 >
-                    <EmailIcon sx={{ fontSize: 32, color: 'white' }} />
+                    <EmailIcon sx={{fontSize: 32, color: 'white'}}/>
                 </Box>
                 <Typography variant="h5" fontWeight={700} gutterBottom>
                     이메일 인증
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                     <strong>{email}</strong>로 발송된
-                    <br />
+                    <br/>
                     6자리 인증 코드를 입력해주세요.
                 </Typography>
             </Box>
 
             {/* 에러/성공 메시지 */}
             {error && (
-                <Alert severity="error" sx={{ borderRadius: 2 }}>
+                <Alert severity="error" sx={{borderRadius: 2}}>
                     {error}
                 </Alert>
             )}
             {success && (
-                <Alert severity="success" sx={{ borderRadius: 2 }}>
+                <Alert severity="success" sx={{borderRadius: 2}}>
                     {success}
                 </Alert>
             )}
@@ -245,14 +233,14 @@ export default function EmailVerification({ email, onComplete, onBack }) {
                 }}
             >
                 {isLoading ? (
-                    <CircularProgress size={24} color="inherit" />
+                    <CircularProgress size={24} color="inherit"/>
                 ) : (
                     '인증 완료'
                 )}
             </Button>
 
             {/* 재전송 */}
-            <Box sx={{ textAlign: 'center' }}>
+            <Box sx={{textAlign: 'center'}}>
                 <Typography variant="body2" color="text.secondary">
                     코드를 받지 못하셨나요?{' '}
                     {countdown > 0 ? (
@@ -274,9 +262,9 @@ export default function EmailVerification({ email, onComplete, onBack }) {
                             }}
                         >
                             {isResending ? (
-                                <CircularProgress size={14} />
+                                <CircularProgress size={14}/>
                             ) : (
-                                <RefreshIcon sx={{ fontSize: 16 }} />
+                                <RefreshIcon sx={{fontSize: 16}}/>
                             )}
                             재전송
                         </Link>

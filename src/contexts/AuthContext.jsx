@@ -1,17 +1,17 @@
-import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react'
+import {createContext, useCallback, useContext, useEffect, useMemo, useState} from 'react'
 import {
-    signIn,
-    signUp,
-    signOut,
     confirmSignUp,
-    getCurrentUser,
     fetchAuthSession,
+    getCurrentUser,
     resendSignUpCode,
+    signIn,
+    signOut,
+    signUp,
 } from 'aws-amplify/auth'
 
 const AuthContext = createContext(null)
 
-export function AuthProvider({ children }) {
+export function AuthProvider({children}) {
     const [user, setUser] = useState(null)
     const [isLoading, setIsLoading] = useState(true)
     const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -50,11 +50,11 @@ export function AuthProvider({ children }) {
     // 로그인
     const login = useCallback(async (email, password) => {
         try {
-            const result = await signIn({ username: email, password })
+            const result = await signIn({username: email, password})
 
             if (result.isSignedIn) {
                 await checkAuthUser()
-                return { success: true }
+                return {success: true}
             }
 
             return {
@@ -120,7 +120,7 @@ export function AuthProvider({ children }) {
     // 인증 코드 재전송
     const resendCode = useCallback(async (email) => {
         try {
-            await resendSignUpCode({ username: email })
+            await resendSignUpCode({username: email})
             return {
                 success: true,
                 message: '인증 코드가 재전송되었습니다.'
@@ -142,7 +142,7 @@ export function AuthProvider({ children }) {
             localStorage.removeItem('accessToken')
             setUser(null)
             setIsAuthenticated(false)
-            return { success: true }
+            return {success: true}
         } catch (error) {
             console.error('Logout error:', error)
             return {

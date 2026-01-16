@@ -29,6 +29,7 @@ import {myWordService, voiceService} from '../services/vocabService'
 import {LEVEL_LABELS, WORD_STATUS_LABELS,} from '../constants/vocabConstants'
 import {useTranslation} from '../../../contexts/SettingsContext'
 import {useAuth} from '../../../contexts/AuthContext'
+
 const PAGE_SIZE = 20
 
 // 디바운스 훅

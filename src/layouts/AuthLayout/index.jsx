@@ -1,6 +1,6 @@
-import { Box, Paper, Typography } from '@mui/material';
+import {Box, Paper, Typography} from '@mui/material';
 
-export default function AuthLayout({ children }) {
+export default function AuthLayout({children}) {
     return (
         <Box
             sx={{
@@ -21,7 +21,7 @@ export default function AuthLayout({ children }) {
                     borderRadius: 4,
                 }}
             >
-                <Box sx={{ textAlign: 'center', mb: 4 }}>
+                <Box sx={{textAlign: 'center', mb: 4}}>
                     <Box
                         sx={{
                             width: 56,
@@ -35,7 +35,7 @@ export default function AuthLayout({ children }) {
                             mb: 2,
                         }}
                     >
-                        <Typography sx={{ fontSize: '1.5rem', fontWeight: 800, color: 'white' }}>
+                        <Typography sx={{fontSize: '1.5rem', fontWeight: 800, color: 'white'}}>
                             AI
                         </Typography>
                     </Box>

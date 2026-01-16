@@ -624,183 +624,183 @@ export default function DailyLearning() {
             )}
 
             <Container maxWidth="sm" sx={{pb: 6}}>
-            {/* Header */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    py: 2,
-                }}
-            >
-                <IconButton onClick={() => navigate('/vocab')}>
-                    <BackIcon/>
-                </IconButton>
-                <Box textAlign="center">
-                    <Typography variant="h6" fontWeight={700}>
-                        {currentIndex + 1} / {words.length}
-                    </Typography>
+                {/* Header */}
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        py: 2,
+                    }}
+                >
+                    <IconButton onClick={() => navigate('/vocab')}>
+                        <BackIcon/>
+                    </IconButton>
+                    <Box textAlign="center">
+                        <Typography variant="h6" fontWeight={700}>
+                            {currentIndex + 1} / {words.length}
+                        </Typography>
+                    </Box>
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={autoPlayTTS}
+                                onChange={(e) => setAutoPlayTTS(e.target.checked)}
+                                size="small"
+                                sx={{
+                                    '& .MuiSwitch-switchBase.Mui-checked': {
+                                        color: '#059669',
+                                    },
+                                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                        backgroundColor: '#059669',
+                                    },
+                                }}
+                            />
+                        }
+                        label={<VolumeIcon fontSize="small" sx={{color: autoPlayTTS ? '#059669' : 'text.secondary'}}/>}
+                    />
                 </Box>
-                <FormControlLabel
-                    control={
-                        <Switch
-                            checked={autoPlayTTS}
-                            onChange={(e) => setAutoPlayTTS(e.target.checked)}
-                            size="small"
-                            sx={{
-                                '& .MuiSwitch-switchBase.Mui-checked': {
-                                    color: '#059669',
-                                },
-                                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                                    backgroundColor: '#059669',
-                                },
-                            }}
-                        />
-                    }
-                    label={<VolumeIcon fontSize="small" sx={{color: autoPlayTTS ? '#059669' : 'text.secondary'}}/>}
-                />
-            </Box>
 
-            {/* Progress Bar */}
-            <Box sx={{mb: 4}}>
-                <Box display="flex" justifyContent="space-between" mb={1}>
-                    <Typography variant="caption" color="text.secondary" fontWeight={500}>
-                        {t('dailyLearning.progress')}
-                    </Typography>
-                    <Typography variant="caption" fontWeight={700} color="primary.main">
-                        {Math.round(progress)}%
-                    </Typography>
-                </Box>
-                <LinearProgress
-                    variant="determinate"
-                    value={progress}
-                    sx={{
-                        height: 8,
-                        borderRadius: 4,
-                        backgroundColor: '#e7e5e4',
-                        '& .MuiLinearProgress-bar': {
-                            borderRadius: 4,
-                            background: 'linear-gradient(90deg, #059669 0%, #10b981 100%)',
-                        },
-                    }}
-                />
-            </Box>
-
-            {/* FlashCard */}
-            <Box
-                sx={{
-                    mb: 4,
-                    transition: swipeDirection
-                        ? 'all 0.25s ease-out'
-                        : isEntering
-                            ? 'all 0.2s ease-out'
-                            : 'none',
-                    transform: swipeDirection === 'left'
-                        ? 'translateX(-120%) rotate(-15deg)'
-                        : swipeDirection === 'right'
-                            ? 'translateX(120%) rotate(15deg)'
-                            : 'scale(1)',
-                    opacity: swipeDirection ? 0 : 1,
-                    animation: isEntering ? 'popIn 0.2s ease-out' : 'none',
-                    '@keyframes popIn': {
-                        '0%': {transform: 'scale(0.9)', opacity: 0},
-                        '100%': {transform: 'scale(1)', opacity: 1},
-                    },
-                }}
-            >
-                <FlashCard
-                    word={currentWord}
-                    isFlipped={isFlipped}
-                    onFlip={handleFlip}
-                    onPlayTTS={() => playTTS(currentWord)}
-                    isPlayingTTS={isPlayingTTS}
-                />
-            </Box>
-
-            {/* Answer Buttons */}
-            <Box display="flex" gap={2} justifyContent="center" mb={3}>
-                <Button
-                    variant="contained"
-                    size="large"
-                    startIcon={<CloseIcon/>}
-                    onClick={() => handleAnswer(false)}
-                    disabled={!!swipeDirection}
-                    sx={{
-                        flex: 1,
-                        maxWidth: 160,
-                        py: 1.5,
-                        backgroundColor: '#ef4444',
-                        '&:hover': {
-                            backgroundColor: '#dc2626',
-                        },
-                    }}
-                >
-                    {t('dailyLearning.dontKnow')}
-                </Button>
-                <Button
-                    variant="contained"
-                    size="large"
-                    startIcon={<CheckIcon/>}
-                    onClick={() => handleAnswer(true)}
-                    disabled={!!swipeDirection}
-                    sx={{
-                        flex: 1,
-                        maxWidth: 160,
-                        py: 1.5,
-                        backgroundColor: '#10b981',
-                        '&:hover': {
-                            backgroundColor: '#059669',
-                        },
-                    }}
-                >
-                    {t('dailyLearning.knowIt')}
-                </Button>
-            </Box>
-
-            {/* Navigation */}
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                <Button
-                    variant="text"
-                    onClick={() => setCurrentIndex(prev => prev - 1)}
-                    disabled={currentIndex === 0}
-                    startIcon={<BackIcon/>}
-                    sx={{color: 'text.secondary'}}
-                >
-                    {t('dailyLearning.previous')}
-                </Button>
-
-                <Tooltip
-                    title={currentWord?.bookmarked ? t('dailyLearning.removeBookmark') : t('dailyLearning.bookmark')}>
-                    <IconButton
-                        onClick={handleToggleBookmark}
+                {/* Progress Bar */}
+                <Box sx={{mb: 4}}>
+                    <Box display="flex" justifyContent="space-between" mb={1}>
+                        <Typography variant="caption" color="text.secondary" fontWeight={500}>
+                            {t('dailyLearning.progress')}
+                        </Typography>
+                        <Typography variant="caption" fontWeight={700} color="primary.main">
+                            {Math.round(progress)}%
+                        </Typography>
+                    </Box>
+                    <LinearProgress
+                        variant="determinate"
+                        value={progress}
                         sx={{
-                            width: 48,
-                            height: 48,
-                            backgroundColor: currentWord?.bookmarked ? '#fef3c7' : '#f5f5f4',
+                            height: 8,
+                            borderRadius: 4,
+                            backgroundColor: '#e7e5e4',
+                            '& .MuiLinearProgress-bar': {
+                                borderRadius: 4,
+                                background: 'linear-gradient(90deg, #059669 0%, #10b981 100%)',
+                            },
+                        }}
+                    />
+                </Box>
+
+                {/* FlashCard */}
+                <Box
+                    sx={{
+                        mb: 4,
+                        transition: swipeDirection
+                            ? 'all 0.25s ease-out'
+                            : isEntering
+                                ? 'all 0.2s ease-out'
+                                : 'none',
+                        transform: swipeDirection === 'left'
+                            ? 'translateX(-120%) rotate(-15deg)'
+                            : swipeDirection === 'right'
+                                ? 'translateX(120%) rotate(15deg)'
+                                : 'scale(1)',
+                        opacity: swipeDirection ? 0 : 1,
+                        animation: isEntering ? 'popIn 0.2s ease-out' : 'none',
+                        '@keyframes popIn': {
+                            '0%': {transform: 'scale(0.9)', opacity: 0},
+                            '100%': {transform: 'scale(1)', opacity: 1},
+                        },
+                    }}
+                >
+                    <FlashCard
+                        word={currentWord}
+                        isFlipped={isFlipped}
+                        onFlip={handleFlip}
+                        onPlayTTS={() => playTTS(currentWord)}
+                        isPlayingTTS={isPlayingTTS}
+                    />
+                </Box>
+
+                {/* Answer Buttons */}
+                <Box display="flex" gap={2} justifyContent="center" mb={3}>
+                    <Button
+                        variant="contained"
+                        size="large"
+                        startIcon={<CloseIcon/>}
+                        onClick={() => handleAnswer(false)}
+                        disabled={!!swipeDirection}
+                        sx={{
+                            flex: 1,
+                            maxWidth: 160,
+                            py: 1.5,
+                            backgroundColor: '#ef4444',
                             '&:hover': {
-                                backgroundColor: currentWord?.bookmarked ? '#fde68a' : '#e7e5e4',
+                                backgroundColor: '#dc2626',
                             },
                         }}
                     >
-                        {currentWord?.bookmarked ? (
-                            <StarIcon sx={{color: '#f59e0b'}}/>
-                        ) : (
-                            <StarBorderIcon sx={{color: '#78716c'}}/>
-                        )}
-                    </IconButton>
-                </Tooltip>
+                        {t('dailyLearning.dontKnow')}
+                    </Button>
+                    <Button
+                        variant="contained"
+                        size="large"
+                        startIcon={<CheckIcon/>}
+                        onClick={() => handleAnswer(true)}
+                        disabled={!!swipeDirection}
+                        sx={{
+                            flex: 1,
+                            maxWidth: 160,
+                            py: 1.5,
+                            backgroundColor: '#10b981',
+                            '&:hover': {
+                                backgroundColor: '#059669',
+                            },
+                        }}
+                    >
+                        {t('dailyLearning.knowIt')}
+                    </Button>
+                </Box>
 
-                <Button
-                    variant="text"
-                    onClick={handleSkip}
-                    disabled={isShuffling}
-                    endIcon={<SkipIcon/>}
-                    sx={{color: 'text.secondary'}}
-                >
-                    {t('dailyLearning.skip')}
-                </Button>
-            </Box>
-        </Container>
+                {/* Navigation */}
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                    <Button
+                        variant="text"
+                        onClick={() => setCurrentIndex(prev => prev - 1)}
+                        disabled={currentIndex === 0}
+                        startIcon={<BackIcon/>}
+                        sx={{color: 'text.secondary'}}
+                    >
+                        {t('dailyLearning.previous')}
+                    </Button>
+
+                    <Tooltip
+                        title={currentWord?.bookmarked ? t('dailyLearning.removeBookmark') : t('dailyLearning.bookmark')}>
+                        <IconButton
+                            onClick={handleToggleBookmark}
+                            sx={{
+                                width: 48,
+                                height: 48,
+                                backgroundColor: currentWord?.bookmarked ? '#fef3c7' : '#f5f5f4',
+                                '&:hover': {
+                                    backgroundColor: currentWord?.bookmarked ? '#fde68a' : '#e7e5e4',
+                                },
+                            }}
+                        >
+                            {currentWord?.bookmarked ? (
+                                <StarIcon sx={{color: '#f59e0b'}}/>
+                            ) : (
+                                <StarBorderIcon sx={{color: '#78716c'}}/>
+                            )}
+                        </IconButton>
+                    </Tooltip>
+
+                    <Button
+                        variant="text"
+                        onClick={handleSkip}
+                        disabled={isShuffling}
+                        endIcon={<SkipIcon/>}
+                        sx={{color: 'text.secondary'}}
+                    >
+                        {t('dailyLearning.skip')}
+                    </Button>
+                </Box>
+            </Container>
         </>
     )
 }

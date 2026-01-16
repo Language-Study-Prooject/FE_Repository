@@ -45,7 +45,7 @@ api.interceptors.response.use(
 
             try {
                 // 토큰 갱신 시도
-                const session = await fetchAuthSession({ forceRefresh: true })
+                const session = await fetchAuthSession({forceRefresh: true})
                 const newToken = session.tokens?.accessToken?.toString()
 
                 if (newToken) {

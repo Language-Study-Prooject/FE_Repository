@@ -18,7 +18,6 @@ import {
 import {
     ArrowBack as BackIcon,
     CheckCircle as CheckIcon,
-    EmojiEvents as TrophyIcon,
     LocalFireDepartment as FireIcon,
     MenuBook as BookIcon,
     Quiz as QuizIcon,
@@ -29,7 +28,7 @@ import {
     Warning as WarningIcon,
 } from '@mui/icons-material'
 import {statsService, voiceService} from '../services/vocabService'
-import {DIFFICULTY_LABELS, LEVEL_COLORS, LEVEL_LABELS, VOICE_TYPES} from '../constants/vocabConstants'
+import {DIFFICULTY_LABELS, LEVEL_LABELS, VOICE_TYPES} from '../constants/vocabConstants'
 import {useTranslation} from '../../../contexts/SettingsContext'
 import {useAuth} from '../../../contexts/AuthContext'
 import {BadgeSection} from '../../badge'
@@ -138,7 +137,8 @@ function LearningCalendar({data}) {
             {/* 요약 정보 */}
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="body2" color="text.secondary">
-                    최근 12주간 <Typography component="span" fontWeight={700} color="text.primary">{totalLearned}개</Typography> 단어 학습
+                    최근 12주간 <Typography component="span" fontWeight={700}
+                                        color="text.primary">{totalLearned}개</Typography> 단어 학습
                 </Typography>
                 <Chip
                     size="small"

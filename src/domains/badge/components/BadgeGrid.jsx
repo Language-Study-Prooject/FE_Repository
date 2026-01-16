@@ -64,7 +64,8 @@ export default function BadgeGrid({badges = [], loading = false, size = 'medium'
                 }}
             >
                 {Array.from({length: 6}).map((_, index) => (
-                    <Box key={index} sx={{display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0}}>
+                    <Box key={index}
+                         sx={{display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0}}>
                         <Skeleton variant="circular" width={72} height={72}/>
                         <Skeleton variant="text" width={50} sx={{mt: 1}}/>
                     </Box>
