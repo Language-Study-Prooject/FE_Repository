@@ -1,7 +1,7 @@
 import badgeApi from '../../../api/badgeApi'
 
-// Mock 데이터 사용 여부
-const USE_MOCK = true
+// Mock 데이터 사용 여부 (환경변수로 제어: VITE_USE_MOCK=true)
+const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
 
 // Placeholder 이미지 (실제 S3 이미지가 없을 경우 대비)
 const PLACEHOLDER_BADGE = 'https://via.placeholder.com/100x100/FFD700/000000?text=Badge'
@@ -188,7 +188,10 @@ const withMock = (apiCall, mockData) => {
             setTimeout(() => resolve(mockData), 500)
         })
     }
-    return apiCall().catch(() => mockData)
+    // 실제 API 호출 시 응답의 data 필드 추출 (백엔드 응답: { isSuccess, message, data })
+    return apiCall()
+        .then(response => response.data || response)
+        .catch(() => mockData)
 }
 
 /**

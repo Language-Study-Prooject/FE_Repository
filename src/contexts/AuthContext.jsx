@@ -20,10 +20,17 @@ export function AuthProvider({ children }) {
         checkAuthUser()
     }, [])
 
-    // 현재 인증된 사용자 확인
+    // 현재 인증된 사용자 확인 및 토큰 저장
     const checkAuthUser = async () => {
         try {
             const currentUser = await getCurrentUser()
+
+            // Cognito 세션에서 토큰 가져와서 localStorage에 저장
+            const session = await fetchAuthSession()
+            const idToken = session.tokens?.idToken?.toString()
+            if (idToken) {
+                localStorage.setItem('accessToken', idToken)
+            }
 
             setUser({
                 ...currentUser,
@@ -32,6 +39,7 @@ export function AuthProvider({ children }) {
             setIsAuthenticated(true)
         } catch (error) {
             // 로그인되지 않은 상태
+            localStorage.removeItem('accessToken')
             setUser(null)
             setIsAuthenticated(false)
         } finally {
@@ -131,6 +139,7 @@ export function AuthProvider({ children }) {
     const logout = useCallback(async () => {
         try {
             await signOut()
+            localStorage.removeItem('accessToken')
             setUser(null)
             setIsAuthenticated(false)
             return { success: true }

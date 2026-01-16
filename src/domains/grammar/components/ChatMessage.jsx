@@ -30,6 +30,8 @@ export default function ChatMessage({
         correctedContent,
         grammarScore,
         errors = [],
+        feedback,
+        isCorrect,
         aiResponse,
         conversationTip,
     } = message
@@ -176,6 +178,23 @@ export default function ChatMessage({
                                     </Box>
                                 ))}
                             </Box>
+
+                            {/* Feedback */}
+                            {feedback && (
+                                <Box
+                                    sx={{
+                                        mt: 2,
+                                        p: 1.5,
+                                        borderRadius: '8px',
+                                        backgroundColor: '#fef3c7',
+                                        border: '1px solid #fcd34d',
+                                    }}
+                                >
+                                    <Typography variant="caption" sx={{color: '#92400e', lineHeight: 1.5}}>
+                                        💡 {feedback}
+                                    </Typography>
+                                </Box>
+                            )}
                         </Box>
                     </Collapse>
                 </Box>
