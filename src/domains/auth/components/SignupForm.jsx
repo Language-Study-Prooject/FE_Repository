@@ -21,6 +21,7 @@ import {
     Close as CloseIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../../contexts/AuthContext';
+import EmailVerification from './EmailVerification'
 
 export default function SignupForm({ onSwitchToLogin }) {
     const { register } = useAuth()
@@ -101,6 +102,16 @@ export default function SignupForm({ onSwitchToLogin }) {
         return 'success'
     }
 
+    // 이메일 인증 화면
+    if (step === 'verify') {
+        return (
+            <EmailVerification
+                email={formData.email}
+                onComplete={onSwitchToLogin}
+                onBack={() => setStep('form')}
+            />
+        )
+    }
 
     return (
         <Box
