@@ -24,6 +24,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import EmailVerification from './EmailVerification'
 
 export default function SignupForm({ onSwitchToLogin }) {
+
     const { register } = useAuth()
 
     const [step, setStep] = useState('form')
