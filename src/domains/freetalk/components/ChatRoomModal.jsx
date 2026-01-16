@@ -61,6 +61,8 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
         connect: wsConnect,
         disconnect: wsDisconnect,
         sendMessage: wsSendMessage,
+        startGame: wsStartGame,
+        stopGame: wsStopGame,
         clearError: wsClearError,
         setMessages,
     } = useChatWebSocket(room?.id, currentUserId)
@@ -516,6 +518,8 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                                     roomId={room?.id}
                                     onGameMessage={handleGameMessage}
                                     initialGameStatus={gameStatus}
+                                    onStartGame={wsStartGame}
+                                    onStopGame={wsStopGame}
                                 />
                             </Box>
                         )}
