@@ -28,8 +28,7 @@ import WordDetailModal from '../components/WordDetailModal'
 import {myWordService, voiceService} from '../services/vocabService'
 import {LEVEL_LABELS, WORD_STATUS_LABELS,} from '../constants/vocabConstants'
 import {useTranslation} from '../../../contexts/SettingsContext'
-
-const TEMP_USER_ID = import.meta.env.VITE_TEMP_USER_ID || 'user1'
+import {useAuth} from '../../../contexts/AuthContext'
 const PAGE_SIZE = 20
 
 // 디바운스 훅
@@ -47,6 +46,8 @@ function useDebounce(value, delay) {
 export default function WordListPage() {
     const navigate = useNavigate()
     const {t} = useTranslation()
+    const {user} = useAuth()
+    const userId = user?.userId || user?.username
     const [searchParams] = useSearchParams()
     const observerRef = useRef(null)
     const loadMoreRef = useRef(null)
@@ -87,7 +88,7 @@ export default function WordListPage() {
                 params.incorrectOnly = true
             }
 
-            const response = await myWordService.getList(TEMP_USER_ID, params)
+            const response = await myWordService.getList(userId, params)
             const data = response?.data || response
             const newWords = data?.userWords || []
 
@@ -168,7 +169,7 @@ export default function WordListPage() {
         const newBookmarked = !word.bookmarked
 
         try {
-            await myWordService.toggleBookmark(TEMP_USER_ID, word.wordId, newBookmarked)
+            await myWordService.toggleBookmark(userId, word.wordId, newBookmarked)
 
             setUserWords(prev =>
                 prev.map(w =>

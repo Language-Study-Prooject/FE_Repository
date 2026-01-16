@@ -124,17 +124,22 @@ export default function WritingPage() {
             if (response.session) {
                 setLevel(response.session.level || GRAMMAR_LEVELS.BEGINNER)
             }
-            // Convert messages to our format
-            const formattedMessages = (response.messages || []).map((msg) => ({
-                id: msg.messageId,
-                content: msg.content,
-                correctedContent: msg.correctedContent,
-                grammarScore: msg.grammarScore,
-                errors: msg.errorsJson ? JSON.parse(msg.errorsJson) : [],
-                aiResponse: msg.role === 'ASSISTANT' ? msg.content : null,
-                isUser: msg.role === 'USER',
-                createdAt: msg.createdAt,
-            }))
+            // Convert messages to our format and sort by createdAt (oldest first)
+            const formattedMessages = (response.messages || [])
+                .map((msg) => ({
+                    id: msg.messageId,
+                    content: msg.content,
+                    correctedContent: msg.correctedContent,
+                    grammarScore: msg.grammarScore,
+                    errors: msg.errors || (msg.errorsJson ? JSON.parse(msg.errorsJson) : []),
+                    feedback: msg.feedback || null,
+                    isCorrect: msg.isCorrect,
+                    aiResponse: msg.role === 'ASSISTANT' ? msg.content : null,
+                    conversationTip: msg.conversationTip || null,
+                    isUser: msg.role === 'USER',
+                    createdAt: msg.createdAt,
+                }))
+                .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
             setMessages(formattedMessages)
         } catch (err) {
             console.error('Failed to load session messages:', err)

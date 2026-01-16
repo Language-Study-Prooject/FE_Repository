@@ -8,18 +8,21 @@ import {
     SkipNext as SkipIcon,
     Stop as StopIcon,
 } from '@mui/icons-material'
-import {GAME_STATUS, gameService, TEMP_USER_ID} from '../../chat/services/chatService'
+import {GAME_STATUS, gameService} from '../../chat/services/chatService'
+import {useAuth} from '../../../contexts/AuthContext'
 import {DESIGN_TOKENS} from '../../../theme/theme'
 
 const CANVAS_WIDTH = 340
 const CANVAS_HEIGHT = 200
 
-const GameModePanel = ({roomId, onGameMessage}) => {
+const GameModePanel = ({roomId, onGameMessage, initialGameStatus}) => {
     const theme = useTheme()
     const isDark = theme.palette.mode === 'dark'
+    const {user} = useAuth()
+    const currentUserId = user?.userId || user?.username
     const canvasRef = useRef(null)
     const [gameState, setGameState] = useState({
-        gameStatus: GAME_STATUS.NONE,
+        gameStatus: initialGameStatus || GAME_STATUS.NONE,
         currentRound: 0,
         totalRounds: 5,
         currentDrawerId: null,
@@ -35,7 +38,7 @@ const GameModePanel = ({roomId, onGameMessage}) => {
     const [brushSize, setBrushSize] = useState(3)
     const [loading, setLoading] = useState(false)
 
-    const isDrawer = gameState.currentDrawerId === TEMP_USER_ID
+    const isDrawer = gameState.currentDrawerId === currentUserId
     const isGameActive = gameState.gameStatus === GAME_STATUS.PLAYING
 
     // 게임 상태 조회
@@ -43,11 +46,32 @@ const GameModePanel = ({roomId, onGameMessage}) => {
         try {
             const response = await gameService.getStatus(roomId)
             const data = response.data || response
-            setGameState(data)
+            setGameState(prev => ({
+                ...prev,
+                ...data,
+                gameStatus: data.gameStatus || GAME_STATUS.NONE,
+            }))
         } catch (err) {
             console.error('Failed to fetch game status:', err)
         }
     }, [roomId])
+
+    // 마운트 시 게임 상태 조회
+    useEffect(() => {
+        if (roomId) {
+            fetchGameStatus()
+        }
+    }, [roomId, fetchGameStatus])
+
+    // 부모 컴포넌트의 게임 상태 변경 반영
+    useEffect(() => {
+        if (initialGameStatus) {
+            setGameState(prev => ({
+                ...prev,
+                gameStatus: initialGameStatus,
+            }))
+        }
+    }, [initialGameStatus])
 
     // 타이머
     useEffect(() => {

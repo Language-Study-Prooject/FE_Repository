@@ -1,7 +1,7 @@
 import grammarApi from '../../../api/grammarApi'
 
-// Mock 데이터 사용 여부 (true: 목 데이터 사용, false: 실제 API 호출)
-const USE_MOCK = true
+// Mock 데이터 사용 여부 (환경변수로 제어: VITE_USE_MOCK=true)
+const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
 
 // ============================================
 // Mock 데이터
@@ -116,7 +116,10 @@ const withMock = (apiCall, mockData) => {
             setTimeout(() => resolve(mockData), 800)
         })
     }
-    return apiCall().catch(() => mockData)
+    // 실제 API 호출 시 응답의 data 필드 추출 (백엔드 응답: { isSuccess, message, data })
+    return apiCall()
+        .then(response => response.data || response)
+        .catch(() => mockData)
 }
 
 /**
