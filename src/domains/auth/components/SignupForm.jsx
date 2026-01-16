@@ -42,13 +42,31 @@ export default function SignupForm({ onSwitchToLogin }) {
         setError('')
     }
 
+    const isPasswordValid = passwordStrength >= 4
+
     const handleSubmit = async (e) => {
         e.preventDefault()
         setError('')
         setSuccess('')
         setIsLoading(true)
 
-        // TODO : 유효성 검사 추가
+        // 유효성 검사 
+        if (!formData.email || !formData.password || !formData.confirmPassword) {
+            setError('모든 필드를 입력해주세요.')
+            setIsLoading(false)
+            return
+        }
+        if (!isPasswordValid) {
+            setError('비밀번호 조건을 충족해주세요.')
+            setIsLoading(false)
+            return
+        }
+
+        if (formData.password !== formData.confirmPassword) {
+            setError('비밀번호가 일치하지 않습니다.')
+            setIsLoading(false)
+            return
+        }
 
         try {
             const result = await register(formData.email, formData.password)
