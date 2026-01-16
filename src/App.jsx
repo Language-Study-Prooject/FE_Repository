@@ -219,7 +219,7 @@ function Dashboard() {
                     const hasChildren = mode.children && mode.children.length > 0
 
                     return (
-                        <Grid item xs={12} md={6} key={mode.id}>
+                        <Grid key={mode.id} size={{xs: 12, md: 6}}>
                             <Card
                                 onMouseEnter={() => handleCardHover(mode.id)}
                                 onMouseLeave={handleCardLeave}
@@ -467,7 +467,7 @@ function ReportsPage() {
 
             {/* 통계 요약 카드 */}
             <Grid container spacing={2} sx={{ mb: 4 }}>
-                <Grid item xs={6} md={3}>
+                <Grid size={{xs: 6, md: 3}}>
                     <Card sx={{ p: 2.5, borderRadius: '16px', height: '100%' }}>
                         <Typography variant="body2" color="text.secondary" gutterBottom>
                             {isKorean ? '총 학습일' : 'Study Days'}
@@ -480,7 +480,7 @@ function ReportsPage() {
                         </Typography>
                     </Card>
                 </Grid>
-                <Grid item xs={6} md={3}>
+                <Grid size={{xs: 6, md: 3}}>
                     <Card sx={{ p: 2.5, borderRadius: '16px', height: '100%' }}>
                         <Typography variant="body2" color="text.secondary" gutterBottom>
                             {isKorean ? '학습한 단어' : 'Words Learned'}
@@ -493,7 +493,7 @@ function ReportsPage() {
                         </Typography>
                     </Card>
                 </Grid>
-                <Grid item xs={6} md={3}>
+                <Grid size={{xs: 6, md: 3}}>
                     <Card sx={{ p: 2.5, borderRadius: '16px', height: '100%' }}>
                         <Typography variant="body2" color="text.secondary" gutterBottom>
                             {isKorean ? '테스트 완료' : 'Tests Taken'}
@@ -506,7 +506,7 @@ function ReportsPage() {
                         </Typography>
                     </Card>
                 </Grid>
-                <Grid item xs={6} md={3}>
+                <Grid size={{xs: 6, md: 3}}>
                     <Card sx={{ p: 2.5, borderRadius: '16px', height: '100%' }}>
                         <Typography variant="body2" color="text.secondary" gutterBottom>
                             {isKorean ? '평균 점수' : 'Average Score'}
@@ -527,7 +527,7 @@ function ReportsPage() {
                     {isKorean ? '연속 학습 기록' : 'Study Streak'}
                 </Typography>
                 <Grid container spacing={3}>
-                    <Grid item xs={6}>
+                    <Grid size={{xs: 6}}>
                         <Box
                             sx={{
                                 p: 2,
@@ -544,7 +544,7 @@ function ReportsPage() {
                             </Typography>
                         </Box>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid size={{xs: 6}}>
                         <Box
                             sx={{
                                 p: 2,
@@ -626,7 +626,7 @@ function SettingsPage() {
                     <CardContent sx={{ p: 3 }}>
                         <Grid container spacing={2}>
                             {languageOptions.map((option) => (
-                                <Grid item xs={6} key={option.value}>
+                                <Grid key={option.value} size={{xs: 6}}>
                                     <Box
                                         onClick={() => setLanguage(option.value)}
                                         sx={{
@@ -678,7 +678,7 @@ function SettingsPage() {
                     </Box>
                     <CardContent sx={{ p: 3 }}>
                         <Grid container spacing={2}>
-                            <Grid item xs={6}>
+                            <Grid size={{xs: 6}}>
                                 <Box
                                     onClick={() => setTtsVoice('FEMALE')}
                                     sx={{
@@ -720,7 +720,7 @@ function SettingsPage() {
                                     </Typography>
                                 </Box>
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid size={{xs: 6}}>
                                 <Box
                                     onClick={() => setTtsVoice('MALE')}
                                     sx={{

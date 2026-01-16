@@ -97,9 +97,18 @@ const FreetalkPeoplePage = () => {
             const transformedRooms = (responseData.rooms || []).map(transformRoomData)
 
             if (isLoadMore) {
-                setRooms((prev) => [...prev, ...transformedRooms])
+                // 중복 제거
+                setRooms((prev) => {
+                    const existingIds = new Set(prev.map(r => r.id))
+                    const newRooms = transformedRooms.filter(r => !existingIds.has(r.id))
+                    return [...prev, ...newRooms]
+                })
             } else {
-                setRooms(transformedRooms)
+                // 중복 제거
+                const uniqueRooms = transformedRooms.filter(
+                    (room, index, self) => index === self.findIndex(r => r.id === room.id)
+                )
+                setRooms(uniqueRooms)
             }
 
             setCursor(responseData.nextCursor || null)
@@ -131,7 +140,11 @@ const FreetalkPeoplePage = () => {
                 const response = await chatRoomService.getList(params)
                 const responseData = response.data || response
                 const transformedRooms = (responseData.rooms || []).map(transformRoomData)
-                setRooms(transformedRooms)
+                // 중복 제거
+                const uniqueRooms = transformedRooms.filter(
+                    (room, index, self) => index === self.findIndex(r => r.id === room.id)
+                )
+                setRooms(uniqueRooms)
                 setCursor(responseData.nextCursor || null)
                 setHasMore(!!responseData.nextCursor)
             } catch (err) {
@@ -177,7 +190,11 @@ const FreetalkPeoplePage = () => {
             const response = await chatRoomService.getList(params)
             const responseData = response.data || response
             const transformedRooms = (responseData.rooms || []).map(transformRoomData)
-            setRooms(transformedRooms)
+            // 중복 제거
+            const uniqueRooms = transformedRooms.filter(
+                (room, index, self) => index === self.findIndex(r => r.id === room.id)
+            )
+            setRooms(uniqueRooms)
             setCursor(responseData.nextCursor || null)
             setHasMore(!!responseData.nextCursor)
         } catch (err) {
@@ -308,11 +325,8 @@ const FreetalkPeoplePage = () => {
             <Grid container spacing={2} alignItems="stretch">
                 {filteredRooms.map((room, index) => (
                     <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        md={4}
                         key={room.id}
+                        size={{xs: 12, sm: 6, md: 4}}
                         sx={{display: 'flex'}}
                         ref={index === filteredRooms.length - 1 ? lastRoomRef : null}
                     >

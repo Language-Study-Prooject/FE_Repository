@@ -26,8 +26,7 @@ import {
 import TestQuestion from '../components/TestQuestion'
 import {testService} from '../services/vocabService'
 import {useTranslation} from '../../../contexts/SettingsContext'
-
-const TEMP_USER_ID = import.meta.env.VITE_TEMP_USER_ID || 'user1'
+import {useAuth} from '../../../contexts/AuthContext'
 const QUESTION_TIME_LIMIT = 5
 
 // Test Setup Screen
@@ -457,6 +456,8 @@ function TestResult({result, onRetry, onHome, t}) {
 export default function TestPage() {
     const navigate = useNavigate()
     const {t} = useTranslation()
+    const {user} = useAuth()
+    const userId = user?.userId || user?.username
     const [phase, setPhase] = useState('setup')
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
@@ -497,7 +498,7 @@ export default function TestPage() {
 
     const fetchRecentResults = async () => {
         try {
-            const response = await testService.getResults(TEMP_USER_ID, {limit: 5})
+            const response = await testService.getResults(userId, {limit: 5})
             setRecentResults(response?.testResults || [])
         } catch (err) {
             console.error('Fetch results error:', err)
@@ -508,7 +509,7 @@ export default function TestPage() {
         try {
             setLoading(true)
             setError(null)
-            const response = await testService.start(TEMP_USER_ID, 'DAILY')
+            const response = await testService.start(userId, 'DAILY')
 
             const testData = response?.data || response
             if (testData?.testId) {
@@ -554,7 +555,7 @@ export default function TestPage() {
                 answer: answers[q.wordId] || '',
             }))
 
-            const response = await testService.submit(TEMP_USER_ID, testId, answersArray)
+            const response = await testService.submit(userId, testId, answersArray)
 
             const resultData = response?.data || response
             if (resultData) {
