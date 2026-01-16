@@ -21,9 +21,13 @@ import {
     Close as CloseIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../../contexts/AuthContext';
+import EmailVerification from './EmailVerification'
 
 export default function SignupForm({ onSwitchToLogin }) {
+
     const { register } = useAuth()
+
+    const [step, setStep] = useState('form')
 
     const [formData, setFormData] = useState({
         email: '',
@@ -36,12 +40,20 @@ export default function SignupForm({ onSwitchToLogin }) {
     const [success, setSuccess] = useState('')
     const [isLoading, setIsLoading] = useState(false)
 
+    const passwordChecks = {
+        length: formData.password.length >= 8,
+        lowercase: /[a-z]/.test(formData.password),
+        number: /[0-9]/.test(formData.password),
+        special: /[!@#$%^&*(),.?":{}|<>]/.test(formData.password),
+    };
+
     const handleChange = (e) => {
         const { name, value } = e.target
         setFormData((prev) => ({ ...prev, [name]: value }))
         setError('')
     }
 
+    const passwordStrength = Object.values(passwordChecks).filter(Boolean).length
     const isPasswordValid = passwordStrength >= 4
 
     const handleSubmit = async (e) => {
@@ -84,6 +96,23 @@ export default function SignupForm({ onSwitchToLogin }) {
         }
     }
 
+    // 비밀번호 강도 표시
+    const getStrengthColor = () => {
+        if (passwordStrength <= 2) return 'error'
+        if (passwordStrength <= 3) return 'warning'
+        return 'success'
+    }
+
+    // 이메일 인증 화면
+    if (step === 'verify') {
+        return (
+            <EmailVerification
+                email={formData.email}
+                onComplete={onSwitchToLogin}
+                onBack={() => setStep('form')}
+            />
+        )
+    }
 
     return (
         <Box
@@ -178,7 +207,57 @@ export default function SignupForm({ onSwitchToLogin }) {
                     }}
                 />
 
-                {/* TODO : 비밀번호 강도 표시 추가 */}
+                {formData.password && (
+                    <Box sx={{ mt: 1.5 }}>
+                        {/* 세그먼트 바 + 강도 텍스트 */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                            {/* 20칸 세그먼트 바 */}
+                            <Box sx={{ display: 'flex', gap: '2px', flex: 1 }}>
+                                {[...Array(20)].map((_, index) => (
+                                    <Box
+                                        key={index}
+                                        sx={{
+                                            flex: 1,
+                                            height: 4,
+                                            borderRadius: 0.5,
+                                            backgroundColor: index < passwordStrength * 5
+                                                ? passwordStrength <= 1 ? '#ef4444'
+                                                    : passwordStrength <= 2 ? '#f59e0b'
+                                                        : passwordStrength <= 3 ? '#84cc16'
+                                                            : '#10b981'
+                                                : '#e5e7eb',
+                                        }}
+                                    />
+                                ))}
+                            </Box>
+                            {/* 강도 텍스트 */}
+                            <Typography
+                                variant="caption"
+                                fontWeight={600}
+                                sx={{
+                                    minWidth: 40,
+                                    color: passwordStrength <= 1 ? '#ef4444'
+                                        : passwordStrength <= 2 ? '#f59e0b'
+                                            : passwordStrength <= 3 ? '#84cc16'
+                                                : '#10b981',
+                                }}
+                            >
+                                {passwordStrength <= 1 ? '약함'
+                                    : passwordStrength <= 2 ? '보통'
+                                        : passwordStrength <= 3 ? '좋음'
+                                            : '강함'}
+                            </Typography>
+                        </Box>
+                        {/* 체크 항목 */}
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                            <PasswordCheck checked={passwordChecks.length} label="8자 이상" />
+                            <PasswordCheck checked={passwordChecks.lowercase} label="소문자" />
+                            <PasswordCheck checked={passwordChecks.number} label="숫자" />
+                            <PasswordCheck checked={passwordChecks.special} label="특수문자" />
+                        </Box>
+                    </Box>
+                )}
+
             </Box>
 
             {/* 비밀번호 확인 */}
@@ -261,6 +340,28 @@ export default function SignupForm({ onSwitchToLogin }) {
                     </Link>
                 </Typography>
             </Box>
+        </Box>
+    )
+}
+
+// 비밀번호 체크 아이템 컴포넌트
+function PasswordCheck({ checked, label }) {
+    return (
+        <Box
+            sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                fontSize: '0.75rem',
+                color: checked ? 'success.main' : 'text.disabled',
+            }}
+        >
+            {checked ? (
+                <CheckIcon sx={{ fontSize: 14 }} />
+            ) : (
+                <CloseIcon sx={{ fontSize: 14 }} />
+            )}
+            {label}
         </Box>
     )
 }
