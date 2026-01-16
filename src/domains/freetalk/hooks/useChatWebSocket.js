@@ -180,6 +180,7 @@ export function useChatWebSocket(roomId, userId) {
 
     /**
      * 메시지 전송
+     * - optimistic update 제거: 서버 브로드캐스트만 표시하여 중복 방지
      */
     const sendMessage = useCallback((content, messageType = 'TEXT') => {
         if (!isConnectedRef.current) {
@@ -187,24 +188,8 @@ export function useChatWebSocket(roomId, userId) {
             return false
         }
 
-        const success = chatWebSocketService.sendMessage(content, messageType)
-
-        if (success) {
-            // Optimistic update - 자신의 메시지 즉시 추가
-            const optimisticMessage = {
-                id: `temp-${Date.now()}`,
-                content,
-                userId,
-                messageType,
-                createdAt: new Date().toISOString(),
-                isOwn: true,
-                isPending: true,
-            }
-            setMessages((prev) => [...prev, optimisticMessage])
-        }
-
-        return success
-    }, [userId])
+        return chatWebSocketService.sendMessage(content, messageType)
+    }, [])
 
     /**
      * 게임 시작
