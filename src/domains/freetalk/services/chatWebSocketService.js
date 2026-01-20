@@ -49,10 +49,8 @@ class ChatWebSocketConnection {
                     this.reconnectAttempts = 0
                     console.log('[ChatWebSocket] Connected')
 
-                    // 연결 후 방 입장 메시지 전송
-                    if (roomId) {
-                        this.joinRoom(roomId)
-                    }
+                    // 연결 후 방 입장은 roomToken으로 이미 처리됨
+                    // joinRoom action은 서버에서 지원하지 않음 (Forbidden)
 
                     resolve()
                 }
@@ -107,49 +105,75 @@ class ChatWebSocketConnection {
      */
     handleMessage(data) {
         const {type, messageType} = data
+        console.log('[ChatWebSocket] Received message:', {type, messageType, data})
 
-        // 메시지 타입에 따라 콜백 호출
+        // 메시지 타입에 따라 콜백 호출 (대소문자 모두 처리)
         switch (type || messageType) {
             case 'message':
             case 'TEXT':
                 this.callbacks.onMessage?.(data)
                 break
             case 'game_start':
+            case 'GAME_START':
                 this.callbacks.onGameStart?.(data)
                 break
             case 'game_end':
+            case 'GAME_END':
                 this.callbacks.onGameEnd?.(data)
                 break
             case 'round_start':
+            case 'ROUND_START':
+                console.log('[ChatWebSocket] Round start received:', data)
                 this.callbacks.onRoundStart?.(data)
                 break
             case 'round_end':
+            case 'ROUND_END':
+                console.log('[ChatWebSocket] Round end received:', data)
                 this.callbacks.onRoundEnd?.(data)
                 break
             case 'drawing':
+            case 'DRAWING':
+                console.log('[ChatWebSocket] Drawing data received:', data)
                 this.callbacks.onDrawing?.(data)
                 break
+            case 'drawing_clear':
+            case 'DRAWING_CLEAR':
+                console.log('[ChatWebSocket] Drawing clear received')
+                this.callbacks.onDrawingClear?.()
+                break
             case 'correct_answer':
+            case 'CORRECT_ANSWER':
+                console.log('[ChatWebSocket] Correct answer received:', data)
                 this.callbacks.onCorrectAnswer?.(data)
                 break
             case 'score_update':
+            case 'SCORE_UPDATE':
                 this.callbacks.onScoreUpdate?.(data)
                 break
             case 'hint':
+            case 'HINT':
                 this.callbacks.onHint?.(data)
                 break
             case 'user_join':
+            case 'USER_JOIN':
                 this.callbacks.onUserJoin?.(data)
                 break
             case 'user_leave':
+            case 'USER_LEAVE':
                 this.callbacks.onUserLeave?.(data)
                 break
             case 'system_command':
+            case 'SYSTEM_COMMAND':
                 // 시스템 명령어 응답 (예: /member, /help 등)
                 this.callbacks.onMessage?.(data)
                 break
             case 'error':
+            case 'ERROR':
                 this.callbacks.onError?.(data)
+                break
+            case 'GUESS':
+                // 추측 메시지 - 일반 메시지로 처리
+                this.callbacks.onMessage?.(data)
                 break
             default:
                 console.log('[ChatWebSocket] Unknown message type:', type || messageType, data)
@@ -188,6 +212,7 @@ class ChatWebSocketConnection {
             return false
         }
 
+        console.log('[ChatWebSocket] Sending message with userId:', this.userId, 'content:', content)
         this.send({
             action: 'sendMessage',
             roomId: this.roomId,
@@ -213,14 +238,34 @@ class ChatWebSocketConnection {
     }
 
     /**
-     * 그리기 데이터 전송
+     * 그리기 데이터 전송 - sendMessage action 사용
      */
     sendDrawing(drawingData) {
+        console.log('[ChatWebSocket] sendDrawing called:', drawingData)
+        // 서버가 sendMessage action만 지원하므로 messageType으로 구분
+        // content는 반드시 문자열이어야 함
+        const content = typeof drawingData === 'string' ? drawingData : JSON.stringify(drawingData)
+        console.log('[ChatWebSocket] sendDrawing content:', content)
         this.send({
-            action: 'sendDrawing',
+            action: 'sendMessage',
             roomId: this.roomId,
             userId: this.userId,
-            drawingData,
+            content: content,
+            messageType: 'DRAWING',
+        })
+    }
+
+    /**
+     * 캔버스 초기화 전송
+     */
+    clearDrawing() {
+        console.log('[ChatWebSocket] clearDrawing called')
+        this.send({
+            action: 'sendMessage',
+            roomId: this.roomId,
+            userId: this.userId,
+            content: '',
+            messageType: 'DRAWING_CLEAR',
         })
     }
 
@@ -336,6 +381,14 @@ export const chatWebSocketService = {
     sendDrawing(drawingData) {
         const instance = this.getInstance()
         return instance.sendDrawing(drawingData)
+    },
+
+    /**
+     * 캔버스 초기화 전송
+     */
+    clearDrawing() {
+        const instance = this.getInstance()
+        return instance.clearDrawing()
     },
 
     /**

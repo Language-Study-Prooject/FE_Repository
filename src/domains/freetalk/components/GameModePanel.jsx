@@ -15,7 +15,7 @@ import {DESIGN_TOKENS} from '../../../theme/theme'
 const CANVAS_WIDTH = 340
 const CANVAS_HEIGHT = 200
 
-const GameModePanel = ({roomId, onGameMessage, initialGameStatus, onStartGame, onStopGame}) => {
+const GameModePanel = ({roomId, onGameMessage, initialGameStatus, wsGameState, isConnected, onStartGame, onStopGame, onSendMessage, onSendDrawing, onClearDrawing, receivedDrawing, onDrawingProcessed, shouldClearCanvas, onCanvasCleared, messages, correctAnswerBubble, onBubbleProcessed}) => {
     const theme = useTheme()
     const isDark = theme.palette.mode === 'dark'
     const {user} = useAuth()
@@ -37,9 +37,30 @@ const GameModePanel = ({roomId, onGameMessage, initialGameStatus, onStartGame, o
     const [brushColor, setBrushColor] = useState('#000000')
     const [brushSize, setBrushSize] = useState(3)
     const [loading, setLoading] = useState(false)
+    const [currentStroke, setCurrentStroke] = useState([]) // 현재 그리는 스트로크
+    const [bubbles, setBubbles] = useState([]) // 비눗방울 애니메이션
 
     const isDrawer = gameState.currentDrawerId === currentUserId
     const isGameActive = gameState.gameStatus === GAME_STATUS.PLAYING
+
+    // 최신 값을 interval에서 사용하기 위한 ref
+    const isDrawerRef = useRef(isDrawer)
+    const isConnectedRef = useRef(isConnected)
+    const onSendMessageRef = useRef(onSendMessage)
+    useEffect(() => {
+        isDrawerRef.current = isDrawer
+        isConnectedRef.current = isConnected
+        onSendMessageRef.current = onSendMessage
+    }, [isDrawer, isConnected, onSendMessage])
+
+    // 디버깅 로그
+    console.log('[GameModePanel] State:', {
+        isDrawer,
+        isGameActive,
+        currentDrawerId: gameState.currentDrawerId,
+        currentUserId,
+        gameStatus: gameState.gameStatus
+    })
 
     // 게임 상태 조회
     const fetchGameStatus = useCallback(async () => {
@@ -73,17 +94,48 @@ const GameModePanel = ({roomId, onGameMessage, initialGameStatus, onStartGame, o
         }
     }, [initialGameStatus])
 
-    // 타이머
+    // WebSocket 게임 상태 동기화 (제시어, 출제자, 라운드 등)
+    useEffect(() => {
+        if (wsGameState) {
+            console.log('[GameModePanel] Syncing wsGameState:', wsGameState)
+            setGameState(prev => ({
+                ...prev,
+                gameStatus: wsGameState.status === 'PLAYING' ? GAME_STATUS.PLAYING :
+                           wsGameState.status === 'FINISHED' ? GAME_STATUS.NONE : prev.gameStatus,
+                currentRound: wsGameState.currentRound ?? prev.currentRound,
+                totalRounds: wsGameState.totalRounds ?? prev.totalRounds,
+                currentDrawerId: wsGameState.currentDrawerId ?? prev.currentDrawerId,
+                currentWord: wsGameState.currentWord ?? prev.currentWord,
+                roundStartTime: wsGameState.roundStartTime ?? prev.roundStartTime,
+                scores: wsGameState.scores ?? prev.scores,
+                hintUsed: wsGameState.hintUsed ?? prev.hintUsed,
+                hint: wsGameState.hint ?? prev.hint,
+            }))
+        }
+    }, [wsGameState])
+
+    // 타이머 + 자동 스킵 (출제자만)
+    const autoSkipSentRef = useRef(false)
     useEffect(() => {
         if (!isGameActive || !gameState.roundStartTime) return
+
+        // 새 라운드 시작 시 autoSkip 플래그 초기화
+        autoSkipSentRef.current = false
 
         const interval = setInterval(() => {
             const elapsed = Math.floor((Date.now() - gameState.roundStartTime) / 1000)
             const remaining = Math.max(0, gameState.roundTimeLimit - elapsed)
             setTimeLeft(remaining)
 
-            if (remaining === 0) {
-                // 시간 초과 처리
+            // 시간 초과 시 자동 스킵 (출제자만, 연결된 경우만, 한 번만 전송)
+            // ref를 사용해서 최신 값 확인
+            if (remaining === 0 && isDrawerRef.current && isConnectedRef.current && !autoSkipSentRef.current && onSendMessageRef.current) {
+                console.log('[GameModePanel] Time expired, auto-skipping... isDrawer:', isDrawerRef.current, 'isConnected:', isConnectedRef.current)
+                autoSkipSentRef.current = true
+                onSendMessageRef.current('/skip', 'TEXT')
+                clearInterval(interval)
+            } else if (remaining === 0) {
+                console.log('[GameModePanel] Time expired, but cannot skip. isDrawer:', isDrawerRef.current, 'isConnected:', isConnectedRef.current)
                 clearInterval(interval)
             }
         }, 1000)
@@ -93,9 +145,11 @@ const GameModePanel = ({roomId, onGameMessage, initialGameStatus, onStartGame, o
 
     // 게임 시작 - WebSocket을 통해 /start 명령어 전송 (서버에서 인원 검증)
     const handleStartGame = () => {
+        console.log('[GameModePanel] handleStartGame called, onStartGame:', !!onStartGame)
         if (onStartGame) {
             // WebSocket으로 /start 명령어 전송 (채팅창에서 /start 입력과 동일)
-            onStartGame()
+            const result = onStartGame()
+            console.log('[GameModePanel] onStartGame result:', result)
         } else {
             // fallback: REST API 사용 (WebSocket 미연결 시)
             setLoading(true)
@@ -179,28 +233,57 @@ const GameModePanel = ({roomId, onGameMessage, initialGameStatus, onStartGame, o
     }
 
     // 캔버스 초기화
-    const clearCanvas = () => {
+    const clearCanvas = (sendToOthers = false) => {
         const canvas = canvasRef.current
         if (!canvas) return
         const ctx = canvas.getContext('2d')
         ctx.fillStyle = '#ffffff'
         ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+        // 다른 사용자에게도 초기화 메시지 전송
+        if (sendToOthers && onClearDrawing) {
+            onClearDrawing()
+        }
     }
 
-    // 캔버스 드로잉
+    // 캔버스 드로잉 - 스트로크 배열 방식
     const startDrawing = (e) => {
         if (!isDrawer) return
+        const canvas = canvasRef.current
+        if (!canvas) return
+
+        const rect = canvas.getBoundingClientRect()
+        const x = e.clientX - rect.left
+        const y = e.clientY - rect.top
+
         setIsDrawing(true)
-        draw(e)
+        // 스트로크 시작
+        setCurrentStroke([{x, y, type: 'start', color: brushColor, width: brushSize}])
+
+        const ctx = canvas.getContext('2d')
+        ctx.beginPath()
+        ctx.moveTo(x, y)
     }
 
     const stopDrawing = () => {
+        if (!isDrawing) return
         setIsDrawing(false)
+
         const canvas = canvasRef.current
         if (canvas) {
             const ctx = canvas.getContext('2d')
             ctx.beginPath()
         }
+
+        // 스트로크 완료 시 WebSocket으로 전송
+        if (currentStroke.length > 0 && onSendDrawing) {
+            const strokeData = [...currentStroke, {type: 'end'}]
+            console.log('[GameModePanel] Sending stroke:', strokeData)
+            onSendDrawing(JSON.stringify(strokeData))
+        } else {
+            console.log('[GameModePanel] Not sending:', {strokeLength: currentStroke.length, hasOnSendDrawing: !!onSendDrawing})
+        }
+        setCurrentStroke([])
     }
 
     const draw = (e) => {
@@ -220,14 +303,125 @@ const GameModePanel = ({roomId, onGameMessage, initialGameStatus, onStartGame, o
         ctx.stroke()
         ctx.beginPath()
         ctx.moveTo(x, y)
+
+        // 스트로크에 좌표 추가
+        setCurrentStroke(prev => [...prev, {x, y, type: 'move'}])
     }
 
-    // 캔버스 초기화
+    // 캔버스 초기화 (라운드 변경 시)
     useEffect(() => {
         if (canvasRef.current) {
             clearCanvas()
         }
     }, [gameState.currentRound])
+
+    // 원격 캔버스 초기화 (다른 사용자가 초기화 시)
+    useEffect(() => {
+        if (shouldClearCanvas && canvasRef.current) {
+            console.log('[GameModePanel] Clearing canvas from remote')
+            clearCanvas(false) // 다시 전송하지 않음
+            onCanvasCleared?.()
+        }
+    }, [shouldClearCanvas, onCanvasCleared])
+
+    // 수신된 그리기 데이터를 캔버스에 그리기
+    useEffect(() => {
+        if (!receivedDrawing || !canvasRef.current) return
+
+        const canvas = canvasRef.current
+        const ctx = canvas.getContext('2d')
+
+        try {
+            // content에서 스트로크 데이터 파싱
+            const content = receivedDrawing.content
+            const strokeData = typeof content === 'string' ? JSON.parse(content) : content
+
+            console.log('[GameModePanel] Drawing received stroke:', strokeData)
+
+            if (!Array.isArray(strokeData)) return
+
+            // 스트로크 그리기
+            strokeData.forEach((point, index) => {
+                if (point.type === 'start') {
+                    ctx.beginPath()
+                    ctx.moveTo(point.x, point.y)
+                    ctx.lineWidth = point.width || 3
+                    ctx.lineCap = 'round'
+                    ctx.strokeStyle = point.color || '#000000'
+                } else if (point.type === 'move') {
+                    ctx.lineTo(point.x, point.y)
+                    ctx.stroke()
+                    ctx.beginPath()
+                    ctx.moveTo(point.x, point.y)
+                } else if (point.type === 'end') {
+                    ctx.beginPath()
+                }
+            })
+
+            // 처리 완료 알림
+            onDrawingProcessed?.()
+        } catch (err) {
+            console.error('[GameModePanel] Error drawing received data:', err)
+        }
+    }, [receivedDrawing, onDrawingProcessed])
+
+    // 비눗방울 애니메이션 생성
+    const createBubble = useCallback((userId, content, isCorrect = false) => {
+        const id = `bubble-${Date.now()}-${Math.random()}`
+        const bubble = {
+            id,
+            userId,
+            content,
+            isCorrect,
+            x: Math.random() * (CANVAS_WIDTH - 100) + 50, // 랜덤 x 위치
+            startTime: Date.now(),
+        }
+        setBubbles(prev => [...prev, bubble])
+
+        // 3초 후 자동 삭제
+        setTimeout(() => {
+            setBubbles(prev => prev.filter(b => b.id !== id))
+        }, 3000)
+    }, [])
+
+    // correctAnswerBubble prop으로 정답 버블 생성 (정답일 때 특별 효과)
+    // + 정답 시 자동으로 다음 라운드로 이동 (출제자만)
+    useEffect(() => {
+        if (correctAnswerBubble) {
+            createBubble(correctAnswerBubble.userId, correctAnswerBubble.content, true) // isCorrect = true
+            onBubbleProcessed?.()
+
+            // 출제자인 경우 2초 후 자동으로 다음 라운드로 이동 (연결된 경우만)
+            if (isDrawer && isConnected && onSendMessage) {
+                console.log('[GameModePanel] Correct answer! Auto-skipping in 2 seconds...')
+                setTimeout(() => {
+                    // 다시 한번 연결 상태 확인
+                    if (isConnectedRef.current && onSendMessageRef.current) {
+                        console.log('[GameModePanel] Auto-skipping to next round...')
+                        onSendMessageRef.current('/skip', 'TEXT')
+                    }
+                }, 2000) // 2초 대기 후 스킵 (정답 효과 보여주기 위해)
+            }
+        }
+    }, [correctAnswerBubble, createBubble, onBubbleProcessed, isDrawer, isConnected, onSendMessage])
+
+    // 게임 중 모든 채팅 메시지를 비눗방울로 표시
+    const lastMessageIdRef = useRef(null)
+    useEffect(() => {
+        if (!isGameActive || !messages || messages.length === 0) return
+
+        // 마지막 메시지만 처리 (중복 방지)
+        const lastMessage = messages[messages.length - 1]
+        if (!lastMessage || lastMessage.id === lastMessageIdRef.current) return
+        if (lastMessage.isSystem || lastMessage.messageType === 'SYSTEM') return
+        if (lastMessage.messageType === 'DRAWING' || lastMessage.messageType === 'DRAWING_CLEAR') return
+
+        // 출제자의 메시지는 제외 (출제자가 답을 알려줘선 안 됨)
+        if (lastMessage.userId === gameState.currentDrawerId) return
+
+        lastMessageIdRef.current = lastMessage.id
+        createBubble(lastMessage.userId, lastMessage.content, false) // isCorrect = false
+    }, [messages, isGameActive, gameState.currentDrawerId, createBubble])
 
     // 점수 정렬
     const sortedScores = Object.entries(gameState.scores || {})
@@ -243,7 +437,10 @@ const GameModePanel = ({roomId, onGameMessage, initialGameStatus, onStartGame, o
                 <Button
                     variant="contained"
                     startIcon={<PlayIcon/>}
-                    onClick={handleStartGame}
+                    onClick={() => {
+                        console.log('[GameModePanel] Button clicked!')
+                        handleStartGame()
+                    }}
                     disabled={loading}
                     size="small"
                 >
@@ -324,6 +521,7 @@ const GameModePanel = ({roomId, onGameMessage, initialGameStatus, onStartGame, o
                     flexDirection: 'column',
                     p: 1,
                     bgcolor: isDark ? 'rgba(255,255,255,0.03)' : '#f5f5f5',
+                    position: 'relative',
                 }}
             >
                 <canvas
@@ -343,6 +541,83 @@ const GameModePanel = ({roomId, onGameMessage, initialGameStatus, onStartGame, o
                         height: CANVAS_HEIGHT,
                     }}
                 />
+
+                {/* 비눗방울 애니메이션 (모든 추측 + 정답) */}
+                {bubbles.map(bubble => {
+                    const elapsed = (Date.now() - bubble.startTime) / 1000
+                    const progress = Math.min(elapsed / 3, 1) // 3초 동안 애니메이션
+                    const y = CANVAS_HEIGHT * (1 - progress) // 아래에서 위로
+                    const opacity = 1 - progress * 0.8 // 점점 투명해짐
+                    const scale = 1 + progress * 0.3 // 약간 커짐
+
+                    return (
+                        <Box
+                            key={bubble.id}
+                            sx={{
+                                position: 'absolute',
+                                left: bubble.x,
+                                top: y,
+                                transform: `translate(-50%, -50%) scale(${scale})`,
+                                opacity,
+                                pointerEvents: 'none',
+                                transition: 'all 0.1s linear',
+                                animation: 'float 3s ease-out forwards',
+                                '@keyframes float': {
+                                    '0%': {
+                                        transform: 'translate(-50%, 0) scale(1)',
+                                        opacity: 1,
+                                    },
+                                    '100%': {
+                                        transform: 'translate(-50%, -200px) scale(1.3)',
+                                        opacity: 0,
+                                    },
+                                },
+                            }}
+                        >
+                            <Box
+                                sx={{
+                                    // 정답은 금색, 일반 추측은 파란색 비눗방울
+                                    background: bubble.isCorrect
+                                        ? 'linear-gradient(135deg, rgba(255,215,0,0.95) 0%, rgba(255,193,7,0.9) 50%, rgba(255,152,0,0.85) 100%)'
+                                        : 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(173,216,230,0.8) 50%, rgba(135,206,250,0.7) 100%)',
+                                    borderRadius: '50%',
+                                    padding: '8px 12px',
+                                    boxShadow: bubble.isCorrect
+                                        ? '0 4px 20px rgba(255,193,7,0.5), inset 0 -2px 10px rgba(255,255,255,0.6)'
+                                        : '0 4px 15px rgba(100,149,237,0.3), inset 0 -2px 10px rgba(255,255,255,0.5)',
+                                    border: bubble.isCorrect
+                                        ? '2px solid rgba(255,215,0,0.8)'
+                                        : '1px solid rgba(255,255,255,0.6)',
+                                    backdropFilter: 'blur(2px)',
+                                    minWidth: 60,
+                                    textAlign: 'center',
+                                }}
+                            >
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        display: 'block',
+                                        fontWeight: 700,
+                                        color: bubble.isCorrect ? '#b8860b' : '#1565c0',
+                                        fontSize: '0.65rem',
+                                    }}
+                                >
+                                    {bubble.isCorrect ? '🎉 ' : ''}{bubble.userId}
+                                </Typography>
+                                <Typography
+                                    variant="body2"
+                                    sx={{
+                                        fontWeight: 600,
+                                        color: bubble.isCorrect ? '#8b4513' : '#0d47a1',
+                                        fontSize: '0.8rem',
+                                    }}
+                                >
+                                    {bubble.content}
+                                </Typography>
+                            </Box>
+                        </Box>
+                    )
+                })}
 
                 {/* 그리기 도구 (출제자만) */}
                 {isDrawer && (
@@ -364,7 +639,7 @@ const GameModePanel = ({roomId, onGameMessage, initialGameStatus, onStartGame, o
                             />
                         ))}
                         <Tooltip title="지우기">
-                            <IconButton size="small" onClick={clearCanvas}>
+                            <IconButton size="small" onClick={() => clearCanvas(true)}>
                                 <ClearIcon fontSize="small"/>
                             </IconButton>
                         </Tooltip>

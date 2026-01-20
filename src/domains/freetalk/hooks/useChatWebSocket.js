@@ -15,6 +15,9 @@ export function useChatWebSocket(roomId, userId) {
     const [messages, setMessages] = useState([])
     const [gameState, setGameState] = useState(null)
     const [error, setError] = useState(null)
+    const [receivedDrawing, setReceivedDrawing] = useState(null)
+    const [shouldClearCanvas, setShouldClearCanvas] = useState(false)
+    const [correctAnswerBubble, setCorrectAnswerBubble] = useState(null)
 
     const isConnectedRef = useRef(false)
     const roomTokenRef = useRef(null)
@@ -60,31 +63,47 @@ export function useChatWebSocket(roomId, userId) {
                 },
 
                 onGameStart: (data) => {
+                    console.log('[useChatWebSocket] Game started - FULL DATA:', JSON.stringify(data, null, 2))
+                    // 실제 게임 데이터 추출 (data.data에 중첩되어 있을 수 있음)
+                    const gameData = data.data || data
+                    // currentWord는 객체: { korean, english, wordId }
+                    // 출제자만 currentWord를 받음
+                    const word = gameData.currentWord
                     setGameState({
                         status: 'PLAYING',
-                        currentRound: data.currentRound || 1,
-                        totalRounds: data.totalRounds || 5,
-                        currentDrawerId: data.currentDrawerId,
-                        currentWord: data.currentWord,
+                        currentRound: gameData.currentRound || 1,
+                        totalRounds: gameData.totalRounds || 5,
+                        currentDrawerId: gameData.currentDrawerId,
+                        currentWord: word?.korean || word, // 한글 제시어 사용
+                        currentWordEnglish: word?.english,
+                        drawerOrder: gameData.drawerOrder,
                         roundStartTime: Date.now(),
-                        scores: data.scores || {},
+                        scores: gameData.scores || {},
                     })
                 },
 
                 onGameEnd: (data) => {
+                    console.log('[useChatWebSocket] Game ended - FULL DATA:', JSON.stringify(data, null, 2))
+                    const gameData = data.data || data
                     setGameState((prev) => ({
                         ...prev,
                         status: 'FINISHED',
-                        finalScores: data.scores,
+                        finalScores: gameData.scores,
                     }))
                 },
 
                 onRoundStart: (data) => {
+                    console.log('[useChatWebSocket] Round started - FULL DATA:', JSON.stringify(data, null, 2))
+                    // 실제 라운드 데이터 추출 (data.data에 중첩되어 있을 수 있음)
+                    const roundData = data.data || data
+                    // currentWord는 객체: { korean, english, wordId }
+                    const word = roundData.currentWord
                     setGameState((prev) => ({
                         ...prev,
-                        currentRound: data.currentRound,
-                        currentDrawerId: data.currentDrawerId,
-                        currentWord: data.currentWord,
+                        currentRound: roundData.currentRound,
+                        currentDrawerId: roundData.currentDrawerId,
+                        currentWord: word?.korean || word,
+                        currentWordEnglish: word?.english,
                         roundStartTime: Date.now(),
                         hintUsed: false,
                         correctGuessers: [],
@@ -92,37 +111,90 @@ export function useChatWebSocket(roomId, userId) {
                 },
 
                 onRoundEnd: (data) => {
-                    setGameState((prev) => ({
-                        ...prev,
-                        scores: data.scores || prev?.scores,
-                    }))
+                    console.log('[useChatWebSocket] Round ended - FULL DATA:', JSON.stringify(data, null, 2))
+
+                    // 실제 라운드 데이터 추출 (data.data에 중첩되어 있을 수 있음)
+                    const roundData = data.data || data
+
+                    console.log('[useChatWebSocket] Extracted roundData:', roundData)
+
+                    // ROUND_END 처리 - 다음 라운드 정보 추출
+                    const nextRoundNum = roundData.nextRound ?? roundData.currentRound ?? ((data.currentRound || 0) + 1)
+                    const nextDrawer = roundData.nextDrawer ?? roundData.nextDrawerId ?? roundData.currentDrawerId
+                    const nextWord = roundData.nextWord ?? roundData.currentWord
+                    const scores = roundData.scores ?? data.scores
+
+                    setGameState((prev) => {
+                        if (!prev) return prev
+
+                        console.log('[useChatWebSocket] Updating gameState:', {
+                            prevRound: prev.currentRound,
+                            nextRoundNum,
+                            nextDrawer,
+                            nextWord,
+                            scores,
+                        })
+
+                        // 항상 다음 라운드로 전환 (ROUND_END는 라운드가 끝났다는 의미)
+                        return {
+                            ...prev,
+                            scores: scores || prev.scores,
+                            currentRound: nextRoundNum,
+                            currentDrawerId: nextDrawer,
+                            currentWord: nextWord?.korean || nextWord,
+                            currentWordEnglish: nextWord?.english,
+                            roundStartTime: Date.now(),
+                            hintUsed: false,
+                            correctGuessers: [],
+                        }
+                    })
                 },
 
                 onCorrectAnswer: (data) => {
+                    console.log('[useChatWebSocket] Correct answer - FULL DATA:', JSON.stringify(data, null, 2))
+                    const answerData = data.data || data
                     setGameState((prev) => ({
                         ...prev,
-                        correctGuessers: [...(prev?.correctGuessers || []), data.userId],
-                        scores: data.scores || prev?.scores,
+                        correctGuessers: [...(prev?.correctGuessers || []), answerData.userId],
+                        scores: answerData.scores || prev?.scores,
                     }))
+                    // 정답 비눗방울 표시 데이터 설정
+                    setCorrectAnswerBubble({
+                        userId: answerData.userId,
+                        content: answerData.content || '정답!',
+                        timestamp: Date.now(),
+                    })
                 },
 
                 onScoreUpdate: (data) => {
+                    const scoreData = data.data || data
                     setGameState((prev) => ({
                         ...prev,
-                        scores: data.scores,
+                        scores: scoreData.scores,
                     }))
                 },
 
                 onHint: (data) => {
+                    const hintData = data.data || data
                     setGameState((prev) => ({
                         ...prev,
-                        hint: data.hint,
+                        hint: hintData.hint,
                         hintUsed: true,
                     }))
                 },
 
                 onDrawing: (data) => {
-                    // 캔버스에 그리기 데이터 적용 (별도 핸들러로 처리)
+                    // 캔버스에 그리기 데이터 적용
+                    console.log('[useChatWebSocket] Drawing received:', data)
+                    // data.data가 있으면 그것을 사용, 없으면 원본 data 사용
+                    const drawingData = data.data || data
+                    setReceivedDrawing(drawingData)
+                },
+
+                onDrawingClear: () => {
+                    // 캔버스 초기화
+                    console.log('[useChatWebSocket] Drawing clear received')
+                    setShouldClearCanvas(true)
                 },
 
                 onUserJoin: (data) => {
@@ -163,7 +235,13 @@ export function useChatWebSocket(roomId, userId) {
             isConnectedRef.current = true
         } catch (err) {
             console.error('[useChatWebSocket] Connection error:', err)
-            setError('연결에 실패했습니다')
+            console.error('[useChatWebSocket] Error details:', {
+                message: err.message,
+                stack: err.stack,
+                roomId,
+                userId
+            })
+            setError('연결에 실패했습니다: ' + err.message)
             setIsConnected(false)
             isConnectedRef.current = false
         }
@@ -184,7 +262,8 @@ export function useChatWebSocket(roomId, userId) {
      */
     const sendMessage = useCallback((content, messageType = 'TEXT') => {
         if (!isConnectedRef.current) {
-            setError('연결되지 않았습니다')
+            console.warn('[useChatWebSocket] Not connected, cannot send message:', content)
+            // 연결 안 됐을 때는 에러 설정하지 않고 조용히 실패
             return false
         }
 
@@ -209,7 +288,24 @@ export function useChatWebSocket(roomId, userId) {
      * 그리기 데이터 전송
      */
     const sendDrawing = useCallback((drawingData) => {
+        console.log('[useChatWebSocket] sendDrawing, isConnected:', isConnectedRef.current)
+        if (!isConnectedRef.current) {
+            console.error('[useChatWebSocket] Not connected, cannot send drawing')
+            return
+        }
         chatWebSocketService.sendDrawing(drawingData)
+    }, [])
+
+    /**
+     * 캔버스 초기화 전송
+     */
+    const clearDrawing = useCallback(() => {
+        console.log('[useChatWebSocket] clearDrawing, isConnected:', isConnectedRef.current)
+        if (!isConnectedRef.current) {
+            console.error('[useChatWebSocket] Not connected, cannot clear drawing')
+            return
+        }
+        chatWebSocketService.clearDrawing()
     }, [])
 
     /**
@@ -243,6 +339,9 @@ export function useChatWebSocket(roomId, userId) {
         messages,
         gameState,
         error,
+        receivedDrawing,
+        shouldClearCanvas,
+        correctAnswerBubble,
 
         // 액션
         connect,
@@ -251,11 +350,15 @@ export function useChatWebSocket(roomId, userId) {
         startGame,
         stopGame,
         sendDrawing,
+        clearDrawing,
         clearError,
         clearMessages,
 
         // 유틸
         setMessages,
+        setReceivedDrawing,
+        setShouldClearCanvas,
+        setCorrectAnswerBubble,
     }
 }
 
