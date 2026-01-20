@@ -27,7 +27,7 @@ export default function AuthLayout({children}) {
                             width: 56,
                             height: 56,
                             borderRadius: '16px',
-                            background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                            background: 'linear-gradient(135deg, #059669, #047857)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',

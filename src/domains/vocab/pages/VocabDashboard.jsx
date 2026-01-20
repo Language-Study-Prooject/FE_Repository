@@ -312,7 +312,7 @@ export default function VocabDashboard() {
                                     width: 40,
                                     height: 40,
                                     borderRadius: '10px',
-                                    backgroundColor: '#dbeafe',
+                                    backgroundColor: '#ecfdf5',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -320,9 +320,9 @@ export default function VocabDashboard() {
                                     mb: 1,
                                 }}
                             >
-                                <LearnIcon sx={{fontSize: 22, color: '#2563eb'}}/>
+                                <LearnIcon sx={{fontSize: 22, color: '#059669'}}/>
                             </Box>
-                            <Typography variant="h4" fontWeight={700} color="#2563eb">
+                            <Typography variant="h4" fontWeight={700} color="#059669">
                                 {wordsLearned}
                             </Typography>
                             <Typography variant="caption" color="text.secondary">

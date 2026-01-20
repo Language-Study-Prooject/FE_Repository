@@ -67,8 +67,8 @@ const Sidebar = ({open, collapsed, onToggleCollapse, onClose}) => {
                     id: 'speaking',
                     label: t('sidebar.speaking'),
                     icon: SpeakingIcon,
-                    color: '#3b82f6',
-                    bgColor: '#eff6ff',
+                    color: '#059669',
+                    bgColor: '#ecfdf5',
                     children: [
                         {
                             id: 'opic',

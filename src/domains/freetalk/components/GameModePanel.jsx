@@ -587,7 +587,7 @@ const GameModePanel = ({roomId, onGameMessage, initialGameStatus, wsGameState, i
                                     sx={{
                                         display: 'block',
                                         fontWeight: 700,
-                                        color: bubble.isCorrect ? '#b8860b' : '#1565c0',
+                                        color: bubble.isCorrect ? '#b8860b' : '#047857',
                                         fontSize: '0.65rem',
                                     }}
                                 >
@@ -597,7 +597,7 @@ const GameModePanel = ({roomId, onGameMessage, initialGameStatus, wsGameState, i
                                     variant="body2"
                                     sx={{
                                         fontWeight: 600,
-                                        color: bubble.isCorrect ? '#8b4513' : '#0d47a1',
+                                        color: bubble.isCorrect ? '#8b4513' : '#059669',
                                         fontSize: '0.8rem',
                                     }}
                                 >

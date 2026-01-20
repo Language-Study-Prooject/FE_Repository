@@ -43,7 +43,7 @@ const HorizontalNav = () => {
             id: 'speaking',
             label: t('sidebar.speaking'),
             icon: SpeakingIcon,
-            color: '#3b82f6',
+            color: '#059669',
             children: [
                 {
                     id: 'opic',

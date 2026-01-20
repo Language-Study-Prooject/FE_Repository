@@ -92,8 +92,8 @@ function Dashboard() {
             title: t('dashboard.speakingTitle'),
             description: t('dashboard.speakingDesc'),
             icon: SpeakingIcon,
-            color: '#3b82f6',
-            bgColor: '#eff6ff',
+            color: '#059669',
+            bgColor: '#ecfdf5',
             children: [
                 {
                     id: 'opic',
@@ -472,7 +472,7 @@ function ReportsPage() {
                         <Typography variant="body2" color="text.secondary" gutterBottom>
                             {isKorean ? '총 학습일' : 'Study Days'}
                         </Typography>
-                        <Typography variant="h4" fontWeight={800} color="#3b82f6">
+                        <Typography variant="h4" fontWeight={800} color="#059669">
                             {stats.totalStudyDays}
                         </Typography>
                         <Typography variant="caption" color="text.disabled">
@@ -613,7 +613,7 @@ function SettingsPage() {
                     <Box
                         sx={{
                             p: 3,
-                            background: 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)',
+                            background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
                         }}
                     >
                         <Typography variant="h6" fontWeight={700} sx={{color: 'white'}}>
@@ -633,14 +633,14 @@ function SettingsPage() {
                                             p: 2.5,
                                             borderRadius: '16px',
                                             border: '2px solid',
-                                            borderColor: settings.language === option.value ? '#3b82f6' : 'divider',
-                                            backgroundColor: settings.language === option.value ? '#eff6ff' : 'transparent',
+                                            borderColor: settings.language === option.value ? '#059669' : 'divider',
+                                            backgroundColor: settings.language === option.value ? '#ecfdf5' : 'transparent',
                                             cursor: 'pointer',
                                             transition: 'all 0.2s ease',
                                             textAlign: 'center',
                                             '&:hover': {
-                                                borderColor: '#3b82f6',
-                                                backgroundColor: '#eff6ff',
+                                                borderColor: '#059669',
+                                                backgroundColor: '#ecfdf5',
                                             },
                                         }}
                                     >
@@ -650,7 +650,7 @@ function SettingsPage() {
                                         <Typography
                                             variant="body1"
                                             fontWeight={settings.language === option.value ? 700 : 500}
-                                            color={settings.language === option.value ? '#3b82f6' : 'text.primary'}
+                                            color={settings.language === option.value ? '#059669' : 'text.primary'}
                                         >
                                             {option.label}
                                         </Typography>
