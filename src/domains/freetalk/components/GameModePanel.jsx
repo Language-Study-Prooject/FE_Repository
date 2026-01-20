@@ -385,25 +385,14 @@ const GameModePanel = ({roomId, onGameMessage, initialGameStatus, wsGameState, i
     }, [])
 
     // correctAnswerBubble prop으로 정답 버블 생성 (정답일 때 특별 효과)
-    // + 정답 시 자동으로 다음 라운드로 이동 (출제자만)
+    // 백엔드가 정답 시 자동으로 ROUND_END를 보내므로 프론트엔드에서 /skip 불필요
     useEffect(() => {
         if (correctAnswerBubble) {
             createBubble(correctAnswerBubble.userId, correctAnswerBubble.content, true) // isCorrect = true
             onBubbleProcessed?.()
-
-            // 출제자인 경우 2초 후 자동으로 다음 라운드로 이동 (연결된 경우만)
-            if (isDrawer && isConnected && onSendMessage) {
-                console.log('[GameModePanel] Correct answer! Auto-skipping in 2 seconds...')
-                setTimeout(() => {
-                    // 다시 한번 연결 상태 확인
-                    if (isConnectedRef.current && onSendMessageRef.current) {
-                        console.log('[GameModePanel] Auto-skipping to next round...')
-                        onSendMessageRef.current('/skip', 'TEXT')
-                    }
-                }, 2000) // 2초 대기 후 스킵 (정답 효과 보여주기 위해)
-            }
+            // 백엔드가 정답 처리 후 자동으로 라운드 전환하므로 /skip 제거
         }
-    }, [correctAnswerBubble, createBubble, onBubbleProcessed, isDrawer, isConnected, onSendMessage])
+    }, [correctAnswerBubble, createBubble, onBubbleProcessed])
 
     // 게임 중 모든 채팅 메시지를 비눗방울로 표시
     const lastMessageIdRef = useRef(null)

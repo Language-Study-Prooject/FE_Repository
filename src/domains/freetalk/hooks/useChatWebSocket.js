@@ -66,7 +66,7 @@ export function useChatWebSocket(roomId, userId) {
                     console.log('[useChatWebSocket] Game started - FULL DATA:', JSON.stringify(data, null, 2))
                     // 실제 게임 데이터 추출 (data.data에 중첩되어 있을 수 있음)
                     const gameData = data.data || data
-                    // currentWord는 객체: { korean, english, wordId }
+                    // currentWord는 객체: { wordId, word } - 영어 단어만 포함
                     // 출제자만 currentWord를 받음
                     const word = gameData.currentWord
                     setGameState({
@@ -74,10 +74,10 @@ export function useChatWebSocket(roomId, userId) {
                         currentRound: gameData.currentRound || 1,
                         totalRounds: gameData.totalRounds || 5,
                         currentDrawerId: gameData.currentDrawerId,
-                        currentWord: word?.korean || word, // 한글 제시어 사용
-                        currentWordEnglish: word?.english,
+                        currentWord: word?.word || word?.korean || word, // word 필드 우선 사용
                         drawerOrder: gameData.drawerOrder,
-                        roundStartTime: Date.now(),
+                        roundStartTime: gameData.roundStartTime || Date.now(),
+                        roundTimeLimit: gameData.roundTimeLimit || 60,
                         scores: gameData.scores || {},
                     })
                 },
@@ -96,15 +96,14 @@ export function useChatWebSocket(roomId, userId) {
                     console.log('[useChatWebSocket] Round started - FULL DATA:', JSON.stringify(data, null, 2))
                     // 실제 라운드 데이터 추출 (data.data에 중첩되어 있을 수 있음)
                     const roundData = data.data || data
-                    // currentWord는 객체: { korean, english, wordId }
+                    // currentWord는 객체: { wordId, word } - 영어 단어만 포함
                     const word = roundData.currentWord
                     setGameState((prev) => ({
                         ...prev,
                         currentRound: roundData.currentRound,
                         currentDrawerId: roundData.currentDrawerId,
-                        currentWord: word?.korean || word,
-                        currentWordEnglish: word?.english,
-                        roundStartTime: Date.now(),
+                        currentWord: word?.word || word?.korean || word, // word 필드 우선 사용
+                        roundStartTime: roundData.roundStartTime || Date.now(),
                         hintUsed: false,
                         correctGuessers: [],
                     }))
@@ -119,19 +118,54 @@ export function useChatWebSocket(roomId, userId) {
                     console.log('[useChatWebSocket] Extracted roundData:', roundData)
 
                     // ROUND_END 처리 - 다음 라운드 정보 추출
-                    const nextRoundNum = roundData.nextRound ?? roundData.currentRound ?? ((data.currentRound || 0) + 1)
+                    const nextRoundNum = roundData.nextRound ?? ((roundData.currentRound || 0) + 1)
                     const nextDrawer = roundData.nextDrawer ?? roundData.nextDrawerId ?? roundData.currentDrawerId
-                    const nextWord = roundData.nextWord ?? roundData.currentWord
-                    const scores = roundData.scores ?? data.scores
+                    const nextWord = roundData.nextWord
+                    const answer = roundData.answer // 이번 라운드 정답
+
+                    // ranking 배열을 scores 객체로 변환
+                    let scores = roundData.scores
+                    if (!scores && roundData.ranking) {
+                        scores = {}
+                        roundData.ranking.forEach(item => {
+                            scores[item.userId] = item.score
+                        })
+                    }
+
+                    console.log('[useChatWebSocket] Calling setGameState with:', {
+                        nextRoundNum,
+                        nextDrawer,
+                        nextWord,
+                        answer,
+                        scores,
+                    })
 
                     setGameState((prev) => {
-                        if (!prev) return prev
+                        console.log('[useChatWebSocket] setGameState callback, prev:', prev)
+
+                        if (!prev) {
+                            console.warn('[useChatWebSocket] prev is null, creating new state')
+                            // prev가 null이면 새 상태 생성
+                            return {
+                                status: 'PLAYING',
+                                currentRound: nextRoundNum,
+                                totalRounds: 5,
+                                currentDrawerId: nextDrawer,
+                                currentWord: nextWord?.word || nextWord?.korean || nextWord,
+                                lastAnswer: answer,
+                                roundStartTime: Date.now(),
+                                scores: scores || {},
+                                hintUsed: false,
+                                correctGuessers: [],
+                            }
+                        }
 
                         console.log('[useChatWebSocket] Updating gameState:', {
                             prevRound: prev.currentRound,
                             nextRoundNum,
                             nextDrawer,
                             nextWord,
+                            answer,
                             scores,
                         })
 
@@ -141,8 +175,8 @@ export function useChatWebSocket(roomId, userId) {
                             scores: scores || prev.scores,
                             currentRound: nextRoundNum,
                             currentDrawerId: nextDrawer,
-                            currentWord: nextWord?.korean || nextWord,
-                            currentWordEnglish: nextWord?.english,
+                            currentWord: nextWord?.word || nextWord?.korean || nextWord, // word 필드 우선 사용
+                            lastAnswer: answer, // 이전 라운드 정답 저장
                             roundStartTime: Date.now(),
                             hintUsed: false,
                             correctGuessers: [],
