@@ -24,6 +24,7 @@ import {
 import {chatRoomService, messageService, voiceService} from '../../chat/services/chatService'
 import {useAuth} from '../../../contexts/AuthContext'
 import {useChatWebSocket} from '../hooks/useChatWebSocket'
+import GameModePanel from '../components/GameModePanel'
 
 const levelColors = {
     beginner: {bg: '#e8f5e9', color: '#2e7d32', label: '초급'},
@@ -55,11 +56,21 @@ const ChatRoomPage = () => {
         messages,
         gameState,
         error: wsError,
+        receivedDrawing,
+        shouldClearCanvas,
+        correctAnswerBubble,
         connect: wsConnect,
         disconnect: wsDisconnect,
         sendMessage: wsSendMessage,
+        startGame: wsStartGame,
+        stopGame: wsStopGame,
+        sendDrawing: wsSendDrawing,
+        clearDrawing: wsClearDrawing,
         clearError: wsClearError,
         setMessages,
+        setReceivedDrawing,
+        setShouldClearCanvas,
+        setCorrectAnswerBubble,
     } = useChatWebSocket(roomId, currentUserId)
 
     // 채팅방 정보 조회
@@ -115,9 +126,12 @@ const ChatRoomPage = () => {
 
     // WebSocket 연결 (별도 effect)
     useEffect(() => {
+        console.log('[ChatRoomPage] WebSocket effect triggered:', {roomId, currentUserId, isConnected})
         if (currentUserId && roomId) {
             console.log('[ChatRoomPage] Connecting WebSocket...', {roomId, currentUserId})
             wsConnect()
+        } else {
+            console.log('[ChatRoomPage] Missing required values:', {roomId, currentUserId})
         }
 
         return () => {
@@ -299,13 +313,44 @@ const ChatRoomPage = () => {
                 </Alert>
             )}
 
-            {/* 게임 상태 표시 */}
-            {gameState?.status === 'PLAYING' && (
-                <Alert severity="info" sx={{m: 1}}>
-                    🎮 게임 진행 중! 라운드 {gameState.currentRound}/{gameState.totalRounds}
-                    {gameState.currentDrawerId === currentUserId && ` - 제시어: ${gameState.currentWord}`}
-                </Alert>
-            )}
+            {/* 게임 모드 패널 - 항상 표시 (게임 상태에 따라 다른 UI) */}
+            <Box sx={{
+                borderBottom: 1,
+                borderColor: 'divider',
+                ...(gameState?.status === 'PLAYING' ? {
+                    maxHeight: '50vh',
+                    overflow: 'auto',
+                } : {}),
+            }}>
+                <GameModePanel
+                    roomId={roomId}
+                    initialGameStatus={gameState?.status}
+                    wsGameState={gameState}
+                    isConnected={isConnected}
+                    messages={messages}
+                    onStartGame={wsStartGame}
+                    onStopGame={wsStopGame}
+                    onSendMessage={wsSendMessage}
+                    onSendDrawing={wsSendDrawing}
+                    onClearDrawing={wsClearDrawing}
+                    receivedDrawing={receivedDrawing}
+                    onDrawingProcessed={() => setReceivedDrawing(null)}
+                    shouldClearCanvas={shouldClearCanvas}
+                    onCanvasCleared={() => setShouldClearCanvas(false)}
+                    correctAnswerBubble={correctAnswerBubble}
+                    onBubbleProcessed={() => setCorrectAnswerBubble(null)}
+                    onGameMessage={(msg) => {
+                        const systemMessage = {
+                            id: `game-${Date.now()}`,
+                            content: msg.content,
+                            messageType: 'SYSTEM',
+                            createdAt: new Date().toISOString(),
+                            isSystem: true,
+                        }
+                        setMessages((prev) => [...prev, systemMessage])
+                    }}
+                />
+            </Box>
 
             {/* 메시지 영역 */}
             <Box

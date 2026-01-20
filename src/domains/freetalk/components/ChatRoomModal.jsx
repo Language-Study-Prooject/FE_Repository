@@ -58,13 +58,21 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
         messages,
         gameState: wsGameState,
         error: wsError,
+        receivedDrawing,
+        shouldClearCanvas,
+        correctAnswerBubble,
         connect: wsConnect,
         disconnect: wsDisconnect,
         sendMessage: wsSendMessage,
         startGame: wsStartGame,
         stopGame: wsStopGame,
+        sendDrawing: wsSendDrawing,
+        clearDrawing: wsClearDrawing,
         clearError: wsClearError,
         setMessages,
+        setReceivedDrawing,
+        setShouldClearCanvas,
+        setCorrectAnswerBubble,
     } = useChatWebSocket(room?.id, currentUserId)
 
     const [newMessage, setNewMessage] = useState('')
@@ -126,19 +134,20 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
         }
     }, [wsError])
 
-    // WebSocket 게임 상태 변경 감지 - 탭 자동 전환
+    // WebSocket 게임 상태 변경 감지 - 게임 시작 시만 게임 탭으로 전환
     useEffect(() => {
         if (wsGameState?.status === 'PLAYING') {
             setGameStatus(GAME_STATUS.PLAYING)
-            setActiveTab(1)
+            setActiveTab(1) // 게임 시작 시 게임 탭으로 전환
         } else if (wsGameState?.status === 'FINISHED') {
             setGameStatus(GAME_STATUS.NONE)
-            setActiveTab(0)
+            // 게임 종료 시에는 탭 유지 (사용자가 직접 전환하도록)
         }
     }, [wsGameState?.status])
 
     // 초기 로드
     useEffect(() => {
+        console.log('[ChatRoomModal] useEffect triggered:', {open, roomId: room?.id, currentUserId})
         if (open && room?.id && currentUserId) {
             console.log('[ChatRoomModal] Initializing...', {roomId: room.id, userId: currentUserId})
             setLoading(true)
@@ -518,8 +527,20 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                                     roomId={room?.id}
                                     onGameMessage={handleGameMessage}
                                     initialGameStatus={gameStatus}
+                                    wsGameState={wsGameState}
+                                    isConnected={isConnected}
+                                    messages={messages}
                                     onStartGame={wsStartGame}
                                     onStopGame={wsStopGame}
+                                    onSendMessage={wsSendMessage}
+                                    onSendDrawing={wsSendDrawing}
+                                    onClearDrawing={wsClearDrawing}
+                                    receivedDrawing={receivedDrawing}
+                                    onDrawingProcessed={() => setReceivedDrawing(null)}
+                                    shouldClearCanvas={shouldClearCanvas}
+                                    onCanvasCleared={() => setShouldClearCanvas(false)}
+                                    correctAnswerBubble={correctAnswerBubble}
+                                    onBubbleProcessed={() => setCorrectAnswerBubble(null)}
                                 />
                             </Box>
                         )}
