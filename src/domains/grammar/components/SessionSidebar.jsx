@@ -170,8 +170,9 @@ export default function SessionSidebar({
                                 >
                                     <ListItemText
                                         primary={
-                                            <Box display="flex" alignItems="center" gap={1}>
+                                            <Box component="span" display="flex" alignItems="center" gap={1}>
                                                 <Typography
+                                                    component="span"
                                                     variant="body2"
                                                     fontWeight={600}
                                                     sx={{
@@ -200,6 +201,7 @@ export default function SessionSidebar({
                                         }
                                         secondary={
                                             <Box
+                                                component="span"
                                                 sx={{
                                                     display: 'flex',
                                                     alignItems: 'center',
@@ -208,6 +210,7 @@ export default function SessionSidebar({
                                                 }}
                                             >
                                                 <Typography
+                                                    component="span"
                                                     variant="caption"
                                                     color="text.secondary"
                                                     sx={{
@@ -219,7 +222,7 @@ export default function SessionSidebar({
                                                 >
                                                     {session.lastMessage || `${session.messageCount} ${isKorean ? '메시지' : 'messages'}`}
                                                 </Typography>
-                                                <Typography variant="caption" color="text.disabled">
+                                                <Typography component="span" variant="caption" color="text.disabled">
                                                     {formatDate(session.updatedAt)}
                                                 </Typography>
                                             </Box>
