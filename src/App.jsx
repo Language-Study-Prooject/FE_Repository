@@ -13,6 +13,7 @@ import {
     Quiz as QuizIcon,
     School as LearnIcon,
     SmartToy as AiIcon,
+    SportsEsports as GameIcon,
     WavingHand as WaveIcon,
 } from '@mui/icons-material'
 import MainLayout from './layouts/MainLayout'
@@ -26,6 +27,9 @@ import WordListPage from './domains/vocab/pages/WordListPage'
 import StatsPage from './domains/vocab/pages/StatsPage'
 import {WritingPage} from './domains/grammar'
 import {BadgeSection} from './domains/badge'
+import CatchmindLobbyPage from './domains/games/pages/CatchmindLobbyPage'
+import CatchmindWaitingPage from './domains/games/pages/CatchmindWaitingPage'
+import CatchmindPlayPage from './domains/games/pages/CatchmindPlayPage'
 import {useChat} from './contexts/ChatContext'
 import {useSettings} from './contexts/SettingsContext'
 import {useAuth} from './contexts/AuthContext'
@@ -163,6 +167,23 @@ function Dashboard() {
                     icon: WordListIcon,
                     path: '/vocab/words',
                     description: t('dashboard.wordListDesc')
+                },
+            ],
+        },
+        {
+            id: 'games',
+            title: t('games.title'),
+            description: t('games.description'),
+            icon: GameIcon,
+            color: '#8b5cf6',
+            bgColor: '#f3e8ff',
+            children: [
+                {
+                    id: 'catchmind',
+                    title: t('games.catchmindTitle'),
+                    icon: GameIcon,
+                    path: '/games/catchmind',
+                    description: t('games.catchmindDesc')
                 },
             ],
         },
@@ -851,6 +872,9 @@ function App() {
                     <Route path="/vocab/stats" element={<StatsPage/>}/>
                     <Route path="/reports" element={<ReportsPage/>}/>
                     <Route path="/settings" element={<SettingsPage/>}/>
+                    <Route path="/games/catchmind" element={<CatchmindLobbyPage/>}/>
+                    <Route path="/games/catchmind/:roomId/waiting" element={<CatchmindWaitingPage/>}/>
+                    <Route path="/games/catchmind/:roomId/play" element={<CatchmindPlayPage/>}/>
                 </Route>
 
                 {/* 404 */}

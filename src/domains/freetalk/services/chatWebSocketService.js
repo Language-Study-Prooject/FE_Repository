@@ -42,12 +42,16 @@ class ChatWebSocketConnection {
                 // roomToken 파라미터로 연결 (token이 아님!)
                 const url = roomToken ? `${WS_URL}?roomToken=${roomToken}` : WS_URL
                 console.log('[ChatWebSocket] Connecting to:', url)
+                console.log('[ChatWebSocket] roomToken:', roomToken ? roomToken.substring(0, 30) + '...' : 'MISSING')
+                console.log('[ChatWebSocket] roomId:', roomId)
+                console.log('[ChatWebSocket] userId:', userId)
                 this.ws = new WebSocket(url)
 
                 this.ws.onopen = () => {
                     this.isConnected = true
                     this.reconnectAttempts = 0
-                    console.log('[ChatWebSocket] Connected')
+                    console.log('[ChatWebSocket] Connected successfully!')
+                    console.log('[ChatWebSocket] WebSocket readyState:', this.ws.readyState)
 
                     // 연결 후 방 입장은 roomToken으로 이미 처리됨
                     // joinRoom action은 서버에서 지원하지 않음 (Forbidden)
@@ -57,7 +61,8 @@ class ChatWebSocketConnection {
 
                 this.ws.onclose = (event) => {
                     this.isConnected = false
-                    console.log('[ChatWebSocket] Disconnected:', event.code)
+                    console.log('[ChatWebSocket] Disconnected:', event.code, event.reason)
+
                     this.callbacks.onClose?.(event)
 
                     // 비정상 종료 시 재연결 시도 (roomToken 만료 시 재발급 필요할 수 있음)
@@ -68,6 +73,7 @@ class ChatWebSocketConnection {
 
                 this.ws.onerror = (error) => {
                     console.error('[ChatWebSocket] Error:', error)
+                    console.error('[ChatWebSocket] WebSocket readyState:', this.ws?.readyState)
                     this.callbacks.onError?.({type: 'error', message: 'WebSocket connection error'})
                     reject(error)
                 }
@@ -87,17 +93,25 @@ class ChatWebSocketConnection {
     }
 
     /**
-     * 재연결 시도
+     * 재연결 시도 - 기존 토큰 무효화하고 onReconnectNeeded 콜백 호출
      */
     attemptReconnect(roomToken, roomId, userId) {
         this.reconnectAttempts++
-        console.log(`[ChatWebSocket] Reconnecting... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
+        console.log(`[ChatWebSocket] Reconnect needed (${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
 
-        setTimeout(() => {
-            this.connect(roomToken, roomId, userId).catch(() => {
-                console.error('[ChatWebSocket] Reconnect failed')
-            })
-        }, this.reconnectDelay * this.reconnectAttempts)
+        // 최대 재연결 시도 횟수 초과 시 중단
+        if (this.reconnectAttempts > this.maxReconnectAttempts) {
+            console.error('[ChatWebSocket] Max reconnect attempts reached')
+            this.callbacks.onError?.({ message: '연결이 끊어졌습니다. 페이지를 새로고침해주세요.' })
+            return
+        }
+
+        // 재연결이 필요함을 알림 (useChatWebSocket에서 새 토큰 발급 후 재연결)
+        if (this.callbacks.onReconnectNeeded) {
+            setTimeout(() => {
+                this.callbacks.onReconnectNeeded()
+            }, this.reconnectDelay * this.reconnectAttempts)
+        }
     }
 
     /**

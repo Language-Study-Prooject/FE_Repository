@@ -10,14 +10,11 @@ import {
     Paper,
     Popover,
     Slider,
-    Tab,
-    Tabs,
     TextField,
     Typography,
     useTheme,
 } from '@mui/material'
 import {
-    Chat as ChatIcon,
     Circle as CircleIcon,
     Close as CloseIcon,
     ExitToApp as ExitToAppIcon,
@@ -26,21 +23,16 @@ import {
     OpenInFull as MaximizeIcon,
     Refresh as RefreshIcon,
     Send as SendIcon,
-    SportsEsports as GameIcon,
     VolumeUp as VolumeUpIcon,
 } from '@mui/icons-material'
 import {
     chatRoomService,
-    GAME_STATUS,
-    gameService,
-    MESSAGE_TYPES,
     messageService,
     voiceService
 } from '../../chat/services/chatService'
 import {useSettings} from '../../../contexts/SettingsContext'
 import {useAuth} from '../../../contexts/AuthContext'
 import {DESIGN_TOKENS, getChatStyles} from '../../../theme/theme'
-import GameModePanel from './GameModePanel'
 import {useChatWebSocket} from '../hooks/useChatWebSocket'
 
 const ChatRoomModal = ({open, onClose, room, onLeave}) => {
@@ -56,23 +48,11 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
     const {
         isConnected,
         messages,
-        gameState: wsGameState,
         error: wsError,
-        receivedDrawing,
-        shouldClearCanvas,
-        correctAnswerBubble,
         connect: wsConnect,
         disconnect: wsDisconnect,
         sendMessage: wsSendMessage,
-        startGame: wsStartGame,
-        stopGame: wsStopGame,
-        sendDrawing: wsSendDrawing,
-        clearDrawing: wsClearDrawing,
-        clearError: wsClearError,
         setMessages,
-        setReceivedDrawing,
-        setShouldClearCanvas,
-        setCorrectAnswerBubble,
     } = useChatWebSocket(room?.id, currentUserId)
 
     const [newMessage, setNewMessage] = useState('')
@@ -85,8 +65,6 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
     const [savedPosition, setSavedPosition] = useState({x: 0, y: 0})
     const [isDragging, setIsDragging] = useState(false)
     const [dragOffset, setDragOffset] = useState({x: 0, y: 0})
-    const [activeTab, setActiveTab] = useState(0) // 0: 채팅, 1: 게임
-    const [gameStatus, setGameStatus] = useState(GAME_STATUS.NONE)
     const [opacity, setOpacity] = useState(100)
     const [opacityAnchorEl, setOpacityAnchorEl] = useState(null)
     // 메시지 목록 조회
@@ -111,39 +89,12 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
         }
     }, [room?.id])
 
-    // 게임 상태 조회
-    const fetchGameStatus = useCallback(async () => {
-        if (!room?.id) return
-        try {
-            const response = await gameService.getStatus(room.id)
-            const data = response.data || response
-            setGameStatus(data.gameStatus || GAME_STATUS.NONE)
-            // 게임 중이면 게임 탭으로 전환
-            if (data.gameStatus === GAME_STATUS.PLAYING) {
-                setActiveTab(1)
-            }
-        } catch (err) {
-            console.error('Failed to fetch game status:', err)
-        }
-    }, [room?.id])
-
     // WebSocket 에러 통합
     useEffect(() => {
         if (wsError) {
             setError(wsError)
         }
     }, [wsError])
-
-    // WebSocket 게임 상태 변경 감지 - 게임 시작 시만 게임 탭으로 전환
-    useEffect(() => {
-        if (wsGameState?.status === 'PLAYING') {
-            setGameStatus(GAME_STATUS.PLAYING)
-            setActiveTab(1) // 게임 시작 시 게임 탭으로 전환
-        } else if (wsGameState?.status === 'FINISHED') {
-            setGameStatus(GAME_STATUS.NONE)
-            // 게임 종료 시에는 탭 유지 (사용자가 직접 전환하도록)
-        }
-    }, [wsGameState?.status])
 
     // 초기 로드
     useEffect(() => {
@@ -152,16 +103,12 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
             console.log('[ChatRoomModal] Initializing...', {roomId: room.id, userId: currentUserId})
             setLoading(true)
             setMinimized(false)
-            setActiveTab(0)
 
             // WebSocket 연결
             wsConnect()
 
-            // 기존 메시지 및 게임 상태 로드
-            Promise.all([
-                fetchMessages(),
-                fetchGameStatus(),
-            ]).finally(() => setLoading(false))
+            // 기존 메시지 로드
+            fetchMessages().finally(() => setLoading(false))
         }
 
         return () => {
@@ -171,29 +118,6 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
             }
         }
     }, [open, room?.id, currentUserId]) // eslint-disable-line react-hooks/exhaustive-deps
-
-    // 게임 메시지 처리
-    const handleGameMessage = (gameMessage) => {
-        const systemMessage = {
-            id: `game-${Date.now()}`,
-            content: gameMessage.content,
-            userId: 'SYSTEM',
-            messageType: gameMessage.type,
-            createdAt: new Date(),
-            isOwn: false,
-            isSystem: true,
-        }
-        setMessages((prev) => [...prev, systemMessage])
-
-        // 게임 시작 시 게임 탭으로 전환
-        if (gameMessage.type === MESSAGE_TYPES.GAME_START) {
-            setGameStatus(GAME_STATUS.PLAYING)
-            setActiveTab(1)
-        } else if (gameMessage.type === MESSAGE_TYPES.GAME_END) {
-            setGameStatus(GAME_STATUS.NONE)
-            setActiveTab(0)
-        }
-    }
 
     // 스크롤 맨 아래로
     const scrollToBottom = (instant = false) => {
@@ -214,13 +138,6 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
             scrollToBottom(false)
         }
     }, [messages.length])
-
-    // 탭 전환 시 채팅 탭으로 돌아오면 스크롤 맨 아래로
-    useEffect(() => {
-        if (activeTab === 0 && messages.length > 0 && !loading) {
-            setTimeout(() => scrollToBottom(true), 100)
-        }
-    }, [activeTab])
 
     // 드래그 핸들러
     const handleMouseDown = (e) => {
@@ -489,30 +406,6 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
 
                 {!minimized && (
                     <>
-                        {/* 탭 (채팅/게임) */}
-                        <Tabs
-                            value={activeTab}
-                            onChange={(e, v) => setActiveTab(v)}
-                            variant="fullWidth"
-                            sx={{
-                                minHeight: 36,
-                                '& .MuiTab-root': {minHeight: 36, py: 0.5},
-                            }}
-                        >
-                            <Tab
-                                icon={<ChatIcon sx={{fontSize: 16}}/>}
-                                iconPosition="start"
-                                label="채팅"
-                                sx={{fontSize: '0.75rem'}}
-                            />
-                            <Tab
-                                icon={<GameIcon sx={{fontSize: 16}}/>}
-                                iconPosition="start"
-                                label="캐치마인드"
-                                sx={{fontSize: '0.75rem'}}
-                            />
-                        </Tabs>
-
                         {/* 에러 메시지 */}
                         {error && (
                             <Alert severity="error" onClose={() => setError(null)} sx={{borderRadius: 0}}>
@@ -520,34 +413,8 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                             </Alert>
                         )}
 
-                        {/* 게임 모드 */}
-                        {activeTab === 1 && (
-                            <Box sx={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
-                                <GameModePanel
-                                    roomId={room?.id}
-                                    onGameMessage={handleGameMessage}
-                                    initialGameStatus={gameStatus}
-                                    wsGameState={wsGameState}
-                                    isConnected={isConnected}
-                                    messages={messages}
-                                    onStartGame={wsStartGame}
-                                    onStopGame={wsStopGame}
-                                    onSendMessage={wsSendMessage}
-                                    onSendDrawing={wsSendDrawing}
-                                    onClearDrawing={wsClearDrawing}
-                                    receivedDrawing={receivedDrawing}
-                                    onDrawingProcessed={() => setReceivedDrawing(null)}
-                                    shouldClearCanvas={shouldClearCanvas}
-                                    onCanvasCleared={() => setShouldClearCanvas(false)}
-                                    correctAnswerBubble={correctAnswerBubble}
-                                    onBubbleProcessed={() => setCorrectAnswerBubble(null)}
-                                />
-                            </Box>
-                        )}
-
-                        {/* 채팅 모드 - 메시지 영역 */}
-                        {activeTab === 0 && (
-                            loading ? (
+                        {/* 메시지 영역 */}
+                        {loading ? (
                                 <Box sx={{
                                     display: 'flex',
                                     justifyContent: 'center',
@@ -729,10 +596,9 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                                     )}
                                     <div ref={messagesEndRef}/>
                                 </Box>
-                            )
-                        )}
+                            )}
 
-                        {/* 입력 영역 - 항상 조작 가능 */}
+                        {/* 입력 영역 */}
                         <Box
                             sx={{
                                 p: 1,

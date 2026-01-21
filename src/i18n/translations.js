@@ -375,6 +375,14 @@ export const translations = {
                 ALL_BADGES: '마스터',
             },
         },
+
+        // Games
+        games: {
+            title: '게임',
+            description: '재미있는 게임으로 영어 실력을 향상하세요',
+            catchmindTitle: '캐치마인드',
+            catchmindDesc: '그림 맞추기 게임',
+        },
     },
 
     en: {
@@ -747,6 +755,14 @@ export const translations = {
                 PERFECT_DRAWS: 'Perfect Drawer',
                 ALL_BADGES: 'Master',
             },
+        },
+
+        // Games
+        games: {
+            title: 'Games',
+            description: 'Improve your English with fun games',
+            catchmindTitle: 'Catchmind',
+            catchmindDesc: 'Drawing guessing game',
         },
     },
 }

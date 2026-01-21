@@ -25,8 +25,8 @@ export function useChatWebSocket(roomId, userId) {
     /**
      * WebSocket 연결
      */
-    const connect = useCallback(async () => {
-        console.log('[useChatWebSocket] Attempting to connect...', {roomId, userId})
+    const connect = useCallback(async (forceNewToken = false) => {
+        console.log('[useChatWebSocket] Attempting to connect...', {roomId, userId, forceNewToken})
 
         if (!roomId || !userId) {
             console.error('[useChatWebSocket] roomId and userId are required', {roomId, userId})
@@ -36,30 +36,55 @@ export function useChatWebSocket(roomId, userId) {
         try {
             setError(null)
 
-            // 1. 먼저 REST API로 roomToken 발급받기
-            console.log('[useChatWebSocket] Getting roomToken via join API...')
-            const joinResponse = await chatRoomService.join(roomId)
-            const roomToken = joinResponse.roomToken || joinResponse.data?.roomToken
-            console.log('[useChatWebSocket] Got roomToken:', roomToken ? 'exists' : 'missing')
-
-            if (!roomToken) {
-                throw new Error('roomToken not received from join API')
+            // forceNewToken이 true면 기존 토큰 삭제
+            if (forceNewToken) {
+                console.log('[useChatWebSocket] Forcing new token, clearing old one')
+                sessionStorage.removeItem(`roomToken_${roomId}`)
             }
 
+            // 1. 먼저 sessionStorage에서 roomToken 확인 (이미 발급받은 경우)
+            let roomToken = sessionStorage.getItem(`roomToken_${roomId}`)
+            console.log('[useChatWebSocket] Checking sessionStorage for roomToken:', roomToken ? 'found' : 'not found')
+
+            // 2. 없으면 REST API로 roomToken 발급받기
+            if (!roomToken) {
+                console.log('[useChatWebSocket] Getting roomToken via join API...')
+                const joinResponse = await chatRoomService.join(roomId)
+                roomToken = joinResponse.roomToken || joinResponse.data?.roomToken
+                console.log('[useChatWebSocket] Got roomToken from API:', roomToken ? 'exists' : 'missing')
+
+                // sessionStorage에 저장
+                if (roomToken) {
+                    sessionStorage.setItem(`roomToken_${roomId}`, roomToken)
+                }
+            }
+
+            if (!roomToken) {
+                throw new Error('roomToken not received')
+            }
+
+            console.log('[useChatWebSocket] Using roomToken:', roomToken.substring(0, 20) + '...')
             roomTokenRef.current = roomToken
 
             // 콜백 설정
             chatWebSocketService.setCallbacks({
                 onMessage: (data) => {
+                    const messageId = data.messageId || `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
                     const newMessage = {
-                        id: data.messageId || `msg-${Date.now()}`,
+                        id: messageId,
                         content: data.content,
                         userId: data.userId,
                         messageType: data.messageType || 'TEXT',
                         createdAt: data.createdAt || new Date().toISOString(),
                         isOwn: data.userId === userId,
                     }
-                    setMessages((prev) => [...prev, newMessage])
+                    setMessages((prev) => {
+                        // 중복 메시지 방지 (같은 messageId가 이미 있으면 추가하지 않음)
+                        if (data.messageId && prev.some(m => m.id === data.messageId)) {
+                            return prev
+                        }
+                        return [...prev, newMessage]
+                    })
                 },
 
                 onGameStart: (data) => {
@@ -119,7 +144,6 @@ export function useChatWebSocket(roomId, userId) {
 
                     // ROUND_END 처리 - 다음 라운드 정보 추출
                     const nextRoundNum = roundData.nextRound ?? ((roundData.currentRound || 0) + 1)
-                    const nextDrawer = roundData.nextDrawer ?? roundData.nextDrawerId ?? roundData.currentDrawerId
                     const nextWord = roundData.nextWord
                     const answer = roundData.answer // 이번 라운드 정답
 
@@ -132,16 +156,40 @@ export function useChatWebSocket(roomId, userId) {
                         })
                     }
 
-                    console.log('[useChatWebSocket] Calling setGameState with:', {
-                        nextRoundNum,
-                        nextDrawer,
-                        nextWord,
-                        answer,
-                        scores,
-                    })
-
                     setGameState((prev) => {
                         console.log('[useChatWebSocket] setGameState callback, prev:', prev)
+
+                        // 다음 출제자 계산 - 서버에서 제공하지 않으면 drawerOrder 기반으로 계산
+                        let nextDrawer = roundData.nextDrawer ?? roundData.nextDrawerId
+
+                        // 서버에서 다음 출제자를 제공하지 않은 경우, drawerOrder 기반으로 계산
+                        if (!nextDrawer && prev?.drawerOrder && prev.drawerOrder.length > 0) {
+                            const drawerOrder = prev.drawerOrder
+                            const currentDrawerIndex = drawerOrder.indexOf(prev.currentDrawerId)
+                            const nextDrawerIndex = (currentDrawerIndex + 1) % drawerOrder.length
+                            nextDrawer = drawerOrder[nextDrawerIndex]
+                            console.log('[useChatWebSocket] Calculated nextDrawer from drawerOrder:', {
+                                drawerOrder,
+                                currentDrawerIndex,
+                                nextDrawerIndex,
+                                nextDrawer,
+                            })
+                        }
+
+                        // 그래도 없으면 currentDrawerId 사용 (fallback, 이 경우 문제가 있음)
+                        if (!nextDrawer) {
+                            nextDrawer = roundData.currentDrawerId || prev?.currentDrawerId
+                            console.warn('[useChatWebSocket] Could not determine nextDrawer, using fallback:', nextDrawer)
+                        }
+
+                        console.log('[useChatWebSocket] Calling setGameState with:', {
+                            nextRoundNum,
+                            nextDrawer,
+                            nextWord,
+                            answer,
+                            scores,
+                            prevDrawerId: prev?.currentDrawerId,
+                        })
 
                         if (!prev) {
                             console.warn('[useChatWebSocket] prev is null, creating new state')
@@ -159,15 +207,6 @@ export function useChatWebSocket(roomId, userId) {
                                 correctGuessers: [],
                             }
                         }
-
-                        console.log('[useChatWebSocket] Updating gameState:', {
-                            prevRound: prev.currentRound,
-                            nextRoundNum,
-                            nextDrawer,
-                            nextWord,
-                            answer,
-                            scores,
-                        })
 
                         // 항상 다음 라운드로 전환 (ROUND_END는 라운드가 끝났다는 의미)
                         return {
@@ -187,11 +226,17 @@ export function useChatWebSocket(roomId, userId) {
                 onCorrectAnswer: (data) => {
                     console.log('[useChatWebSocket] Correct answer - FULL DATA:', JSON.stringify(data, null, 2))
                     const answerData = data.data || data
-                    setGameState((prev) => ({
-                        ...prev,
-                        correctGuessers: [...(prev?.correctGuessers || []), answerData.userId],
-                        scores: answerData.scores || prev?.scores,
-                    }))
+                    setGameState((prev) => {
+                        // prev가 null이면 기본 상태 유지
+                        if (!prev) return prev
+
+                        return {
+                            ...prev,
+                            correctGuessers: [...(prev.correctGuessers || []), answerData.userId],
+                            // scores는 기존 값 유지 (answerData.scores가 있을 때만 업데이트)
+                            scores: answerData.scores ? answerData.scores : prev.scores,
+                        }
+                    })
                     // 정답 비눗방울 표시 데이터 설정
                     setCorrectAnswerBubble({
                         userId: answerData.userId,
@@ -220,9 +265,12 @@ export function useChatWebSocket(roomId, userId) {
                 onDrawing: (data) => {
                     // 캔버스에 그리기 데이터 적용
                     console.log('[useChatWebSocket] Drawing received:', data)
-                    // data.data가 있으면 그것을 사용, 없으면 원본 data 사용
-                    const drawingData = data.data || data
-                    setReceivedDrawing(drawingData)
+                    // 실제 stroke 데이터는 content 필드에 있음 (전송 시 content에 넣었으므로)
+                    // 서버 응답 구조: { messageType: 'DRAWING', data: { content: '...' }, ... }
+                    // 또는: { messageType: 'DRAWING', content: '...', ... }
+                    const strokeData = data.content || data.data?.content || data.data || data
+                    console.log('[useChatWebSocket] Extracted stroke data:', strokeData)
+                    setReceivedDrawing(strokeData)
                 },
 
                 onDrawingClear: () => {
@@ -261,6 +309,13 @@ export function useChatWebSocket(roomId, userId) {
                     setIsConnected(false)
                     isConnectedRef.current = false
                 },
+
+                onReconnectNeeded: () => {
+                    console.log('[useChatWebSocket] Reconnect needed, getting new token...')
+                    // 기존 토큰 삭제 후 새 토큰으로 재연결
+                    sessionStorage.removeItem(`roomToken_${roomId}`)
+                    connect(true)
+                },
             })
 
             // 2. roomToken으로 WebSocket 연결
@@ -273,9 +328,19 @@ export function useChatWebSocket(roomId, userId) {
                 message: err.message,
                 stack: err.stack,
                 roomId,
-                userId
+                userId,
+                forceNewToken
             })
-            setError('연결에 실패했습니다: ' + err.message)
+
+            // 기존 토큰으로 연결 실패 시, 새 토큰으로 재시도 (1회만)
+            if (!forceNewToken && sessionStorage.getItem(`roomToken_${roomId}`)) {
+                console.log('[useChatWebSocket] Connection failed with cached token, retrying with new token...')
+                sessionStorage.removeItem(`roomToken_${roomId}`)
+                // 재귀 호출로 새 토큰 발급 후 재시도
+                return connect(true)
+            }
+
+            setError('연결에 실패했습니다: ' + (err.message || '알 수 없는 오류'))
             setIsConnected(false)
             isConnectedRef.current = false
         }

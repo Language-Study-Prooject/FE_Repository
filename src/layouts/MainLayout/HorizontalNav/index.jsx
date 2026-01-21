@@ -15,6 +15,7 @@ import {
     School as LearnIcon,
     Settings as SettingsIcon,
     SmartToy as AiIcon,
+    SportsEsports as GameIcon,
     TrendingUp as TrendingIcon,
 } from '@mui/icons-material'
 import {useThemeMode} from '../../../contexts/ThemeContext'
@@ -116,6 +117,21 @@ const HorizontalNav = () => {
                     icon: TrendingIcon,
                     path: '/vocab/stats',
                     desc: t('sidebar.reportsDesc')
+                },
+            ],
+        },
+        {
+            id: 'games',
+            label: t('games.title'),
+            icon: GameIcon,
+            color: '#8b5cf6',
+            children: [
+                {
+                    id: 'catchmind',
+                    label: t('games.catchmindTitle'),
+                    icon: GameIcon,
+                    path: '/games/catchmind',
+                    desc: t('games.catchmindDesc')
                 },
             ],
         },
