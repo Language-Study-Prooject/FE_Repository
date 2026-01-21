@@ -238,7 +238,14 @@ const withMock = (apiCall, mockData) => {
     // 실제 API 호출 시 응답의 data 필드 추출 (백엔드 응답: { isSuccess, message, data })
     return apiCall()
         .then(response => response.data || response)
-        .catch(() => mockData)
+        .catch((err) => {
+            // 400 에러(level required 등)는 re-throw하여 컴포넌트에서 처리
+            if (err.response?.status === 400) {
+                throw err
+            }
+            // 네트워크 에러 등은 mock fallback
+            return mockData
+        })
 }
 
 /**
