@@ -14,6 +14,7 @@ import {
     LinearProgress,
     Tooltip,
     Typography,
+    useTheme,
 } from '@mui/material'
 import {
     ArrowForward as ArrowIcon,
@@ -34,9 +35,13 @@ import {dailyService, statsService, userWordService, voiceService} from '../serv
 import {DAILY_GOAL} from '../constants/vocabConstants'
 import {useTranslation} from '../../../contexts/SettingsContext'
 import {useAuth} from '../../../contexts/AuthContext'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 
 export default function VocabDashboard() {
     const navigate = useNavigate()
+    const theme = useTheme()
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
     const {t, isKorean} = useTranslation()
     const {user} = useAuth()
     const userId = user?.userId || user?.username
@@ -614,9 +619,9 @@ export default function VocabDashboard() {
                                                     : hasProgress
                                                         ? '#fbbf24'
                                                         : isFuture
-                                                            ? '#f5f5f5'
-                                                            : '#fee2e2',
-                                                border: isFuture ? '2px dashed #e5e5e5' : 'none',
+                                                            ? (isDark ? '#292524' : '#f5f5f5')
+                                                            : (isDark ? '#450a0a' : '#fee2e2'),
+                                                border: isFuture ? `2px dashed ${isDark ? '#44403c' : '#e5e5e5'}` : 'none',
                                             }}
                                         >
                                             {isCompleted ? (
@@ -665,8 +670,8 @@ export default function VocabDashboard() {
                                         justifyContent: 'space-between',
                                         p: 2,
                                         borderRadius: 2,
-                                        backgroundColor: '#fafafa',
-                                        '&:hover': {backgroundColor: '#f5f5f5'},
+                                        backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#fafafa',
+                                        '&:hover': {backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#f5f5f5'},
                                     }}
                                 >
                                     <Box flex={1}>
