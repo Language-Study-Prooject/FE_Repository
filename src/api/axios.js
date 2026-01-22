@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://gc8l9ijhzc.execute-api.ap-northeast-2.amazonaws.com/dev'
+const API_BASE_URL = import.meta.env.VITE_API_URL
 
 const api = axios.create({
     baseURL: API_BASE_URL,

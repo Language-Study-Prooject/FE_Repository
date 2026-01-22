@@ -3,9 +3,8 @@
  * 실시간 토큰 단위 AI 응답을 위한 WebSocket 서비스
  */
 
-// WebSocket URL - 환경변수에서 가져오거나 기본값 사용
-const WS_URL = import.meta.env.VITE_GRAMMAR_WS_URL ||
-    'wss://placeholder.execute-api.ap-northeast-2.amazonaws.com/dev'
+// WebSocket URL - 환경변수에서 가져옴
+const WS_URL = import.meta.env.VITE_GRAMMAR_WS_URL
 
 // Mock 모드 (환경변수로 제어: VITE_USE_MOCK=true)
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'

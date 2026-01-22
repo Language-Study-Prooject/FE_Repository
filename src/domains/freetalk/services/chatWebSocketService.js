@@ -7,8 +7,7 @@
  * 2. roomToken으로 WebSocket 연결: wss://...?roomToken={roomToken}
  */
 
-const WS_URL = import.meta.env.VITE_WS_URL ||
-    'wss://t378dif43l.execute-api.ap-northeast-2.amazonaws.com/dev'
+const WS_URL = import.meta.env.VITE_WS_URL
 
 /**
  * Chat WebSocket 연결 클래스
