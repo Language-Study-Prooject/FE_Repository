@@ -2,8 +2,11 @@ import {useEffect, useRef, useState} from 'react'
 import {Avatar, Box, IconButton, Paper, TextField, Typography} from '@mui/material'
 import {Send as SendIcon} from '@mui/icons-material'
 import {GAME_COLORS} from '../theme/gameTheme'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 
 const WaitingChat = ({ messages, onSendMessage, currentUserId, disabled }) => {
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
     const [newMessage, setNewMessage] = useState('')
     const messagesEndRef = useRef(null)
 
@@ -44,7 +47,7 @@ const WaitingChat = ({ messages, onSendMessage, currentUserId, disabled }) => {
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 1,
-                    bgcolor: '#F8FAFC',
+                    bgcolor: isDark ? '#18181b' : '#F8FAFC',
                     borderRadius: '12px 12px 0 0',
                 }}
             >
@@ -127,7 +130,7 @@ const WaitingChat = ({ messages, onSendMessage, currentUserId, disabled }) => {
                                             sx={{
                                                 px: 1.5,
                                                 py: 0.75,
-                                                bgcolor: isOwn ? GAME_COLORS.primary : 'white',
+                                                bgcolor: isOwn ? GAME_COLORS.primary : (isDark ? '#3f3f46' : 'white'),
                                                 color: isOwn ? 'white' : 'text.primary',
                                                 borderRadius: isOwn
                                                     ? '12px 12px 0 12px'
@@ -157,7 +160,7 @@ const WaitingChat = ({ messages, onSendMessage, currentUserId, disabled }) => {
             <Box
                 sx={{
                     p: 1.5,
-                    bgcolor: 'white',
+                    bgcolor: isDark ? '#27272a' : 'white',
                     borderTop: '1px solid',
                     borderColor: 'divider',
                     borderRadius: '0 0 12px 12px',
