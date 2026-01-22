@@ -2,11 +2,11 @@ name: PR-Jira Sync
 
 on:
   pull_request_target:
-    types: [ opened, reopened, edited, closed ]
+    types: [opened, reopened, edited, closed]
     branches:
       - develop
       - main
-
+  
   workflow_dispatch:
     inputs:
       process_all_open_prs:
@@ -138,7 +138,7 @@ jobs:
               issue_number: context.payload.pull_request.number,
               body: `Jira: [${jiraKey}](${jiraUrl})`
             });
-
+  
   # PR 수정 시 Jira 업데이트
   update-jira-on-pr-edit:
     if: github.event_name == 'pull_request_target' && github.event.action == 'edited'
@@ -205,7 +205,7 @@ jobs:
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
           JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
           DESC_JSON: ${{ steps.parse.outputs.description }}
-
+          
         with:
           script: |
             const jiraKey = '${{ steps.get-jira-key.outputs.jira_key }}';
@@ -417,31 +417,31 @@ jobs:
                 repo: context.repo.repo,
                 issue_number: pr.number
               });
-            
+              
               const hasJiraLink = comments.data.some(c => c.body.includes('Jira:'));
               if (hasJiraLink) {
                 console.log(`PR #${pr.number} already has Jira link, skipping`);
                 continue;
               }
-            
+              
               console.log(`Processing PR #${pr.number}: ${pr.title}`);
-            
+              
               // 제목에서 type 파싱
               const typeMatch = pr.title.match(/^(\w+)(?:\([^)]*\))?:/);
               const type = typeMatch ? typeMatch[1].toLowerCase() : 'task';
               const jiraType = typeMap[type] || 'Task';
-            
+              
               // 본문 파싱
               const body = pr.body || '';
               const sections = {};
               const sectionNames = ['목적', '변경 요약', '수용 기준 검증'];
-            
+              
               for (const name of sectionNames) {
                 const regex = new RegExp(`${name}\\n([\\s\\S]*?)(?=\\n(?:목적|변경 요약|수용 기준 검증|브레이킹|테스트|참조)|$)`);
                 const match = body.match(regex);
                 if (match) sections[name] = match[1].trim();
               }
-            
+              
               const jiraResponse = await fetch(
                 `${process.env.JIRA_BASE_URL}/rest/api/3/issue`,
                 {
@@ -472,9 +472,9 @@ jobs:
                   })
                 }
               );
-            
+              
               const jiraData = await jiraResponse.json();
-            
+              
               if (jiraData.key) {
                 await github.rest.issues.createComment({
                   owner: context.repo.owner,
@@ -486,6 +486,6 @@ jobs:
               } else {
                 console.log(`Failed to create Jira for PR #${pr.number}:`, jiraData);
               }
-            
+              
               await new Promise(resolve => setTimeout(resolve, 1000));
             }
