@@ -1,6 +1,6 @@
-import {useState} from 'react'
-import {Navigate, Route, Routes, useNavigate} from 'react-router-dom'
-import {Box, Button, Card, CardContent, CircularProgress, Collapse, Container, Grid, Typography} from '@mui/material'
+import { useState, useEffect } from 'react'
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { Box, Button, Card, CardContent, CircularProgress, Collapse, Container, Grid, Typography } from '@mui/material'
 import {
     ChevronRight as ChevronRightIcon,
     Create as WritingCategoryIcon,
@@ -18,6 +18,7 @@ import {
 } from '@mui/icons-material'
 import MainLayout from './layouts/MainLayout'
 import FreetalkPeoplePage from './domains/freetalk/pages/FreetalkPeoplePage'
+import { SpeakingPage } from './domains/speaking'
 import ChatRoomPage from './domains/freetalk/pages/ChatRoomPage'
 import ChatRoomModal from './domains/freetalk/components/ChatRoomModal'
 import VocabDashboard from './domains/vocab/pages/VocabDashboard'
@@ -25,20 +26,20 @@ import DailyLearning from './domains/vocab/pages/DailyLearning'
 import TestPage from './domains/vocab/pages/TestPage'
 import WordListPage from './domains/vocab/pages/WordListPage'
 import StatsPage from './domains/vocab/pages/StatsPage'
-import {WritingPage} from './domains/grammar'
-import {BadgeSection} from './domains/badge'
+import { WritingPage } from './domains/grammar'
+import { BadgeSection } from './domains/badge'
 import CatchmindLobbyPage from './domains/games/pages/CatchmindLobbyPage'
 import CatchmindWaitingPage from './domains/games/pages/CatchmindWaitingPage'
 import CatchmindPlayPage from './domains/games/pages/CatchmindPlayPage'
-import {useChat} from './contexts/ChatContext'
-import {useSettings} from './contexts/SettingsContext'
-import {useAuth} from './contexts/AuthContext'
+import { useChat } from './contexts/ChatContext'
+import { useSettings } from './contexts/SettingsContext'
+import { useAuth } from './contexts/AuthContext'
 import LoginPage from './pages/Login'
 import SignUpPage from './pages/SignUp'
 
 
-function ProtectedRoute({children}) {
-    const {isAuthenticated, isLoading} = useAuth()
+function ProtectedRoute({ children }) {
+    const { isAuthenticated, isLoading } = useAuth()
 
     if (isLoading) {
         return (
@@ -48,21 +49,21 @@ function ProtectedRoute({children}) {
                 alignItems: 'center',
                 justifyContent: 'center'
             }}>
-                <CircularProgress/>
+                <CircularProgress />
             </Box>
         )
     }
 
     if (!isAuthenticated) {
-        return <Navigate to="/login" replace/>
+        return <Navigate to="/login" replace />
     }
 
     return children
 }
 
 // 이미 로그인된 경우 대시보드로
-function PublicRoute({children}) {
-    const {isAuthenticated, isLoading} = useAuth()
+function PublicRoute({ children }) {
+    const { isAuthenticated, isLoading } = useAuth()
 
     if (isLoading) {
         return (
@@ -72,13 +73,13 @@ function PublicRoute({children}) {
                 alignItems: 'center',
                 justifyContent: 'center'
             }}>
-                <CircularProgress/>
+                <CircularProgress />
             </Box>
         )
     }
 
     if (isAuthenticated) {
-        return <Navigate to="/dashboard" replace/>
+        return <Navigate to="/dashboard" replace />
     }
 
     return children
@@ -88,7 +89,7 @@ function PublicRoute({children}) {
 function Dashboard() {
     const navigate = useNavigate()
     const [expandedCard, setExpandedCard] = useState(null)
-    const {t} = useSettings()
+    const { t } = useSettings()
 
     const learningModes = [
         {
@@ -203,9 +204,9 @@ function Dashboard() {
     }
 
     return (
-        <Container maxWidth="lg" sx={{pb: 6}}>
+        <Container maxWidth="lg" sx={{ pb: 6 }}>
             {/* Header */}
-            <Box sx={{mb: 5, pt: 2}}>
+            <Box sx={{ mb: 5, pt: 2 }}>
                 <Box display="flex" alignItems="center" gap={1.5} mb={1}>
                     <Box
                         sx={{
@@ -219,10 +220,10 @@ function Dashboard() {
                             boxShadow: '0 8px 16px -4px rgba(249, 115, 22, 0.3)',
                         }}
                     >
-                        <WaveIcon sx={{fontSize: 28, color: 'white'}}/>
+                        <WaveIcon sx={{ fontSize: 28, color: 'white' }} />
                     </Box>
                     <Box>
-                        <Typography variant="h4" fontWeight={800} sx={{lineHeight: 1.2}}>
+                        <Typography variant="h4" fontWeight={800} sx={{ lineHeight: 1.2 }}>
                             {t('dashboard.greeting')}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
@@ -240,7 +241,7 @@ function Dashboard() {
                     const hasChildren = mode.children && mode.children.length > 0
 
                     return (
-                        <Grid key={mode.id} size={{xs: 12, md: 6}}>
+                        <Grid key={mode.id} size={{ xs: 12, md: 6 }}>
                             <Card
                                 onMouseEnter={() => handleCardHover(mode.id)}
                                 onMouseLeave={handleCardLeave}
@@ -261,8 +262,8 @@ function Dashboard() {
                                     minHeight: isExpanded ? 'auto' : 140,
                                 }}
                             >
-                                <CardContent sx={{p: 3}}>
-                                    <Box sx={{display: 'flex', alignItems: 'flex-start', gap: 2.5}}>
+                                <CardContent sx={{ p: 3 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2.5 }}>
                                         {/* Icon */}
                                         <Box
                                             sx={{
@@ -276,11 +277,11 @@ function Dashboard() {
                                                 flexShrink: 0,
                                             }}
                                         >
-                                            <Icon sx={{fontSize: 28, color: mode.color}}/>
+                                            <Icon sx={{ fontSize: 28, color: mode.color }} />
                                         </Box>
 
                                         {/* Text */}
-                                        <Box sx={{flex: 1, minWidth: 0}}>
+                                        <Box sx={{ flex: 1, minWidth: 0 }}>
                                             <Box sx={{
                                                 display: 'flex',
                                                 alignItems: 'center',
@@ -299,7 +300,7 @@ function Dashboard() {
                                                     />
                                                 )}
                                             </Box>
-                                            <Typography variant="body2" color="text.secondary" sx={{mt: 0.5}}>
+                                            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                                                 {mode.description}
                                             </Typography>
                                         </Box>
@@ -358,14 +359,14 @@ function Dashboard() {
                                                                     boxShadow: '0 2px 8px -2px rgba(0,0,0,0.1)',
                                                                 }}
                                                             >
-                                                                <ChildIcon sx={{color: mode.color, fontSize: 22}}/>
+                                                                <ChildIcon sx={{ color: mode.color, fontSize: 22 }} />
                                                             </Box>
                                                             <Typography variant="subtitle2" fontWeight={700}
-                                                                        sx={{mb: 0.5}}>
+                                                                sx={{ mb: 0.5 }}>
                                                                 {child.title}
                                                             </Typography>
                                                             <Typography variant="caption" color="text.secondary"
-                                                                        sx={{lineHeight: 1.3}}>
+                                                                sx={{ lineHeight: 1.3 }}>
                                                                 {child.description}
                                                             </Typography>
                                                         </Box>
@@ -382,12 +383,12 @@ function Dashboard() {
             </Grid>
 
             {/* Recent Activity */}
-            <Box sx={{mt: 6}}>
-                <Typography variant="h5" fontWeight={700} gutterBottom sx={{mb: 3}}>
+            <Box sx={{ mt: 6 }}>
+                <Typography variant="h5" fontWeight={700} gutterBottom sx={{ mb: 3 }}>
                     {t('dashboard.recentActivity')}
                 </Typography>
                 <Card>
-                    <CardContent sx={{py: 6, textAlign: 'center'}}>
+                    <CardContent sx={{ py: 6, textAlign: 'center' }}>
                         <Box
                             sx={{
                                 width: 64,
@@ -401,17 +402,17 @@ function Dashboard() {
                                 mb: 2,
                             }}
                         >
-                            <LearnIcon sx={{fontSize: 32, color: '#a8a29e'}}/>
+                            <LearnIcon sx={{ fontSize: 32, color: '#a8a29e' }} />
                         </Box>
                         <Typography color="text.secondary" variant="body1" fontWeight={500}>
                             {t('dashboard.noHistory')}
                         </Typography>
-                        <Typography color="text.disabled" variant="body2" sx={{mt: 0.5}}>
+                        <Typography color="text.disabled" variant="body2" sx={{ mt: 0.5 }}>
                             {t('dashboard.startLearning')}
                         </Typography>
                         <Button
                             variant="contained"
-                            sx={{mt: 3}}
+                            sx={{ mt: 3 }}
                             onClick={() => navigate('/vocab')}
                         >
                             {t('dashboard.startButton')}
@@ -426,25 +427,16 @@ function Dashboard() {
 // Placeholder Pages
 function OpicPage() {
     return (
-        <Container maxWidth="lg" sx={{py: 4}}>
+        <Container maxWidth="lg" sx={{ py: 4 }}>
             <Typography variant="h4" fontWeight={700}>OPIC Practice</Typography>
             <Typography color="text.secondary">Level-based training</Typography>
         </Container>
     )
 }
 
-function FreetalkAiPage() {
-    return (
-        <Container maxWidth="lg" sx={{py: 4}}>
-            <Typography variant="h4" fontWeight={700}>AI Conversation</Typography>
-            <Typography color="text.secondary">Free conversation with AI</Typography>
-        </Container>
-    )
-}
-
 
 function ReportsPage() {
-    const {isKorean} = useSettings()
+    const { isKorean } = useSettings()
 
     // 더미 통계 데이터
     const stats = {
@@ -457,9 +449,9 @@ function ReportsPage() {
     }
 
     return (
-        <Container maxWidth="lg" sx={{py: 4}}>
+        <Container maxWidth="lg" sx={{ py: 4 }}>
             {/* 헤더 */}
-            <Box sx={{mb: 4}}>
+            <Box sx={{ mb: 4 }}>
                 <Box display="flex" alignItems="center" gap={2} mb={1}>
                     <Box
                         sx={{
@@ -473,7 +465,7 @@ function ReportsPage() {
                             boxShadow: '0 8px 16px -4px rgba(139, 92, 246, 0.3)',
                         }}
                     >
-                        <QuizIcon sx={{fontSize: 26, color: 'white'}}/>
+                        <QuizIcon sx={{ fontSize: 26, color: 'white' }} />
                     </Box>
                     <Box>
                         <Typography variant="h4" fontWeight={800}>
@@ -487,9 +479,9 @@ function ReportsPage() {
             </Box>
 
             {/* 통계 요약 카드 */}
-            <Grid container spacing={2} sx={{mb: 4}}>
-                <Grid size={{xs: 6, md: 3}}>
-                    <Card sx={{p: 2.5, borderRadius: '16px', height: '100%'}}>
+            <Grid container spacing={2} sx={{ mb: 4 }}>
+                <Grid size={{ xs: 6, md: 3 }}>
+                    <Card sx={{ p: 2.5, borderRadius: '16px', height: '100%' }}>
                         <Typography variant="body2" color="text.secondary" gutterBottom>
                             {isKorean ? '총 학습일' : 'Study Days'}
                         </Typography>
@@ -501,8 +493,8 @@ function ReportsPage() {
                         </Typography>
                     </Card>
                 </Grid>
-                <Grid size={{xs: 6, md: 3}}>
-                    <Card sx={{p: 2.5, borderRadius: '16px', height: '100%'}}>
+                <Grid size={{ xs: 6, md: 3 }}>
+                    <Card sx={{ p: 2.5, borderRadius: '16px', height: '100%' }}>
                         <Typography variant="body2" color="text.secondary" gutterBottom>
                             {isKorean ? '학습한 단어' : 'Words Learned'}
                         </Typography>
@@ -514,8 +506,8 @@ function ReportsPage() {
                         </Typography>
                     </Card>
                 </Grid>
-                <Grid size={{xs: 6, md: 3}}>
-                    <Card sx={{p: 2.5, borderRadius: '16px', height: '100%'}}>
+                <Grid size={{ xs: 6, md: 3 }}>
+                    <Card sx={{ p: 2.5, borderRadius: '16px', height: '100%' }}>
                         <Typography variant="body2" color="text.secondary" gutterBottom>
                             {isKorean ? '테스트 완료' : 'Tests Taken'}
                         </Typography>
@@ -527,8 +519,8 @@ function ReportsPage() {
                         </Typography>
                     </Card>
                 </Grid>
-                <Grid size={{xs: 6, md: 3}}>
-                    <Card sx={{p: 2.5, borderRadius: '16px', height: '100%'}}>
+                <Grid size={{ xs: 6, md: 3 }}>
+                    <Card sx={{ p: 2.5, borderRadius: '16px', height: '100%' }}>
                         <Typography variant="body2" color="text.secondary" gutterBottom>
                             {isKorean ? '평균 점수' : 'Average Score'}
                         </Typography>
@@ -543,12 +535,12 @@ function ReportsPage() {
             </Grid>
 
             {/* 연속 학습 */}
-            <Card sx={{p: 3, borderRadius: '20px', mb: 4}}>
+            <Card sx={{ p: 3, borderRadius: '20px', mb: 4 }}>
                 <Typography variant="h6" fontWeight={700} gutterBottom>
                     {isKorean ? '연속 학습 기록' : 'Study Streak'}
                 </Typography>
                 <Grid container spacing={3}>
-                    <Grid size={{xs: 6}}>
+                    <Grid size={{ xs: 6 }}>
                         <Box
                             sx={{
                                 p: 2,
@@ -565,7 +557,7 @@ function ReportsPage() {
                             </Typography>
                         </Box>
                     </Grid>
-                    <Grid size={{xs: 6}}>
+                    <Grid size={{ xs: 6 }}>
                         <Box
                             sx={{
                                 p: 2,
@@ -586,22 +578,22 @@ function ReportsPage() {
             </Card>
 
             {/* 배지 섹션 */}
-            <BadgeSection/>
+            <BadgeSection />
         </Container>
     )
 }
 
 function SettingsPage() {
-    const {settings, setTtsVoice, setLanguage, t} = useSettings()
+    const { settings, setTtsVoice, setLanguage, t } = useSettings()
 
     const languageOptions = [
-        {value: 'ko', label: '한국어', flag: '🇰🇷'},
-        {value: 'en', label: 'English', flag: '🇺🇸'},
+        { value: 'ko', label: '한국어', flag: '🇰🇷' },
+        { value: 'en', label: 'English', flag: '🇺🇸' },
     ]
 
     return (
-        <Container maxWidth="md" sx={{py: 4}}>
-            <Box sx={{mb: 4}}>
+        <Container maxWidth="md" sx={{ py: 4 }}>
+            <Box sx={{ mb: 4 }}>
                 <Box display="flex" alignItems="center" gap={2} mb={1}>
                     <Box
                         sx={{
@@ -615,10 +607,10 @@ function SettingsPage() {
                             boxShadow: '0 6px 12px -3px rgba(107, 114, 128, 0.3)',
                         }}
                     >
-                        <VocabIcon sx={{fontSize: 26, color: 'white'}}/>
+                        <VocabIcon sx={{ fontSize: 26, color: 'white' }} />
                     </Box>
                     <Box>
-                        <Typography variant="h4" fontWeight={800} sx={{lineHeight: 1.2}}>
+                        <Typography variant="h4" fontWeight={800} sx={{ lineHeight: 1.2 }}>
                             {t('settings.title')}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
@@ -630,24 +622,24 @@ function SettingsPage() {
 
             <Box display="flex" flexDirection="column" gap={3}>
                 {/* Language Settings */}
-                <Card sx={{borderRadius: '20px', overflow: 'hidden'}}>
+                <Card sx={{ borderRadius: '20px', overflow: 'hidden' }}>
                     <Box
                         sx={{
                             p: 3,
                             background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
                         }}
                     >
-                        <Typography variant="h6" fontWeight={700} sx={{color: 'white'}}>
+                        <Typography variant="h6" fontWeight={700} sx={{ color: 'white' }}>
                             {t('settings.language')}
                         </Typography>
-                        <Typography variant="body2" sx={{color: 'rgba(255,255,255,0.8)'}}>
+                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
                             {t('settings.languageDesc')}
                         </Typography>
                     </Box>
-                    <CardContent sx={{p: 3}}>
+                    <CardContent sx={{ p: 3 }}>
                         <Grid container spacing={2}>
                             {languageOptions.map((option) => (
-                                <Grid key={option.value} size={{xs: 6}}>
+                                <Grid key={option.value} size={{ xs: 6 }}>
                                     <Box
                                         onClick={() => setLanguage(option.value)}
                                         sx={{
@@ -665,7 +657,7 @@ function SettingsPage() {
                                             },
                                         }}
                                     >
-                                        <Typography variant="h4" sx={{mb: 1}}>
+                                        <Typography variant="h4" sx={{ mb: 1 }}>
                                             {option.flag}
                                         </Typography>
                                         <Typography
@@ -683,23 +675,23 @@ function SettingsPage() {
                 </Card>
 
                 {/* TTS Voice Settings */}
-                <Card sx={{borderRadius: '20px', overflow: 'hidden'}}>
+                <Card sx={{ borderRadius: '20px', overflow: 'hidden' }}>
                     <Box
                         sx={{
                             p: 3,
                             background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
                         }}
                     >
-                        <Typography variant="h6" fontWeight={700} sx={{color: 'white'}}>
+                        <Typography variant="h6" fontWeight={700} sx={{ color: 'white' }}>
                             {t('settings.ttsVoice')}
                         </Typography>
-                        <Typography variant="body2" sx={{color: 'rgba(255,255,255,0.8)'}}>
+                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
                             {t('settings.ttsVoiceDesc')}
                         </Typography>
                     </Box>
-                    <CardContent sx={{p: 3}}>
+                    <CardContent sx={{ p: 3 }}>
                         <Grid container spacing={2}>
-                            <Grid size={{xs: 6}}>
+                            <Grid size={{ xs: 6 }}>
                                 <Box
                                     onClick={() => setTtsVoice('FEMALE')}
                                     sx={{
@@ -730,7 +722,7 @@ function SettingsPage() {
                                             mb: 1.5,
                                         }}
                                     >
-                                        <Typography sx={{fontSize: 24}}>👩</Typography>
+                                        <Typography sx={{ fontSize: 24 }}>👩</Typography>
                                     </Box>
                                     <Typography
                                         variant="body1"
@@ -741,7 +733,7 @@ function SettingsPage() {
                                     </Typography>
                                 </Box>
                             </Grid>
-                            <Grid size={{xs: 6}}>
+                            <Grid size={{ xs: 6 }}>
                                 <Box
                                     onClick={() => setTtsVoice('MALE')}
                                     sx={{
@@ -772,7 +764,7 @@ function SettingsPage() {
                                             mb: 1.5,
                                         }}
                                     >
-                                        <Typography sx={{fontSize: 24}}>👨</Typography>
+                                        <Typography sx={{ fontSize: 24 }}>👨</Typography>
                                     </Box>
                                     <Typography
                                         variant="body1"
@@ -793,7 +785,7 @@ function SettingsPage() {
 
 function NotFound() {
     const navigate = useNavigate()
-    const {t} = useSettings()
+    const { t } = useSettings()
 
     return (
         <Container maxWidth="sm">
@@ -811,10 +803,10 @@ function NotFound() {
                 >
                     404
                 </Typography>
-                <Typography variant="h5" fontWeight={600} sx={{mt: 2, mb: 1}}>
+                <Typography variant="h5" fontWeight={600} sx={{ mt: 2, mb: 1 }}>
                     {t('notFound.title')}
                 </Typography>
-                <Typography color="text.secondary" sx={{mb: 4}}>
+                <Typography color="text.secondary" sx={{ mb: 4 }}>
                     {t('notFound.message')}
                 </Typography>
                 <Button
@@ -830,7 +822,7 @@ function NotFound() {
 }
 
 function App() {
-    const {activeRoom, closeChatRoom} = useChat()
+    const { activeRoom, closeChatRoom } = useChat()
 
     const handleRefreshRooms = () => {
         // Refresh rooms list after leaving a room
@@ -840,45 +832,45 @@ function App() {
         <>
             <Routes>
                 {/* Chat room page (separate layout) */}
-                <Route path="/freetalk/people/room/:roomId" element={<ChatRoomPage/>}/>
+                <Route path="/freetalk/people/room/:roomId" element={<ChatRoomPage />} />
 
                 {/* 로그인 / 회원가입 route */}
                 <Route path="/login" element={
                     <PublicRoute>
-                        <LoginPage/>
+                        <LoginPage />
                     </PublicRoute>
-                }/>
+                } />
                 <Route path="/signup" element={
                     <PublicRoute>
-                        <SignUpPage/>
+                        <SignUpPage />
                     </PublicRoute>
-                }/>
+                } />
 
                 {/* MainLayout routes */}
                 <Route element={<ProtectedRoute>
-                    <MainLayout/>
+                    <MainLayout />
                 </ProtectedRoute>
                 }>
-                    <Route path="/" element={<Dashboard/>}/>
-                    <Route path="/dashboard" element={<Dashboard/>}/>
-                    <Route path="/opic" element={<OpicPage/>}/>
-                    <Route path="/freetalk/people" element={<FreetalkPeoplePage/>}/>
-                    <Route path="/freetalk/ai" element={<FreetalkAiPage/>}/>
-                    <Route path="/writing" element={<WritingPage/>}/>
-                    <Route path="/vocab" element={<VocabDashboard/>}/>
-                    <Route path="/vocab/daily" element={<DailyLearning/>}/>
-                    <Route path="/vocab/test" element={<TestPage/>}/>
-                    <Route path="/vocab/words" element={<WordListPage/>}/>
-                    <Route path="/vocab/stats" element={<StatsPage/>}/>
-                    <Route path="/reports" element={<ReportsPage/>}/>
-                    <Route path="/settings" element={<SettingsPage/>}/>
-                    <Route path="/games/catchmind" element={<CatchmindLobbyPage/>}/>
-                    <Route path="/games/catchmind/:roomId/waiting" element={<CatchmindWaitingPage/>}/>
-                    <Route path="/games/catchmind/:roomId/play" element={<CatchmindPlayPage/>}/>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/opic" element={<OpicPage />} />
+                    <Route path="/freetalk/people" element={<FreetalkPeoplePage />} />
+                    <Route path="/freetalk/ai" element={<SpeakingPage />} />
+                    <Route path="/writing" element={<WritingPage />} />
+                    <Route path="/vocab" element={<VocabDashboard />} />
+                    <Route path="/vocab/daily" element={<DailyLearning />} />
+                    <Route path="/vocab/test" element={<TestPage />} />
+                    <Route path="/vocab/words" element={<WordListPage />} />
+                    <Route path="/vocab/stats" element={<StatsPage />} />
+                    <Route path="/reports" element={<ReportsPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="/games/catchmind" element={<CatchmindLobbyPage />} />
+                    <Route path="/games/catchmind/:roomId/waiting" element={<CatchmindWaitingPage />} />
+                    <Route path="/games/catchmind/:roomId/play" element={<CatchmindPlayPage />} />
                 </Route>
 
                 {/* 404 */}
-                <Route path="*" element={<NotFound/>}/>
+                <Route path="*" element={<NotFound />} />
             </Routes>
 
             {/* Global chat modal */}
