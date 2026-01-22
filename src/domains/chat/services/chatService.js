@@ -241,6 +241,7 @@ export const chatRoomService = {
         return withMock(
             () => {
                 const queryParams = new URLSearchParams()
+                queryParams.append('type', 'CHAT')  // 채팅방만 조회
                 queryParams.append('limit', limit)
                 if (level) queryParams.append('level', level)
                 if (joined) {

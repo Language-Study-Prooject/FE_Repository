@@ -27,12 +27,15 @@ import BubbleOverlay from '../components/BubbleOverlay'
 import {gameService} from '../services/gameService'
 import {GAME_COLORS, GAME_LAYOUT, GAME_TYPOGRAPHY} from '../theme/gameTheme'
 import {useAuth} from '../../../contexts/AuthContext'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 import {useChatWebSocket} from '../../freetalk/hooks/useChatWebSocket'
 
 const CatchmindPlayPage = () => {
     const { roomId } = useParams()
     const navigate = useNavigate()
     const { user } = useAuth()
+    const { mode } = useThemeMode()
+    const isDark = mode === 'dark'
     const currentUserId = user?.userId || user?.username || user?.sub
     const canvasRef = useRef(null)
 
@@ -570,7 +573,7 @@ const CatchmindPlayPage = () => {
     }
 
     return (
-        <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#F1F5F9' }}>
+        <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: isDark ? '#27272a' : '#F1F5F9' }}>
             {/* 헤더 - 컴팩트 */}
             <Box
                 sx={{
@@ -724,7 +727,7 @@ const CatchmindPlayPage = () => {
                         <Box
                             sx={{
                                 p: 0.75,
-                                bgcolor: 'white',
+                                bgcolor: isDark ? '#27272a' : 'white',
                                 borderTop: '1px solid',
                                 borderColor: 'divider',
                             }}
@@ -747,7 +750,7 @@ const CatchmindPlayPage = () => {
                         width: GAME_LAYOUT.splitView.chat,
                         borderLeft: '1px solid',
                         borderColor: 'divider',
-                        bgcolor: 'white',
+                        bgcolor: isDark ? '#27272a' : 'white',
                         display: 'flex',
                         flexDirection: 'column',
                     }}
@@ -756,7 +759,7 @@ const CatchmindPlayPage = () => {
                     <Box
                         sx={{
                             p: 1,
-                            bgcolor: '#F8FAFC',
+                            bgcolor: isDark ? '#27272a' : '#F8FAFC',
                             borderBottom: '1px solid',
                             borderColor: 'divider',
                         }}

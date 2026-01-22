@@ -32,12 +32,14 @@ import {
 } from '../../chat/services/chatService'
 import {useSettings} from '../../../contexts/SettingsContext'
 import {useAuth} from '../../../contexts/AuthContext'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 import {DESIGN_TOKENS, getChatStyles} from '../../../theme/theme'
 import {useChatWebSocket} from '../hooks/useChatWebSocket'
 
 const ChatRoomModal = ({open, onClose, room, onLeave}) => {
     const theme = useTheme()
-    const isDark = theme.palette.mode === 'dark'
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
     const {settings} = useSettings()
     const {user} = useAuth()
     const currentUserId = user?.userId || user?.username || user?.sub

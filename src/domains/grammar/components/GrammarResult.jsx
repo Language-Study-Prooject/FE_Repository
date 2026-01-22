@@ -8,6 +8,7 @@ import {
 } from '@mui/icons-material'
 import {useState} from 'react'
 import {useSettings} from '../../../contexts/SettingsContext'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 import {
     getScoreColor,
     getScoreGrade,
@@ -17,6 +18,8 @@ import {
 
 export default function GrammarResult({result}) {
     const {t, isKorean} = useSettings()
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
     const [expandedError, setExpandedError] = useState(null)
 
     if (!result) return null
@@ -182,7 +185,7 @@ export default function GrammarResult({result}) {
                             flexDirection: 'column',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            backgroundColor: '#fff',
+                            backgroundColor: isDark ? '#27272a' : '#fff',
                         }}
                     >
                         <Typography
@@ -233,14 +236,14 @@ export default function GrammarResult({result}) {
                                 width: 40,
                                 height: 40,
                                 borderRadius: '50%',
-                                backgroundColor: '#f3f4f6',
+                                backgroundColor: isDark ? '#3f3f46' : '#f3f4f6',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                             }}
                         >
                             <ArrowForwardIcon
-                                sx={{fontSize: 20, color: '#6b7280', transform: 'rotate(90deg)'}}
+                                sx={{fontSize: 20, color: isDark ? '#a1a1aa' : '#6b7280', transform: 'rotate(90deg)'}}
                             />
                         </Box>
                     </Box>
@@ -335,7 +338,7 @@ export default function GrammarResult({result}) {
                                                 >
                                                     {error.original}
                                                 </Typography>
-                                                <ArrowForwardIcon sx={{fontSize: 16, color: '#9ca3af'}}/>
+                                                <ArrowForwardIcon sx={{fontSize: 16, color: isDark ? '#a1a1aa' : '#9ca3af'}}/>
                                                 <Typography sx={{color: '#16a34a', fontWeight: 600}}>
                                                     {error.corrected}
                                                 </Typography>

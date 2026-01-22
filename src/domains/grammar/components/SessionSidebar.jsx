@@ -17,6 +17,7 @@ import {
 } from '@mui/material'
 import {Add as AddIcon, Chat as ChatIcon, Delete as DeleteIcon, History as HistoryIcon,} from '@mui/icons-material'
 import {useSettings} from '../../../contexts/SettingsContext'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 import {GRAMMAR_LEVEL_BG_COLORS, GRAMMAR_LEVEL_COLORS} from '../constants/grammarConstants'
 
 export default function SessionSidebar({
@@ -28,6 +29,8 @@ export default function SessionSidebar({
                                            loading = false,
                                        }) {
     const {t, isKorean} = useSettings()
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [sessionToDelete, setSessionToDelete] = useState(null)
 
@@ -78,8 +81,8 @@ export default function SessionSidebar({
                 display: 'flex',
                 flexDirection: 'column',
                 borderRight: '1px solid',
-                borderColor: 'divider',
-                backgroundColor: '#fafafa',
+                borderColor: isDark ? '#3f3f46' : 'divider',
+                backgroundColor: isDark ? '#27272a' : '#fafafa',
             }}
         >
             {/* Header */}
@@ -164,7 +167,7 @@ export default function SessionSidebar({
                                             },
                                         },
                                         '&:hover': {
-                                            backgroundColor: '#f3f4f6',
+                                            backgroundColor: isDark ? '#3f3f46' : '#f3f4f6',
                                         },
                                     }}
                                 >

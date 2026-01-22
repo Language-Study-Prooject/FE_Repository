@@ -21,12 +21,15 @@ import WaitingChat from '../components/WaitingChat'
 import {gameService} from '../services/gameService'
 import {GAME_COLORS} from '../theme/gameTheme'
 import {useAuth} from '../../../contexts/AuthContext'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 import {useChatWebSocket} from '../../freetalk/hooks/useChatWebSocket'
 
 const CatchmindWaitingPage = () => {
     const { roomId } = useParams()
     const navigate = useNavigate()
     const { user } = useAuth()
+    const { mode } = useThemeMode()
+    const isDark = mode === 'dark'
     const currentUserId = user?.userId || user?.username || user?.sub
 
     // WebSocket 연결
@@ -212,7 +215,7 @@ const CatchmindWaitingPage = () => {
     }
 
     return (
-        <Box sx={{ minHeight: '100vh', bgcolor: '#F8FAFC' }}>
+        <Box sx={{ minHeight: '100vh', bgcolor: isDark ? '#27272a' : '#F8FAFC' }}>
             {/* 헤더 */}
             <Box
                 sx={{

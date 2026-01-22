@@ -153,7 +153,7 @@ const HorizontalNav = () => {
             id: 'settings',
             label: t('nav.settings'),
             icon: SettingsIcon,
-            color: '#6b7280',
+            color: mode === 'dark' ? '#a1a1aa' : '#6b7280',
             path: '/settings',
         },
     ]

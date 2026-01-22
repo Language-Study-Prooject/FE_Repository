@@ -34,6 +34,7 @@ import {dailyService, userWordService, voiceService} from '../services/vocabServ
 import {LEVEL_LABELS, LEVELS} from '../constants/vocabConstants'
 import {useTranslation} from '../../../contexts/SettingsContext'
 import {useAuth} from '../../../contexts/AuthContext'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 
 // 카드 셔플 애니메이션 컴포넌트
 function ShuffleAnimation({count, isKorean}) {
@@ -62,7 +63,7 @@ function ShuffleAnimation({count, isKorean}) {
                             position: 'absolute',
                             width: 120,
                             height: 160,
-                            backgroundColor: '#fff',
+                            backgroundColor: isDark ? '#27272a' : '#fff',
                             borderRadius: 3,
                             boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
                             left: '50%',
@@ -250,6 +251,8 @@ export default function DailyLearning() {
     const navigate = useNavigate()
     const {t, isKorean} = useTranslation()
     const {user} = useAuth()
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
     const userId = user?.userId || user?.username
     const [phase, setPhase] = useState('loading')
     const [loading, setLoading] = useState(false)
@@ -547,7 +550,7 @@ export default function DailyLearning() {
                         {t('dailyLearning.completedSession')}
                     </Typography>
 
-                    <Paper sx={{p: 4, mb: 4, backgroundColor: '#fafaf9'}}>
+                    <Paper sx={{p: 4, mb: 4, backgroundColor: isDark ? '#27272a' : '#fafaf9'}}>
                         <Box display="flex" justifyContent="center" gap={6} mb={3}>
                             <Box textAlign="center">
                                 <Typography variant="h2" sx={{color: '#10b981', fontWeight: 800}}>
@@ -574,7 +577,7 @@ export default function DailyLearning() {
                                 px: 3,
                                 py: 1.5,
                                 borderRadius: '12px',
-                                backgroundColor: accuracy >= 80 ? '#ecfdf5' : accuracy >= 50 ? '#fff7ed' : '#fef2f2',
+                                backgroundColor: isDark ? (accuracy >= 80 ? '#064e3b' : accuracy >= 50 ? '#78350f' : '#7f1d1d') : (accuracy >= 80 ? '#ecfdf5' : accuracy >= 50 ? '#fff7ed' : '#fef2f2'),
                             }}
                         >
                             <SparkleIcon

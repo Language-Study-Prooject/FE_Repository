@@ -31,6 +31,7 @@ import {statsService, voiceService} from '../services/vocabService'
 import {DIFFICULTY_LABELS, LEVEL_LABELS, VOICE_TYPES} from '../constants/vocabConstants'
 import {useTranslation} from '../../../contexts/SettingsContext'
 import {useAuth} from '../../../contexts/AuthContext'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 import {BadgeSection} from '../../badge'
 
 // 학습 캘린더 히트맵 컴포넌트 (GitHub 스타일)
@@ -301,7 +302,7 @@ function LearningCalendar({data}) {
 }
 
 // 복습 필요 단어 목록 컴포넌트
-function WeakWordsList({words, onPlayTTS, playingWordId}) {
+function WeakWordsList({words, onPlayTTS, playingWordId, isDark}) {
     if (!words || words.length === 0) {
         return (
             <Box textAlign="center" py={4}>
@@ -378,8 +379,8 @@ function WeakWordsList({words, onPlayTTS, playingWordId}) {
                         onClick={() => onPlayTTS?.(item)}
                         disabled={playingWordId === item.wordId}
                         sx={{
-                            backgroundColor: '#f3f4f6',
-                            '&:hover': {backgroundColor: '#e5e7eb'},
+                            backgroundColor: isDark ? '#3f3f46' : '#f3f4f6',
+                            '&:hover': {backgroundColor: isDark ? '#52525b' : '#e5e7eb'},
                         }}
                     >
                         <VolumeIcon fontSize="small" color={playingWordId === item.wordId ? 'primary' : 'action'}/>
@@ -391,7 +392,7 @@ function WeakWordsList({words, onPlayTTS, playingWordId}) {
 }
 
 // 레벨별 진행률 차트
-function LevelProgressChart({data}) {
+function LevelProgressChart({data, isDark}) {
     if (!data) return null
 
     const levelConfig = {
@@ -439,7 +440,7 @@ function LevelProgressChart({data}) {
                             sx={{
                                 height: 8,
                                 borderRadius: 4,
-                                backgroundColor: '#f3f4f6',
+                                backgroundColor: isDark ? '#3f3f46' : '#f3f4f6',
                                 '& .MuiLinearProgress-bar': {
                                     borderRadius: 4,
                                     backgroundColor: config.color,
@@ -582,6 +583,8 @@ export default function StatsPage() {
     const navigate = useNavigate()
     const {t, isKorean} = useTranslation()
     const {user} = useAuth()
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
 
@@ -681,8 +684,8 @@ export default function StatsPage() {
                 <IconButton
                     onClick={() => navigate('/vocab')}
                     sx={{
-                        backgroundColor: '#f3f4f6',
-                        '&:hover': {backgroundColor: '#e5e7eb'},
+                        backgroundColor: isDark ? '#3f3f46' : '#f3f4f6',
+                        '&:hover': {backgroundColor: isDark ? '#52525b' : '#e5e7eb'},
                     }}
                 >
                     <BackIcon/>
@@ -815,7 +818,7 @@ export default function StatsPage() {
                     <Typography variant="subtitle1" fontWeight={700} mb={2}>
                         레벨별 학습 진행률
                     </Typography>
-                    <LevelProgressChart data={levelProgress}/>
+                    <LevelProgressChart data={levelProgress} isDark={isDark}/>
                 </Paper>
             )}
 
@@ -846,6 +849,7 @@ export default function StatsPage() {
                     words={weakWords}
                     onPlayTTS={handlePlayTTS}
                     playingWordId={playingWordId}
+                    isDark={isDark}
                 />
             </Paper>
 

@@ -11,6 +11,7 @@ import {
 } from '@mui/material'
 import {School as SchoolIcon, Spellcheck as SpellcheckIcon,} from '@mui/icons-material'
 import {useSettings} from '../../../contexts/SettingsContext'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 import {
     GRAMMAR_LEVEL_BG_COLORS,
     GRAMMAR_LEVEL_COLORS,
@@ -20,6 +21,8 @@ import {
 
 export default function GrammarInput({onCheck, loading = false}) {
     const {t, isKorean} = useSettings()
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
     const [sentence, setSentence] = useState('')
     const [level, setLevel] = useState(GRAMMAR_LEVELS.BEGINNER)
     const [error, setError] = useState('')
@@ -208,7 +211,7 @@ export default function GrammarInput({onCheck, loading = false}) {
                             fontSize: '1.1rem',
                             lineHeight: 1.7,
                             fontFamily: '"DM Sans", sans-serif',
-                            backgroundColor: '#fff',
+                            backgroundColor: isDark ? '#27272a' : '#fff',
                             '&:hover fieldset': {
                                 borderColor: GRAMMAR_LEVEL_COLORS[level],
                             },
@@ -219,7 +222,7 @@ export default function GrammarInput({onCheck, loading = false}) {
                         },
                         '& .MuiInputBase-input': {
                             '&::placeholder': {
-                                color: '#9ca3af',
+                                color: isDark ? '#a1a1aa' : '#9ca3af',
                                 opacity: 1,
                             },
                         },
@@ -236,7 +239,7 @@ export default function GrammarInput({onCheck, loading = false}) {
                     <Typography
                         variant="caption"
                         sx={{
-                            color: isOverLimit ? '#ef4444' : '#9ca3af',
+                            color: isOverLimit ? '#ef4444' : (isDark ? '#a1a1aa' : '#9ca3af'),
                             fontWeight: isOverLimit ? 600 : 400,
                         }}
                     >
@@ -272,8 +275,8 @@ export default function GrammarInput({onCheck, loading = false}) {
                         boxShadow: `0 12px 28px -4px ${GRAMMAR_LEVEL_COLORS[level]}50`,
                     },
                     '&:disabled': {
-                        background: '#e5e7eb',
-                        color: '#9ca3af',
+                        background: isDark ? '#3f3f46' : '#e5e7eb',
+                        color: isDark ? '#a1a1aa' : '#9ca3af',
                         boxShadow: 'none',
                     },
                 }}

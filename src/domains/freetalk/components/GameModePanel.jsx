@@ -10,6 +10,7 @@ import {
 } from '@mui/icons-material'
 import {GAME_STATUS, gameService} from '../../chat/services/chatService'
 import {useAuth} from '../../../contexts/AuthContext'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 import {DESIGN_TOKENS} from '../../../theme/theme'
 
 const CANVAS_WIDTH = 340
@@ -17,7 +18,8 @@ const CANVAS_HEIGHT = 200
 
 const GameModePanel = ({roomId, onGameMessage, initialGameStatus, wsGameState, isConnected, onStartGame, onStopGame, onSendMessage, onSendDrawing, onClearDrawing, receivedDrawing, onDrawingProcessed, shouldClearCanvas, onCanvasCleared, messages, correctAnswerBubble, onBubbleProcessed}) => {
     const theme = useTheme()
-    const isDark = theme.palette.mode === 'dark'
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
     const {user} = useAuth()
     const currentUserId = user?.userId || user?.username
     const canvasRef = useRef(null)

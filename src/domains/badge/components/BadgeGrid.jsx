@@ -2,9 +2,12 @@ import {useRef, useState} from 'react'
 import {Box, Skeleton, Typography} from '@mui/material'
 import BadgeCard from './BadgeCard'
 import {useSettings} from '../../../contexts/SettingsContext'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 
 export default function BadgeGrid({badges = [], loading = false, size = 'medium'}) {
     const {isKorean} = useSettings()
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
     const scrollRef = useRef(null)
     const [isDragging, setIsDragging] = useState(false)
     const [startX, setStartX] = useState(0)
@@ -112,7 +115,7 @@ export default function BadgeGrid({badges = [], loading = false, size = 'medium'
                     height: 6,
                 },
                 '&::-webkit-scrollbar-track': {
-                    backgroundColor: '#f3f4f6',
+                    backgroundColor: isDark ? '#3f3f46' : '#f3f4f6',
                     borderRadius: 3,
                 },
                 '&::-webkit-scrollbar-thumb': {

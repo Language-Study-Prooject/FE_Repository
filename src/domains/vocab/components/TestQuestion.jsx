@@ -1,4 +1,5 @@
 import {Box, Paper, RadioGroup, Typography} from '@mui/material'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 
 export default function TestQuestion({
                                          question,
@@ -7,6 +8,9 @@ export default function TestQuestion({
                                          showResult = false,
                                          disabled = false,
                                      }) {
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
+
     if (!question) return null
 
     const getOptionStyle = (option, index) => {
@@ -16,7 +20,7 @@ export default function TestQuestion({
         if (!showResult) {
             return {
                 border: isSelected ? '2px solid #059669' : '2px solid #e7e5e4',
-                backgroundColor: isSelected ? '#ecfdf5' : '#ffffff',
+                backgroundColor: isSelected ? '#ecfdf5' : (isDark ? '#27272a' : '#ffffff'),
                 transform: isSelected ? 'scale(1.02)' : 'scale(1)',
             }
         }
@@ -199,7 +203,7 @@ export default function TestQuestion({
                                                 ? '#059669'
                                                 : isWrong
                                                     ? '#ef4444'
-                                                    : '#1c1917',
+                                                    : (isDark ? '#fafafa' : '#1c1917'),
                                             flex: 1,
                                         }}
                                     >

@@ -192,7 +192,7 @@ const Sidebar = ({open, collapsed, onToggleCollapse, onClose}) => {
                     icon: SettingsIcon,
                     path: '/settings',
                     description: t('sidebar.settingsDesc'),
-                    color: '#6b7280',
+                    color: mode === 'dark' ? '#a1a1aa' : '#6b7280',
                     bgColor: '#f3f4f6',
                 },
             ],

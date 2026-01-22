@@ -80,3 +80,9 @@ workbox-*.js
 .claude/
 CLAUDE.md
 .claudeignore
+
+# Terraform
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.backup
+infra/*.tfvars
