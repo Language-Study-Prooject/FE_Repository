@@ -2,6 +2,7 @@ import {useEffect, useRef, useState} from 'react'
 import {Avatar, Box, Chip, IconButton, Paper, TextField, Typography} from '@mui/material'
 import {Send as SendIcon} from '@mui/icons-material'
 import {GAME_COLORS} from '../theme/gameTheme'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 
 const GameChat = ({
     messages,
@@ -10,6 +11,8 @@ const GameChat = ({
     isDrawer,
     currentDrawerId,
 }) => {
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
     const [newMessage, setNewMessage] = useState('')
     const messagesEndRef = useRef(null)
 
@@ -69,7 +72,7 @@ const GameChat = ({
                     py: 0.5,
                     borderBottom: '1px solid',
                     borderColor: 'divider',
-                    bgcolor: 'white',
+                    bgcolor: isDark ? '#27272a' : 'white',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1,
@@ -92,7 +95,7 @@ const GameChat = ({
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 0.5,
-                    bgcolor: '#F8FAFC',
+                    bgcolor: isDark ? '#18181b' : '#F8FAFC',
                 }}
             >
                 {messages.map((message) => {
@@ -273,7 +276,7 @@ const GameChat = ({
             <Box
                 sx={{
                     p: 0.5,
-                    bgcolor: 'white',
+                    bgcolor: isDark ? '#27272a' : 'white',
                     borderTop: '1px solid',
                     borderColor: 'divider',
                     display: 'flex',
