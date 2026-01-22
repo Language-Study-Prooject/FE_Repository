@@ -24,7 +24,7 @@ import {
 import {chatRoomService, messageService, voiceService} from '../../chat/services/chatService'
 import {useAuth} from '../../../contexts/AuthContext'
 import {useChatWebSocket} from '../hooks/useChatWebSocket'
-import GameModePanel from '../components/GameModePanel'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 
 const levelColors = {
     beginner: {bg: '#e8f5e9', color: '#2e7d32', label: '초급'},
@@ -36,6 +36,8 @@ const ChatRoomPage = () => {
     const {roomId} = useParams()
     const navigate = useNavigate()
     const {user} = useAuth()
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
     const currentUserId = user?.userId || user?.username || user?.sub
 
     // 디버깅: 사용자 정보 확인
@@ -50,27 +52,16 @@ const ChatRoomPage = () => {
     const [error, setError] = useState(null)
     const [playingTTS, setPlayingTTS] = useState(null)
 
-    // WebSocket 훅 사용
+    // WebSocket 훅 사용 (채팅방에서는 게임 관련 기능 제외)
     const {
         isConnected,
         messages,
-        gameState,
         error: wsError,
-        receivedDrawing,
-        shouldClearCanvas,
-        correctAnswerBubble,
         connect: wsConnect,
         disconnect: wsDisconnect,
         sendMessage: wsSendMessage,
-        startGame: wsStartGame,
-        stopGame: wsStopGame,
-        sendDrawing: wsSendDrawing,
-        clearDrawing: wsClearDrawing,
         clearError: wsClearError,
         setMessages,
-        setReceivedDrawing,
-        setShouldClearCanvas,
-        setCorrectAnswerBubble,
     } = useChatWebSocket(roomId, currentUserId)
 
     // 채팅방 정보 조회
@@ -256,7 +247,7 @@ const ChatRoomPage = () => {
     }
 
     return (
-        <Box sx={{display: 'flex', flexDirection: 'column', height: '100vh', bgcolor: '#b2c7d9'}}>
+        <Box sx={{display: 'flex', flexDirection: 'column', height: '100vh', bgcolor: isDark ? '#1e293b' : '#b2c7d9'}}>
             {/* 헤더 */}
             <AppBar position="static" color="default" elevation={1}>
                 <Toolbar>
@@ -313,45 +304,6 @@ const ChatRoomPage = () => {
                 </Alert>
             )}
 
-            {/* 게임 모드 패널 - 항상 표시 (게임 상태에 따라 다른 UI) */}
-            <Box sx={{
-                borderBottom: 1,
-                borderColor: 'divider',
-                ...(gameState?.status === 'PLAYING' ? {
-                    maxHeight: '50vh',
-                    overflow: 'auto',
-                } : {}),
-            }}>
-                <GameModePanel
-                    roomId={roomId}
-                    initialGameStatus={gameState?.status}
-                    wsGameState={gameState}
-                    isConnected={isConnected}
-                    messages={messages}
-                    onStartGame={wsStartGame}
-                    onStopGame={wsStopGame}
-                    onSendMessage={wsSendMessage}
-                    onSendDrawing={wsSendDrawing}
-                    onClearDrawing={wsClearDrawing}
-                    receivedDrawing={receivedDrawing}
-                    onDrawingProcessed={() => setReceivedDrawing(null)}
-                    shouldClearCanvas={shouldClearCanvas}
-                    onCanvasCleared={() => setShouldClearCanvas(false)}
-                    correctAnswerBubble={correctAnswerBubble}
-                    onBubbleProcessed={() => setCorrectAnswerBubble(null)}
-                    onGameMessage={(msg) => {
-                        const systemMessage = {
-                            id: `game-${Date.now()}`,
-                            content: msg.content,
-                            messageType: 'SYSTEM',
-                            createdAt: new Date().toISOString(),
-                            isSystem: true,
-                        }
-                        setMessages((prev) => [...prev, systemMessage])
-                    }}
-                />
-            </Box>
-
             {/* 메시지 영역 */}
             <Box
                 ref={messagesContainerRef}
@@ -368,9 +320,6 @@ const ChatRoomPage = () => {
                     <Box sx={{textAlign: 'center', py: 4}}>
                         <Typography variant="body2" color="text.secondary">
                             아직 메시지가 없습니다. 첫 메시지를 보내보세요!
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{mt: 1, display: 'block'}}>
-                            /start - 게임 시작 | /stop - 게임 종료
                         </Typography>
                     </Box>
                 ) : (
@@ -428,7 +377,12 @@ const ChatRoomPage = () => {
                                                 sx={{
                                                     px: 1.5,
                                                     py: 1,
-                                                    bgcolor: message.isOwn ? '#fee500' : '#ffffff',
+                                                    bgcolor: message.isOwn
+                                                        ? (isDark ? '#facc15' : '#fee500')
+                                                        : (isDark ? '#374151' : '#ffffff'),
+                                                    color: message.isOwn
+                                                        ? '#1c1917'
+                                                        : (isDark ? '#fafaf9' : 'inherit'),
                                                     borderRadius: message.isOwn ? '12px 12px 0 12px' : '12px 12px 12px 0',
                                                     opacity: message.isPending ? 0.7 : 1,
                                                 }}
@@ -480,7 +434,7 @@ const ChatRoomPage = () => {
             >
                 <TextField
                     fullWidth
-                    placeholder={isConnected ? '메시지를 입력하세요... (/start, /stop)' : '연결 중...'}
+                    placeholder={isConnected ? '메시지를 입력하세요...' : '연결 중...'}
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
