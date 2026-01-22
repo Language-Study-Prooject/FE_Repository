@@ -322,6 +322,7 @@ export function useChatWebSocket(roomId, userId) {
             await chatWebSocketService.connect(roomToken, roomId, userId)
             setIsConnected(true)
             isConnectedRef.current = true
+            setError(null) // 연결 성공 시 에러 초기화
         } catch (err) {
             console.error('[useChatWebSocket] Connection error:', err)
             console.error('[useChatWebSocket] Error details:', {
