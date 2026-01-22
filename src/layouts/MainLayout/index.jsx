@@ -5,6 +5,7 @@ import Header from './Header'
 import Sidebar from './Sidebar'
 import HorizontalNav from './HorizontalNav'
 import Footer from './Footer'
+import {useThemeMode} from '../../contexts/ThemeContext'
 
 const DRAWER_WIDTH = 280
 const DRAWER_WIDTH_COLLAPSED = 76
@@ -14,6 +15,8 @@ const USE_HORIZONTAL_NAV = true
 
 const MainLayout = () => {
     const theme = useTheme()
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
     const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
     // 모바일 사이드바 열림 상태
@@ -51,7 +54,7 @@ const MainLayout = () => {
     const topOffset = USE_HORIZONTAL_NAV && !isMobile ? 120 : 64
 
     return (
-        <Box sx={{display: 'flex', minHeight: '100vh'}}>
+        <Box sx={{display: 'flex', minHeight: '100vh', backgroundColor: isDark ? '#18181b' : '#fafaf9'}}>
             {/* Header */}
             <Header
                 onMenuClick={handleMobileToggle}
@@ -94,7 +97,8 @@ const MainLayout = () => {
                     sx={{
                         flex: 1,
                         p: 3,
-                        backgroundColor: 'background.default',
+                        backgroundColor: isDark ? '#18181b' : '#fafaf9',
+                        transition: 'background-color 0.2s ease',
                     }}
                 >
                     <Outlet/>
