@@ -298,7 +298,7 @@ const HorizontalNav = () => {
                                             width: DROPDOWN_ITEM_WIDTH + DROPDOWN_PADDING * 2,
                                             // 최대 하위 메뉴 개수 기준으로 고정 높이 설정
                                             minHeight: maxChildren * DROPDOWN_ITEM_HEIGHT + DROPDOWN_PADDING * 2,
-                                            backgroundColor: mode === 'dark' ? '#1e1e1e' : 'white',
+                                            backgroundColor: mode === 'dark' ? '#27272a' : 'white',
                                             boxShadow: mode === 'dark'
                                                 ? '0 10px 40px -10px rgba(0,0,0,0.5)'
                                                 : '0 10px 40px -10px rgba(0,0,0,0.15)',
