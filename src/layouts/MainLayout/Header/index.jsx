@@ -85,8 +85,8 @@ const Header = ({onMenuClick, sidebarOpen}) => {
             sx={{
                 zIndex: theme.zIndex.drawer + 1,
                 background: mode === 'dark'
-                    ? 'rgba(30, 30, 30, 0.85)'
-                    : 'rgba(255, 255, 255, 0.85)',
+                    ? 'rgba(24, 24, 27, 0.95)'
+                    : 'rgba(255, 255, 255, 0.95)',
                 backdropFilter: 'blur(20px)',
                 borderBottom: '1px solid',
                 borderColor: mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
