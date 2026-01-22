@@ -89,9 +89,9 @@ body {
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: var(--color-gray-50);
-    color: var(--color-gray-900);
     line-height: 1.6;
+    /* Let MUI CssBaseline control background-color and color for dark mode support */
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 #root {
@@ -256,6 +256,179 @@ h1, h2, h3, h4, h5, h6 {
     background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+}
+
+/* ============================================
+   Dark Mode Support
+   ============================================ */
+.dark-mode .glass {
+    background: rgba(39, 39, 42, 0.8);
+}
+
+.dark-mode ::-webkit-scrollbar-track {
+    background: #27272a;
+}
+
+.dark-mode ::-webkit-scrollbar-thumb {
+    background: #52525b;
+}
+
+.dark-mode ::-webkit-scrollbar-thumb:hover {
+    background: #71717a;
+}
+
+.dark-mode ::selection {
+    background-color: #059669;
+    color: #ecfdf5;
+}
+
+/* Dark Mode - MUI Components */
+.dark-mode .MuiCard-root,
+.dark-mode .MuiPaper-root:not(.MuiAlert-root):not(.MuiMenu-paper) {
+    background-color: #27272a !important;
+    color: #fafafa !important;
+}
+
+.dark-mode .MuiCardContent-root {
+    color: #fafafa !important;
+}
+
+.dark-mode .MuiTypography-root {
+    color: #fafafa !important;
+}
+
+.dark-mode .MuiTypography-colorTextSecondary,
+.dark-mode .MuiTypography-root.MuiTypography-colorTextSecondary,
+.dark-mode [class*="MuiTypography-colorTextSecondary"] {
+    color: #a1a1aa !important;
+}
+
+/* Preserve colored text */
+.dark-mode .MuiTypography-colorPrimary {
+    color: #34d399 !important;
+}
+
+.dark-mode .MuiTypography-colorError {
+    color: #f87171 !important;
+}
+
+.dark-mode .MuiInputBase-root {
+    background-color: #3f3f46 !important;
+    color: #fafafa !important;
+}
+
+.dark-mode .MuiOutlinedInput-notchedOutline {
+    border-color: #52525b !important;
+}
+
+.dark-mode .MuiInputLabel-root {
+    color: #a1a1aa !important;
+}
+
+.dark-mode .MuiChip-root:not(.MuiChip-colorPrimary):not(.MuiChip-colorSecondary):not(.MuiChip-colorSuccess):not(.MuiChip-colorError):not(.MuiChip-colorWarning) {
+    background-color: #3f3f46 !important;
+    color: #fafafa !important;
+}
+
+.dark-mode .MuiChip-outlined {
+    border-color: #52525b !important;
+    background-color: transparent !important;
+}
+
+.dark-mode .MuiButton-outlined {
+    border-color: #52525b !important;
+    color: #fafafa !important;
+}
+
+.dark-mode .MuiButton-text {
+    color: #fafafa !important;
+}
+
+.dark-mode .MuiIconButton-root {
+    color: #fafafa !important;
+}
+
+.dark-mode .MuiSvgIcon-root {
+    color: inherit !important;
+}
+
+.dark-mode .MuiAlert-root {
+    background-color: #3f3f46 !important;
+}
+
+.dark-mode .MuiAlert-standardSuccess {
+    background-color: rgba(52, 211, 153, 0.15) !important;
+}
+
+.dark-mode .MuiAlert-standardError {
+    background-color: rgba(248, 113, 113, 0.15) !important;
+}
+
+.dark-mode .MuiAlert-standardWarning {
+    background-color: rgba(251, 191, 36, 0.15) !important;
+}
+
+.dark-mode .MuiTableCell-root {
+    border-color: #3f3f46 !important;
+    color: #fafafa !important;
+}
+
+.dark-mode .MuiTableHead-root .MuiTableCell-root {
+    background-color: #27272a !important;
+}
+
+.dark-mode .MuiDivider-root {
+    border-color: #3f3f46 !important;
+}
+
+.dark-mode .MuiLinearProgress-root {
+    background-color: #3f3f46 !important;
+}
+
+.dark-mode .MuiMenu-paper,
+.dark-mode .MuiPopover-paper {
+    background-color: #27272a !important;
+}
+
+.dark-mode .MuiMenuItem-root {
+    color: #fafafa !important;
+}
+
+.dark-mode .MuiMenuItem-root:hover {
+    background-color: #3f3f46 !important;
+}
+
+.dark-mode .MuiList-root {
+    background-color: #27272a !important;
+}
+
+.dark-mode .MuiListItemButton-root:hover {
+    background-color: #3f3f46 !important;
+}
+
+.dark-mode .MuiListItemText-primary {
+    color: #fafafa !important;
+}
+
+.dark-mode .MuiListItemText-secondary {
+    color: #a1a1aa !important;
+}
+
+.dark-mode .MuiTab-root {
+    color: #a1a1aa !important;
+}
+
+.dark-mode .MuiTab-root.Mui-selected {
+    color: #34d399 !important;
+}
+
+.dark-mode .MuiTabs-indicator {
+    background-color: #34d399 !important;
+}
+
+.dark-mode .MuiTooltip-tooltip {
+    background-color: #3f3f46 !important;
+    color: #fafafa !important;
 }
 
 /* Card Hover Effect */
