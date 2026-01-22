@@ -2,8 +2,8 @@ name: Issue-Jira Sync
 
 on:
   issues:
-    types: [opened, reopened, edited, closed ]
-  
+    types: [ opened, reopened, edited, closed ]
+
   workflow_dispatch:
     inputs:
       process_all_open_issues:
@@ -126,34 +126,51 @@ jobs:
         if: steps.check-jira.outputs.result == 'false'
         id: description
         uses: actions/github-script@v7
+        env:
+          TEMPLATE_TYPE: ${{ steps.parse.outputs.template_type }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          FIELD_GOAL: ${{ steps.parse.outputs.goal }}
+          FIELD_SCOPE: ${{ steps.parse.outputs.scope }}
+          FIELD_BREAKDOWN: ${{ steps.parse.outputs.breakdown }}
+          FIELD_BACKGROUND: ${{ steps.parse.outputs.background }}
+          FIELD_AC: ${{ steps.parse.outputs.ac }}
+          FIELD_DESIGN: ${{ steps.parse.outputs.design }}
+          FIELD_PARENT: ${{ steps.parse.outputs.parent }}
+          FIELD_CHANGE: ${{ steps.parse.outputs.change }}
+          FIELD_IMPACT: ${{ steps.parse.outputs.impact }}
+          FIELD_TIMEBOX: ${{ steps.parse.outputs.timebox }}
+          FIELD_QUESTIONS: ${{ steps.parse.outputs.questions }}
         with:
           script: |
-            const templateType = '${{ steps.parse.outputs.template_type }}';
+            const templateType = process.env.TEMPLATE_TYPE || 'task';
+            const issueUrl = process.env.ISSUE_URL || '';
+            const author = process.env.ISSUE_AUTHOR || '';
             
-            let desc = `h3. GitHub Issue\n${{ github.event.issue.html_url }}\n\nh3. Author\n${{ github.event.issue.user.login }}\n\n`;
+            let desc = 'h3. GitHub Issue\n' + issueUrl + '\n\nh3. Author\n' + author + '\n\n';
             
             switch (templateType) {
               case 'epic':
-                desc += `h3. 목표\n${{ steps.parse.outputs.goal }}\n\n`;
-                desc += `h3. 범위\n${{ steps.parse.outputs.scope }}\n\n`;
-                desc += `h3. 하위 스토리\n${{ steps.parse.outputs.breakdown }}\n`;
+                desc += 'h3. 목표\n' + (process.env.FIELD_GOAL || '-') + '\n\n';
+                desc += 'h3. 범위\n' + (process.env.FIELD_SCOPE || '-') + '\n\n';
+                desc += 'h3. 하위 스토리\n' + (process.env.FIELD_BREAKDOWN || '-') + '\n';
                 break;
               case 'story':
-                desc += `h3. 배경\n${{ steps.parse.outputs.background }}\n\n`;
-                desc += `h3. 수용 기준(AC)\n${{ steps.parse.outputs.ac }}\n\n`;
-                desc += `h3. 디자인\n${{ steps.parse.outputs.design }}\n`;
+                desc += 'h3. 배경\n' + (process.env.FIELD_BACKGROUND || '-') + '\n\n';
+                desc += 'h3. 수용 기준(AC)\n' + (process.env.FIELD_AC || '-') + '\n\n';
+                desc += 'h3. 디자인\n' + (process.env.FIELD_DESIGN || '-') + '\n';
                 break;
               case 'cr':
-                desc += `h3. 제안 변경 사항\n${{ steps.parse.outputs.change }}\n\n`;
-                desc += `h3. 영향도\n${{ steps.parse.outputs.impact }}\n`;
+                desc += 'h3. 제안 변경 사항\n' + (process.env.FIELD_CHANGE || '-') + '\n\n';
+                desc += 'h3. 영향도\n' + (process.env.FIELD_IMPACT || '-') + '\n';
                 break;
               case 'spike':
-                desc += `h3. 타임박스\n${{ steps.parse.outputs.timebox }}\n\n`;
-                desc += `h3. 핵심 질문\n${{ steps.parse.outputs.questions }}\n`;
+                desc += 'h3. 타임박스\n' + (process.env.FIELD_TIMEBOX || '-') + '\n\n';
+                desc += 'h3. 핵심 질문\n' + (process.env.FIELD_QUESTIONS || '-') + '\n';
                 break;
-              default: // task
-                desc += `h3. 연결된 Story/Epic\n${{ steps.parse.outputs.parent }}\n\n`;
-                desc += `h3. 작업 범위\n${{ steps.parse.outputs.scope }}\n`;
+              default:
+                desc += 'h3. 연결된 Story/Epic\n' + (process.env.FIELD_PARENT || '-') + '\n\n';
+                desc += 'h3. 작업 범위\n' + (process.env.FIELD_SCOPE || '-') + '\n';
             }
             
             core.setOutput('content', desc);
@@ -457,7 +474,7 @@ jobs:
                 })
               }
             );
-  
+
   # 기존 이슈 일괄 처리
   sync-all-open-issues:
     if: github.event_name == 'workflow_dispatch'
@@ -487,45 +504,45 @@ jobs:
                 repo: context.repo.repo,
                 issue_number: issue.number
               });
-              
+            
               const hasJiraLink = comments.data.some(c => c.body.includes('Jira:'));
               if (hasJiraLink) {
                 console.log(`Issue #${issue.number} already has Jira link, skipping`);
                 continue;
               }
-              
+            
               console.log(`Processing Issue #${issue.number}: ${issue.title}`);
-              
+            
               const labels = issue.labels.map(l => l.name);
               const title = issue.title;
               const body = issue.body || '';
-              
+            
               // Jira Type 결정
               let jiraType = 'Task';
               if (labels.includes('epic') || /^\[EPIC\]/i.test(title)) jiraType = 'Epic';
               else if (labels.includes('story') || /^\[STORY\]/i.test(title)) jiraType = 'Story';
               else if (labels.includes('bug') || /^\[BUG\]/i.test(title)) jiraType = 'Bug';
-              
+            
               // 템플릿 타입 판단
               let templateType = 'task';
               if (labels.includes('epic') || /^\[EPIC\]/i.test(title)) templateType = 'epic';
               else if (labels.includes('story') || /^\[STORY\]/i.test(title)) templateType = 'story';
               else if (labels.includes('change-request') || /^\[CR\]/i.test(title)) templateType = 'cr';
               else if (labels.includes('spike') || /^\[SPIKE\]/i.test(title)) templateType = 'spike';
-              
+            
               // 섹션 파싱
               const parseSection = (label) => {
                 const regex = new RegExp(`### ${label}\\s*\\n([\\s\\S]*?)(?=###|$)`);
                 const match = body.match(regex);
                 return match ? match[1].trim() : '-';
               };
-              
+            
               // description 구성
               const descContent = [
                 { type: 'paragraph', content: [{ type: 'text', text: `GitHub Issue: ${issue.html_url}` }] },
                 { type: 'paragraph', content: [{ type: 'text', text: `Author: ${issue.user.login}` }] }
               ];
-              
+            
               switch (templateType) {
                 case 'epic':
                   descContent.push(
@@ -567,7 +584,7 @@ jobs:
                     { type: 'paragraph', content: [{ type: 'text', text: parseSection('작업 범위') }] }
                   );
               }
-              
+            
               const jiraResponse = await fetch(
                 `${process.env.JIRA_BASE_URL}/rest/api/3/issue`,
                 {
@@ -590,9 +607,9 @@ jobs:
                   })
                 }
               );
-              
+            
               const jiraData = await jiraResponse.json();
-              
+            
               if (jiraData.key) {
                 await github.rest.issues.createComment({
                   owner: context.repo.owner,
@@ -604,7 +621,6 @@ jobs:
               } else {
                 console.log(`Failed to create Jira for Issue #${issue.number}:`, jiraData);
               }
-              
+            
               await new Promise(resolve => setTimeout(resolve, 1000));
             }
-            

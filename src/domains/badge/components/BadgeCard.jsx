@@ -2,10 +2,13 @@ import {useState} from 'react'
 import {Box, Fade, LinearProgress, Tooltip, Typography,} from '@mui/material'
 import {EmojiEvents as TrophyIcon, Lock as LockIcon,} from '@mui/icons-material'
 import {useSettings} from '../../../contexts/SettingsContext'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 import {BADGE_CATEGORY_COLORS, BADGE_DESCRIPTIONS_EN, BADGE_NAMES_EN,} from '../constants/badgeConstants'
 
 export default function BadgeCard({badge, size = 'medium'}) {
     const {isKorean} = useSettings()
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
     const [imageError, setImageError] = useState(false)
 
     const isEarned = badge.earned
@@ -101,14 +104,14 @@ export default function BadgeCard({badge, size = 'medium'}) {
             PopperProps={{
                 sx: {
                     '& .MuiTooltip-tooltip': {
-                        backgroundColor: '#fff',
+                        backgroundColor: isDark ? '#27272a' : '#fff',
                         color: '#1f2937',
                         boxShadow: '0 10px 40px -10px rgba(0,0,0,0.2)',
                         borderRadius: '12px',
                         border: '1px solid #e5e7eb',
                     },
                     '& .MuiTooltip-arrow': {
-                        color: '#fff',
+                        color: isDark ? '#27272a' : '#fff',
                         '&::before': {
                             border: '1px solid #e5e7eb',
                         },
@@ -141,7 +144,7 @@ export default function BadgeCard({badge, size = 'medium'}) {
                         position: 'relative',
                         background: isEarned
                             ? `linear-gradient(135deg, ${BADGE_CATEGORY_COLORS[badge.category]}20 0%, ${BADGE_CATEGORY_COLORS[badge.category]}10 100%)`
-                            : '#f3f4f6',
+                            : isDark ? '#3f3f46' : '#f3f4f6',
                         border: isEarned ? `3px solid ${BADGE_CATEGORY_COLORS[badge.category]}` : '3px solid #d1d5db',
                         boxShadow: isEarned
                             ? `0 8px 24px -4px ${BADGE_CATEGORY_COLORS[badge.category]}40`
@@ -189,7 +192,7 @@ export default function BadgeCard({badge, size = 'medium'}) {
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                border: '2px solid #fff',
+                                border: isDark ? '2px solid #27272a' : '2px solid #fff',
                             }}
                         >
                             <LockIcon sx={{fontSize: 12, color: '#fff'}}/>

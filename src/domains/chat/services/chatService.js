@@ -2,8 +2,8 @@ import chatApi from '../../../api/chatApi'
 
 const TEMP_USER_ID = import.meta.env.VITE_TEMP_USER_ID || 'user1'
 
-// Mock 데이터 사용 여부 (true: 목 데이터 사용, false: 실제 API 호출)
-const USE_MOCK = true
+// Mock 데이터 사용 여부 (환경변수로 제어: VITE_USE_MOCK=true)
+const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
 
 // ============================================
 // Mock 데이터 (백엔드 API 응답 형식과 동일)
@@ -200,19 +200,13 @@ const mockMessages = {
 
 const withMock = (apiCall, mockData) => {
     if (USE_MOCK) {
-        // interceptor가 response.data를 반환하므로 동일한 형식으로 반환
-        // 실제 API: { success: true, message: ..., data: {...} }
-        return Promise.resolve({
-            success: true,
-            message: 'Mock data',
-            data: mockData
-        })
+        // Mock 모드에서는 직접 데이터 반환
+        return Promise.resolve(mockData)
     }
-    return apiCall().catch(() => ({
-        success: true,
-        message: 'Fallback mock data',
-        data: mockData
-    }))
+    // 실제 API 호출 시 응답의 data 필드 추출 (백엔드 응답: { isSuccess, message, data })
+    return apiCall()
+        .then(response => response.data || response)
+        .catch(() => mockData)
 }
 
 /**
@@ -235,7 +229,7 @@ export const chatRoomService = {
             lastMessageAt: new Date().toISOString(),
         }
         return withMock(
-            () => chatApi.post('/rooms', {...data, createdBy: TEMP_USER_ID}),
+            () => chatApi.post('/chat/rooms', {...data, createdBy: TEMP_USER_ID}),
             newRoom
         )
     },
@@ -247,6 +241,7 @@ export const chatRoomService = {
         return withMock(
             () => {
                 const queryParams = new URLSearchParams()
+                queryParams.append('type', 'CHAT')  // 채팅방만 조회
                 queryParams.append('limit', limit)
                 if (level) queryParams.append('level', level)
                 if (joined) {
@@ -254,7 +249,7 @@ export const chatRoomService = {
                     queryParams.append('userId', TEMP_USER_ID)
                 }
                 if (cursor) queryParams.append('cursor', cursor)
-                return chatApi.get(`/rooms?${queryParams.toString()}`)
+                return chatApi.get(`/chat/rooms?${queryParams.toString()}`)
             },
             {
                 rooms: mockChatRooms
@@ -273,7 +268,7 @@ export const chatRoomService = {
     // GET /rooms/{roomId} - 채팅방 상세 조회
     getDetail: async (roomId) => {
         return withMock(
-            () => chatApi.get(`/rooms/${roomId}`),
+            () => chatApi.get(`/chat/rooms/${roomId}`),
             mockChatRooms.find(r => r.roomId === roomId) || mockChatRooms[0]
         )
     },
@@ -282,7 +277,7 @@ export const chatRoomService = {
     join: async (roomId, password) => {
         const room = mockChatRooms.find(r => r.roomId === roomId)
         return withMock(
-            () => chatApi.post(`/rooms/${roomId}/join`, {
+            () => chatApi.post(`/chat/rooms/${roomId}/join`, {
                 userId: TEMP_USER_ID,
                 ...(password && {password}),
             }),
@@ -301,7 +296,7 @@ export const chatRoomService = {
     // POST /rooms/{roomId}/leave - 채팅방 퇴장
     leave: async (roomId) => {
         return withMock(
-            () => chatApi.post(`/rooms/${roomId}/leave`, {userId: TEMP_USER_ID}),
+            () => chatApi.post(`/chat/rooms/${roomId}/leave`, {userId: TEMP_USER_ID}),
             {roomId, currentMembers: 2}
         )
     },
@@ -322,7 +317,7 @@ export const messageService = {
             createdAt: new Date().toISOString(),
         }
         return withMock(
-            () => chatApi.post(`/rooms/${roomId}/messages`, {
+            () => chatApi.post(`/chat/rooms/${roomId}/messages`, {
                 userId: TEMP_USER_ID,
                 content,
                 messageType,
@@ -340,7 +335,7 @@ export const messageService = {
                 const queryParams = new URLSearchParams()
                 queryParams.append('limit', limit)
                 if (cursor) queryParams.append('cursor', cursor)
-                return chatApi.get(`/rooms/${roomId}/messages?${queryParams.toString()}`)
+                return chatApi.get(`/chat/rooms/${roomId}/messages?${queryParams.toString()}`)
             },
             {
                 messages: (mockMessages[roomId] || []).slice(0, limit),
@@ -358,7 +353,7 @@ export const voiceService = {
     // POST /voice/synthesize - TTS 변환
     synthesize: async (messageId, roomId, voice = 'FEMALE') => {
         return withMock(
-            () => chatApi.post('/voice/synthesize', {messageId, roomId, voice}),
+            () => chatApi.post('/chat/voice/synthesize', {messageId, roomId, voice}),
             {audioUrl: null, cached: false}
         )
     },
@@ -412,7 +407,7 @@ export const gameService = {
         }
 
         return withMock(
-            () => chatApi.post(`/rooms/${roomId}/game/start`, {userId: TEMP_USER_ID}),
+            () => chatApi.post(`/chat/rooms/${roomId}/game/start`, {userId: TEMP_USER_ID}),
             {
                 gameStatus: mockGameState.gameStatus,
                 currentRound: mockGameState.currentRound,
@@ -447,7 +442,7 @@ export const gameService = {
         }
 
         return withMock(
-            () => chatApi.post(`/rooms/${roomId}/game/stop`, {userId: TEMP_USER_ID}),
+            () => chatApi.post(`/chat/rooms/${roomId}/game/stop`, {userId: TEMP_USER_ID}),
             {message: '게임이 종료되었습니다.', scores: finalScores}
         )
     },
@@ -455,7 +450,7 @@ export const gameService = {
     // GET /rooms/{roomId}/game/status - 게임 상태 조회
     getStatus: async (roomId) => {
         return withMock(
-            () => chatApi.get(`/rooms/${roomId}/game/status`),
+            () => chatApi.get(`/chat/rooms/${roomId}/game/status`),
             {
                 gameStatus: mockGameState.gameStatus,
                 currentRound: mockGameState.currentRound,
@@ -480,7 +475,7 @@ export const gameService = {
             .map(([userId, score], index) => ({rank: index + 1, userId, score}))
 
         return withMock(
-            () => chatApi.get(`/rooms/${roomId}/game/scores`),
+            () => chatApi.get(`/chat/rooms/${roomId}/game/scores`),
             {scores: sortedScores, currentRound: mockGameState.currentRound, totalRounds: mockGameState.totalRounds}
         )
     },
@@ -522,7 +517,7 @@ export const gameService = {
         mockGameState.hintUsed = true
 
         return withMock(
-            () => chatApi.post(`/rooms/${roomId}/game/hint`, {userId: TEMP_USER_ID}),
+            () => chatApi.post(`/chat/rooms/${roomId}/game/hint`, {userId: TEMP_USER_ID}),
             {hint, hintUsed: true}
         )
     },
@@ -532,7 +527,7 @@ export const gameService = {
         if (mockGameState.currentRound >= mockGameState.totalRounds) {
             mockGameState.gameStatus = 'FINISHED'
             return withMock(
-                () => chatApi.post(`/rooms/${roomId}/game/skip`, {userId: TEMP_USER_ID}),
+                () => chatApi.post(`/chat/rooms/${roomId}/game/skip`, {userId: TEMP_USER_ID}),
                 {gameStatus: 'FINISHED', message: '게임이 종료되었습니다.'}
             )
         }
@@ -553,7 +548,7 @@ export const gameService = {
         }
 
         return withMock(
-            () => chatApi.post(`/rooms/${roomId}/game/skip`, {userId: TEMP_USER_ID}),
+            () => chatApi.post(`/chat/rooms/${roomId}/game/skip`, {userId: TEMP_USER_ID}),
             {
                 currentRound: mockGameState.currentRound,
                 currentDrawerId: mockGameState.currentDrawerId,

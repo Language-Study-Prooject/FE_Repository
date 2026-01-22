@@ -1,6 +1,6 @@
 import {useState} from 'react'
-import {Route, Routes, useNavigate} from 'react-router-dom'
-import {Box, Button, Card, CardContent, Collapse, Container, Grid, Typography,} from '@mui/material'
+import {Navigate, Route, Routes, useNavigate} from 'react-router-dom'
+import {Box, Button, Card, CardContent, CircularProgress, Collapse, Container, Grid, Typography} from '@mui/material'
 import {
     ChevronRight as ChevronRightIcon,
     Create as WritingCategoryIcon,
@@ -13,6 +13,7 @@ import {
     Quiz as QuizIcon,
     School as LearnIcon,
     SmartToy as AiIcon,
+    SportsEsports as GameIcon,
     WavingHand as WaveIcon,
 } from '@mui/icons-material'
 import MainLayout from './layouts/MainLayout'
@@ -26,8 +27,62 @@ import WordListPage from './domains/vocab/pages/WordListPage'
 import StatsPage from './domains/vocab/pages/StatsPage'
 import {WritingPage} from './domains/grammar'
 import {BadgeSection} from './domains/badge'
+import CatchmindLobbyPage from './domains/games/pages/CatchmindLobbyPage'
+import CatchmindWaitingPage from './domains/games/pages/CatchmindWaitingPage'
+import CatchmindPlayPage from './domains/games/pages/CatchmindPlayPage'
 import {useChat} from './contexts/ChatContext'
 import {useSettings} from './contexts/SettingsContext'
+import {useAuth} from './contexts/AuthContext'
+import LoginPage from './pages/Login'
+import SignUpPage from './pages/SignUp'
+
+
+function ProtectedRoute({children}) {
+    const {isAuthenticated, isLoading} = useAuth()
+
+    if (isLoading) {
+        return (
+            <Box sx={{
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}>
+                <CircularProgress/>
+            </Box>
+        )
+    }
+
+    if (!isAuthenticated) {
+        return <Navigate to="/login" replace/>
+    }
+
+    return children
+}
+
+// 이미 로그인된 경우 대시보드로
+function PublicRoute({children}) {
+    const {isAuthenticated, isLoading} = useAuth()
+
+    if (isLoading) {
+        return (
+            <Box sx={{
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}>
+                <CircularProgress/>
+            </Box>
+        )
+    }
+
+    if (isAuthenticated) {
+        return <Navigate to="/dashboard" replace/>
+    }
+
+    return children
+}
 
 // Dashboard Page
 function Dashboard() {
@@ -41,8 +96,8 @@ function Dashboard() {
             title: t('dashboard.speakingTitle'),
             description: t('dashboard.speakingDesc'),
             icon: SpeakingIcon,
-            color: '#3b82f6',
-            bgColor: '#eff6ff',
+            color: '#059669',
+            bgColor: '#ecfdf5',
             children: [
                 {
                     id: 'opic',
@@ -115,6 +170,23 @@ function Dashboard() {
                 },
             ],
         },
+        {
+            id: 'games',
+            title: t('games.title'),
+            description: t('games.description'),
+            icon: GameIcon,
+            color: '#8b5cf6',
+            bgColor: '#f3e8ff',
+            children: [
+                {
+                    id: 'catchmind',
+                    title: t('games.catchmindTitle'),
+                    icon: GameIcon,
+                    path: '/games/catchmind',
+                    description: t('games.catchmindDesc')
+                },
+            ],
+        },
     ]
 
     const handleCardHover = (modeId) => {
@@ -168,7 +240,7 @@ function Dashboard() {
                     const hasChildren = mode.children && mode.children.length > 0
 
                     return (
-                        <Grid item xs={12} md={6} key={mode.id}>
+                        <Grid key={mode.id} size={{xs: 12, md: 6}}>
                             <Card
                                 onMouseEnter={() => handleCardHover(mode.id)}
                                 onMouseLeave={handleCardLeave}
@@ -416,12 +488,12 @@ function ReportsPage() {
 
             {/* 통계 요약 카드 */}
             <Grid container spacing={2} sx={{mb: 4}}>
-                <Grid item xs={6} md={3}>
+                <Grid size={{xs: 6, md: 3}}>
                     <Card sx={{p: 2.5, borderRadius: '16px', height: '100%'}}>
                         <Typography variant="body2" color="text.secondary" gutterBottom>
                             {isKorean ? '총 학습일' : 'Study Days'}
                         </Typography>
-                        <Typography variant="h4" fontWeight={800} color="#3b82f6">
+                        <Typography variant="h4" fontWeight={800} color="#059669">
                             {stats.totalStudyDays}
                         </Typography>
                         <Typography variant="caption" color="text.disabled">
@@ -429,7 +501,7 @@ function ReportsPage() {
                         </Typography>
                     </Card>
                 </Grid>
-                <Grid item xs={6} md={3}>
+                <Grid size={{xs: 6, md: 3}}>
                     <Card sx={{p: 2.5, borderRadius: '16px', height: '100%'}}>
                         <Typography variant="body2" color="text.secondary" gutterBottom>
                             {isKorean ? '학습한 단어' : 'Words Learned'}
@@ -442,7 +514,7 @@ function ReportsPage() {
                         </Typography>
                     </Card>
                 </Grid>
-                <Grid item xs={6} md={3}>
+                <Grid size={{xs: 6, md: 3}}>
                     <Card sx={{p: 2.5, borderRadius: '16px', height: '100%'}}>
                         <Typography variant="body2" color="text.secondary" gutterBottom>
                             {isKorean ? '테스트 완료' : 'Tests Taken'}
@@ -455,7 +527,7 @@ function ReportsPage() {
                         </Typography>
                     </Card>
                 </Grid>
-                <Grid item xs={6} md={3}>
+                <Grid size={{xs: 6, md: 3}}>
                     <Card sx={{p: 2.5, borderRadius: '16px', height: '100%'}}>
                         <Typography variant="body2" color="text.secondary" gutterBottom>
                             {isKorean ? '평균 점수' : 'Average Score'}
@@ -476,7 +548,7 @@ function ReportsPage() {
                     {isKorean ? '연속 학습 기록' : 'Study Streak'}
                 </Typography>
                 <Grid container spacing={3}>
-                    <Grid item xs={6}>
+                    <Grid size={{xs: 6}}>
                         <Box
                             sx={{
                                 p: 2,
@@ -493,7 +565,7 @@ function ReportsPage() {
                             </Typography>
                         </Box>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid size={{xs: 6}}>
                         <Box
                             sx={{
                                 p: 2,
@@ -562,7 +634,7 @@ function SettingsPage() {
                     <Box
                         sx={{
                             p: 3,
-                            background: 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)',
+                            background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
                         }}
                     >
                         <Typography variant="h6" fontWeight={700} sx={{color: 'white'}}>
@@ -575,21 +647,21 @@ function SettingsPage() {
                     <CardContent sx={{p: 3}}>
                         <Grid container spacing={2}>
                             {languageOptions.map((option) => (
-                                <Grid item xs={6} key={option.value}>
+                                <Grid key={option.value} size={{xs: 6}}>
                                     <Box
                                         onClick={() => setLanguage(option.value)}
                                         sx={{
                                             p: 2.5,
                                             borderRadius: '16px',
                                             border: '2px solid',
-                                            borderColor: settings.language === option.value ? '#3b82f6' : 'divider',
-                                            backgroundColor: settings.language === option.value ? '#eff6ff' : 'transparent',
+                                            borderColor: settings.language === option.value ? '#059669' : 'divider',
+                                            backgroundColor: settings.language === option.value ? '#ecfdf5' : 'transparent',
                                             cursor: 'pointer',
                                             transition: 'all 0.2s ease',
                                             textAlign: 'center',
                                             '&:hover': {
-                                                borderColor: '#3b82f6',
-                                                backgroundColor: '#eff6ff',
+                                                borderColor: '#059669',
+                                                backgroundColor: '#ecfdf5',
                                             },
                                         }}
                                     >
@@ -599,7 +671,7 @@ function SettingsPage() {
                                         <Typography
                                             variant="body1"
                                             fontWeight={settings.language === option.value ? 700 : 500}
-                                            color={settings.language === option.value ? '#3b82f6' : 'text.primary'}
+                                            color={settings.language === option.value ? '#059669' : 'text.primary'}
                                         >
                                             {option.label}
                                         </Typography>
@@ -627,7 +699,7 @@ function SettingsPage() {
                     </Box>
                     <CardContent sx={{p: 3}}>
                         <Grid container spacing={2}>
-                            <Grid item xs={6}>
+                            <Grid size={{xs: 6}}>
                                 <Box
                                     onClick={() => setTtsVoice('FEMALE')}
                                     sx={{
@@ -669,7 +741,7 @@ function SettingsPage() {
                                     </Typography>
                                 </Box>
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid size={{xs: 6}}>
                                 <Box
                                     onClick={() => setTtsVoice('MALE')}
                                     sx={{
@@ -770,8 +842,23 @@ function App() {
                 {/* Chat room page (separate layout) */}
                 <Route path="/freetalk/people/room/:roomId" element={<ChatRoomPage/>}/>
 
+                {/* 로그인 / 회원가입 route */}
+                <Route path="/login" element={
+                    <PublicRoute>
+                        <LoginPage/>
+                    </PublicRoute>
+                }/>
+                <Route path="/signup" element={
+                    <PublicRoute>
+                        <SignUpPage/>
+                    </PublicRoute>
+                }/>
+
                 {/* MainLayout routes */}
-                <Route element={<MainLayout/>}>
+                <Route element={<ProtectedRoute>
+                    <MainLayout/>
+                </ProtectedRoute>
+                }>
                     <Route path="/" element={<Dashboard/>}/>
                     <Route path="/dashboard" element={<Dashboard/>}/>
                     <Route path="/opic" element={<OpicPage/>}/>
@@ -785,6 +872,9 @@ function App() {
                     <Route path="/vocab/stats" element={<StatsPage/>}/>
                     <Route path="/reports" element={<ReportsPage/>}/>
                     <Route path="/settings" element={<SettingsPage/>}/>
+                    <Route path="/games/catchmind" element={<CatchmindLobbyPage/>}/>
+                    <Route path="/games/catchmind/:roomId/waiting" element={<CatchmindWaitingPage/>}/>
+                    <Route path="/games/catchmind/:roomId/play" element={<CatchmindPlayPage/>}/>
                 </Route>
 
                 {/* 404 */}

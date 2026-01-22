@@ -402,15 +402,15 @@ export const darkTheme = createTheme({
             contrastText: '#1c1917',
         },
         background: {
-            default: '#0c0a09',   // Stone 950
-            paper: '#1c1917',     // Stone 900
+            default: '#18181b',   // Zinc 900 - softer dark
+            paper: '#27272a',     // Zinc 800 - for cards
         },
         text: {
             primary: '#fafaf9',   // Stone 50
             secondary: '#a8a29e', // Stone 400
             disabled: '#78716c',  // Stone 500
         },
-        divider: '#292524',     // Stone 800
+        divider: '#3f3f46',     // Zinc 700
         action: {
             hover: 'rgba(52, 211, 153, 0.08)',
             selected: 'rgba(52, 211, 153, 0.16)',

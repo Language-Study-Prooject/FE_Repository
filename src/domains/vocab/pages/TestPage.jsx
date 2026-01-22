@@ -26,12 +26,13 @@ import {
 import TestQuestion from '../components/TestQuestion'
 import {testService} from '../services/vocabService'
 import {useTranslation} from '../../../contexts/SettingsContext'
+import {useAuth} from '../../../contexts/AuthContext'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 
-const TEMP_USER_ID = import.meta.env.VITE_TEMP_USER_ID || 'user1'
 const QUESTION_TIME_LIMIT = 5
 
 // Test Setup Screen
-function TestSetup({onStart, recentResults, loading, t}) {
+function TestSetup({onStart, recentResults, loading, t, isDark}) {
     return (
         <Box>
             <Paper
@@ -100,13 +101,13 @@ function TestSetup({onStart, recentResults, loading, t}) {
                     onClick={onStart}
                     disabled={loading}
                     sx={{
-                        backgroundColor: 'white',
+                        backgroundColor: isDark ? '#27272a' : 'white',
                         color: '#059669',
                         fontWeight: 700,
                         px: 5,
                         py: 1.5,
                         '&:hover': {
-                            backgroundColor: 'rgba(255,255,255,0.95)',
+                            backgroundColor: isDark ? '#3f3f46' : 'rgba(255,255,255,0.95)',
                         },
                     }}
                 >
@@ -183,6 +184,7 @@ function TestInProgress({
                             onPrev,
                             onSubmit,
                             t,
+                            isDark,
                         }) {
     const currentQuestion = questions[currentIndex]
     const progress = ((currentIndex + 1) / questions.length) * 100
@@ -205,14 +207,14 @@ function TestInProgress({
                         px: 2,
                         py: 1,
                         borderRadius: '12px',
-                        backgroundColor: timeRemaining <= 2 ? '#fef2f2' : '#f5f5f4',
+                        backgroundColor: timeRemaining <= 2 ? '#fef2f2' : (isDark ? '#3f3f46' : '#f5f5f4'),
                     }}
                 >
-                    <TimerIcon sx={{fontSize: 20, color: timeRemaining <= 2 ? '#ef4444' : '#57534e'}}/>
+                    <TimerIcon sx={{fontSize: 20, color: timeRemaining <= 2 ? '#ef4444' : (isDark ? '#a1a1aa' : '#57534e')}}/>
                     <Typography
                         variant="h6"
                         fontWeight={700}
-                        sx={{color: timeRemaining <= 2 ? '#ef4444' : '#1c1917', minWidth: 24, textAlign: 'center'}}
+                        sx={{color: timeRemaining <= 2 ? '#ef4444' : (isDark ? '#fafafa' : '#1c1917'), minWidth: 24, textAlign: 'center'}}
                     >
                         {timeRemaining}
                     </Typography>
@@ -300,8 +302,8 @@ function TestInProgress({
                                 ? '#059669'
                                 : idx === currentIndex
                                     ? '#10b981'
-                                    : '#f5f5f4',
-                            color: answers[q.wordId] || idx === currentIndex ? 'white' : '#57534e',
+                                    : (isDark ? '#3f3f46' : '#f5f5f4'),
+                            color: answers[q.wordId] || idx === currentIndex ? 'white' : (isDark ? '#a1a1aa' : '#57534e'),
                             transition: 'all 0.2s ease',
                         }}
                     >
@@ -314,7 +316,7 @@ function TestInProgress({
 }
 
 // Result Screen
-function TestResult({result, onRetry, onHome, t}) {
+function TestResult({result, onRetry, onHome, t, isDark}) {
     const score = result.successRate || 0
     const isGreat = score >= 80
     const isGood = score >= 60
@@ -353,7 +355,7 @@ function TestResult({result, onRetry, onHome, t}) {
                 {result.totalQuestions || 0} {t('test.question')} / {result.correctCount || 0} {t('test.correct')}
             </Typography>
 
-            <Paper elevation={0} sx={{p: 4, mb: 4, backgroundColor: '#fafaf9', borderRadius: '20px'}}>
+            <Paper elevation={0} sx={{p: 4, mb: 4, backgroundColor: isDark ? '#27272a' : '#fafaf9', borderRadius: '20px'}}>:
                 <Box display="flex" justifyContent="center" gap={6} mb={3}>
                     <Box textAlign="center">
                         <Typography variant="h3" sx={{color: '#10b981', fontWeight: 800}}>
@@ -457,6 +459,10 @@ function TestResult({result, onRetry, onHome, t}) {
 export default function TestPage() {
     const navigate = useNavigate()
     const {t} = useTranslation()
+    const {user} = useAuth()
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
+    const userId = user?.userId || user?.username
     const [phase, setPhase] = useState('setup')
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
@@ -497,7 +503,7 @@ export default function TestPage() {
 
     const fetchRecentResults = async () => {
         try {
-            const response = await testService.getResults(TEMP_USER_ID, {limit: 5})
+            const response = await testService.getResults(userId, {limit: 5})
             setRecentResults(response?.testResults || [])
         } catch (err) {
             console.error('Fetch results error:', err)
@@ -508,7 +514,7 @@ export default function TestPage() {
         try {
             setLoading(true)
             setError(null)
-            const response = await testService.start(TEMP_USER_ID, 'DAILY')
+            const response = await testService.start(userId, 'DAILY')
 
             const testData = response?.data || response
             if (testData?.testId) {
@@ -554,7 +560,7 @@ export default function TestPage() {
                 answer: answers[q.wordId] || '',
             }))
 
-            const response = await testService.submit(TEMP_USER_ID, testId, answersArray)
+            const response = await testService.submit(userId, testId, answersArray)
 
             const resultData = response?.data || response
             if (resultData) {
@@ -597,7 +603,7 @@ export default function TestPage() {
             )}
 
             {phase === 'setup' &&
-                <TestSetup onStart={handleStart} recentResults={recentResults} loading={loading} t={t}/>}
+                <TestSetup onStart={handleStart} recentResults={recentResults} loading={loading} t={t} isDark={isDark}/>}
 
             {phase === 'testing' && questions.length > 0 && (
                 <TestInProgress
@@ -610,11 +616,12 @@ export default function TestPage() {
                     onPrev={handlePrev}
                     onSubmit={handleSubmit}
                     t={t}
+                    isDark={isDark}
                 />
             )}
 
             {phase === 'result' && result && (
-                <TestResult result={result} onRetry={handleRetry} onHome={() => navigate('/vocab')} t={t}/>
+                <TestResult result={result} onRetry={handleRetry} onHome={() => navigate('/vocab')} t={t} isDark={isDark}/>
             )}
         </Container>
     )

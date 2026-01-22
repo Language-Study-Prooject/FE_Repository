@@ -28,8 +28,9 @@ import WordDetailModal from '../components/WordDetailModal'
 import {myWordService, voiceService} from '../services/vocabService'
 import {LEVEL_LABELS, WORD_STATUS_LABELS,} from '../constants/vocabConstants'
 import {useTranslation} from '../../../contexts/SettingsContext'
+import {useAuth} from '../../../contexts/AuthContext'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 
-const TEMP_USER_ID = import.meta.env.VITE_TEMP_USER_ID || 'user1'
 const PAGE_SIZE = 20
 
 // 디바운스 훅
@@ -47,6 +48,10 @@ function useDebounce(value, delay) {
 export default function WordListPage() {
     const navigate = useNavigate()
     const {t} = useTranslation()
+    const {user} = useAuth()
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
+    const userId = user?.userId || user?.username
     const [searchParams] = useSearchParams()
     const observerRef = useRef(null)
     const loadMoreRef = useRef(null)
@@ -87,7 +92,7 @@ export default function WordListPage() {
                 params.incorrectOnly = true
             }
 
-            const response = await myWordService.getList(TEMP_USER_ID, params)
+            const response = await myWordService.getList(userId, params)
             const data = response?.data || response
             const newWords = data?.userWords || []
 
@@ -168,7 +173,7 @@ export default function WordListPage() {
         const newBookmarked = !word.bookmarked
 
         try {
-            await myWordService.toggleBookmark(TEMP_USER_ID, word.wordId, newBookmarked)
+            await myWordService.toggleBookmark(userId, word.wordId, newBookmarked)
 
             setUserWords(prev =>
                 prev.map(w =>
@@ -275,7 +280,7 @@ export default function WordListPage() {
                 sx={{
                     mb: 3,
                     '& .MuiOutlinedInput-root': {
-                        backgroundColor: 'white',
+                        backgroundColor: isDark ? '#27272a' : 'white',
                     },
                 }}
             />
@@ -349,7 +354,7 @@ export default function WordListPage() {
                             <Box display="flex" alignItems="center" justifyContent="space-between">
                                 <Box flex={1} minWidth={0}>
                                     <Box display="flex" alignItems="center" gap={1} mb={0.5} flexWrap="wrap">
-                                        <Typography variant="h6" fontWeight={700} sx={{color: '#1c1917'}}>
+                                        <Typography variant="h6" fontWeight={700} sx={{color: isDark ? '#fafafa' : '#1c1917'}}>
                                             {word.english}
                                         </Typography>
                                         {word.level && (
@@ -380,7 +385,7 @@ export default function WordListPage() {
                                         )}
                                     </Box>
 
-                                    <Typography variant="body2" sx={{color: '#57534e', mb: 1}}>
+                                    <Typography variant="body2" sx={{color: isDark ? '#a1a1aa' : '#57534e', mb: 1}}>
                                         {word.korean}
                                     </Typography>
 
@@ -407,13 +412,13 @@ export default function WordListPage() {
                                         sx={{
                                             width: 40,
                                             height: 40,
-                                            backgroundColor: playingWordId === word.wordId ? '#059669' : '#f5f5f4',
-                                            '&:hover': {backgroundColor: playingWordId === word.wordId ? '#047857' : '#e7e5e4'},
+                                            backgroundColor: playingWordId === word.wordId ? '#059669' : (isDark ? '#3f3f46' : '#f5f5f4'),
+                                            '&:hover': {backgroundColor: playingWordId === word.wordId ? '#047857' : (isDark ? '#52525b' : '#e7e5e4')},
                                         }}
                                     >
                                         <VolumeIcon
                                             fontSize="small"
-                                            sx={{color: playingWordId === word.wordId ? 'white' : '#57534e'}}
+                                            sx={{color: playingWordId === word.wordId ? 'white' : (isDark ? '#a1a1aa' : '#57534e')}}
                                         />
                                     </IconButton>
                                     <IconButton
@@ -425,8 +430,8 @@ export default function WordListPage() {
                                         sx={{
                                             width: 40,
                                             height: 40,
-                                            backgroundColor: word.bookmarked ? '#fef3c7' : '#f5f5f4',
-                                            '&:hover': {backgroundColor: word.bookmarked ? '#fde68a' : '#e7e5e4'},
+                                            backgroundColor: word.bookmarked ? '#fef3c7' : (isDark ? '#3f3f46' : '#f5f5f4'),
+                                            '&:hover': {backgroundColor: word.bookmarked ? '#fde68a' : (isDark ? '#52525b' : '#e7e5e4')},
                                         }}
                                     >
                                         {word.bookmarked ? (
@@ -457,7 +462,7 @@ export default function WordListPage() {
                                 width: 64,
                                 height: 64,
                                 borderRadius: '16px',
-                                backgroundColor: '#f5f5f4',
+                                backgroundColor: isDark ? '#3f3f46' : '#f5f5f4',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',

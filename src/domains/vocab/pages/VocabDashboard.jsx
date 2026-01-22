@@ -14,28 +14,37 @@ import {
     LinearProgress,
     Tooltip,
     Typography,
+    useTheme,
 } from '@mui/material'
 import {
+    ArrowForward as ArrowIcon,
     CheckCircle as CheckIcon,
-    EmojiEvents as TrophyIcon,
     LocalFireDepartment as FireIcon,
     MenuBook as VocabIcon,
     PlayArrow as PlayIcon,
     Quiz as TestIcon,
+    School as LearnIcon,
     Star as StarIcon,
     StarBorder as StarBorderIcon,
+    Timeline as StatsIcon,
     TrendingUp as TrendingIcon,
     VolumeUp as VolumeIcon,
+    Warning as WarningIcon,
 } from '@mui/icons-material'
 import {dailyService, statsService, userWordService, voiceService} from '../services/vocabService'
-import {DAILY_GOAL, LEVEL_LABELS,} from '../constants/vocabConstants'
+import {DAILY_GOAL} from '../constants/vocabConstants'
 import {useTranslation} from '../../../contexts/SettingsContext'
-
-const TEMP_USER_ID = import.meta.env.VITE_TEMP_USER_ID || 'user1'
+import {useAuth} from '../../../contexts/AuthContext'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 
 export default function VocabDashboard() {
     const navigate = useNavigate()
+    const theme = useTheme()
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
     const {t, isKorean} = useTranslation()
+    const {user} = useAuth()
+    const userId = user?.userId || user?.username
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
     const [dailyData, setDailyData] = useState(null)
@@ -54,16 +63,20 @@ export default function VocabDashboard() {
             setError(null)
 
             const [daily, stats, weekly, weakness] = await Promise.all([
-                dailyService.getWords(TEMP_USER_ID).catch(() => null),
-                statsService.getOverall(TEMP_USER_ID).catch(() => null),
-                statsService.getDaily(TEMP_USER_ID, {limit: 7}).catch(() => null),
-                statsService.getWeakness(TEMP_USER_ID).catch(() => null),
+                dailyService.getWords().catch(() => null),
+                statsService.getOverall().catch(() => null),
+                statsService.getDaily(null, {limit: 7}).catch(() => null),
+                statsService.getWeakness().catch(() => null),
             ])
 
             setDailyData(daily)
             setStatsData(stats)
-            setWeeklyStats(weekly?.dailyStats || [])
-            setWeakWords(weakness?.weakestWords?.slice(0, 5) || [])
+            // API: { data: { history: [...] } } 또는 mock: { history: [...] }
+            const weeklyData = weekly?.data || weekly
+            setWeeklyStats(weeklyData?.history || weeklyData?.dailyStats || [])
+            // API: { data: { frequentMistakes: [...] } } 또는 mock: { frequentMistakes: [...] }
+            const weaknessData = weakness?.data || weakness
+            setWeakWords(weaknessData?.frequentMistakes?.slice(0, 5) || weaknessData?.weakestWords?.slice(0, 5) || [])
         } catch (err) {
             console.error('Dashboard fetch error:', err)
             setError('Failed to load data.')
@@ -81,6 +94,8 @@ export default function VocabDashboard() {
                 audio.onended = () => setPlayingTTS(null)
                 audio.onerror = () => setPlayingTTS(null)
                 await audio.play()
+            } else {
+                setPlayingTTS(null)
             }
         } catch (err) {
             console.error('TTS error:', err)
@@ -90,7 +105,7 @@ export default function VocabDashboard() {
 
     const handleToggleBookmark = async (word) => {
         try {
-            await userWordService.updateTag(TEMP_USER_ID, word.wordId, {
+            await userWordService.updateTag(userId, word.wordId, {
                 bookmarked: !word.bookmarked,
             })
             setWeakWords((prev) =>
@@ -113,36 +128,45 @@ export default function VocabDashboard() {
         )
     }
 
-    const learnedCount = dailyData?.learnedCount || 0
-    const totalWords = dailyData?.totalWords || DAILY_GOAL.TOTAL
-    const progress = totalWords > 0 ? (learnedCount / totalWords) * 100 : 0
-    const newWordsCount = dailyData?.newWords?.length || 0
-    const reviewWordsCount = dailyData?.reviewWords?.length || 0
+    // API 응답 구조: { status, message, data: { dailyStudy, progress, newWords, reviewWords } }
+    // 또는 mock: { dailyStudy, progress, newWords, reviewWords }
+    const daily = dailyData?.data || dailyData
+    const learnedCount = daily?.progress?.learned || daily?.dailyStudy?.learnedCount || 0
+    const totalWords = daily?.progress?.total || daily?.dailyStudy?.totalWords || DAILY_GOAL.TOTAL
+    const progress = daily?.progress?.percentage ?? (totalWords > 0 ? (learnedCount / totalWords) * 100 : 0)
+    const isCompleted = daily?.progress?.isCompleted || daily?.dailyStudy?.isCompleted || false
 
-    // Calculate streak from weekly stats
-    const streak = weeklyStats.filter(s => s?.isCompleted).length
+    // 통계 데이터 (API: { status, data: {...} } 또는 mock: {...})
+    const stats = statsData?.data || statsData
+    const currentStreak = stats?.currentStreak || stats?.streakDays || 0
+    const longestStreak = stats?.longestStreak || 0
+    const wordsLearned = stats?.newWordsLearned || stats?.totalLearned || 0
+    const successRate = stats?.successRate || stats?.averageAccuracy || 0
+    const testsCompleted = stats?.testsCompleted || stats?.testCount || 0
+
+    // 주간 통계에서 완료일 수 계산
+    const weeklyCompleted = weeklyStats.filter(s => s?.isCompleted).length
 
     return (
         <Container maxWidth="lg" sx={{pb: 6}}>
             {/* Header */}
-            <Box sx={{mb: 5, pt: 2}}>
-                <Box display="flex" alignItems="center" gap={1.5} mb={1}>
+            <Box sx={{mb: 4, pt: 2}}>
+                <Box display="flex" alignItems="center" gap={1.5}>
                     <Box
                         sx={{
-                            width: 48,
-                            height: 48,
-                            borderRadius: '14px',
+                            width: 44,
+                            height: 44,
+                            borderRadius: '12px',
                             background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            boxShadow: '0 8px 16px -4px rgba(5, 150, 105, 0.3)',
                         }}
                     >
-                        <VocabIcon sx={{fontSize: 28, color: 'white'}}/>
+                        <VocabIcon sx={{fontSize: 24, color: 'white'}}/>
                     </Box>
                     <Box>
-                        <Typography variant="h4" fontWeight={700} sx={{lineHeight: 1.2}}>
+                        <Typography variant="h5" fontWeight={700}>
                             {t('vocabDash.title')}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
@@ -153,504 +177,541 @@ export default function VocabDashboard() {
             </Box>
 
             {error && (
-                <Alert severity="error" sx={{mb: 3}}>
+                <Alert severity="error" sx={{mb: 3, borderRadius: 2}}>
                     {error}
                 </Alert>
             )}
 
-            {/* Hero Progress Card */}
-            <Card
-                sx={{
-                    mb: 4,
-                    background: 'linear-gradient(135deg, #059669 0%, #047857 50%, #065f46 100%)',
-                    position: 'relative',
-                    overflow: 'hidden',
-                }}
-            >
-                {/* Decorative Elements */}
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        top: -60,
-                        right: -60,
-                        width: 200,
-                        height: 200,
-                        borderRadius: '50%',
-                        background: 'rgba(255,255,255,0.08)',
-                    }}
-                />
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        bottom: -40,
-                        left: '30%',
-                        width: 120,
-                        height: 120,
-                        borderRadius: '50%',
-                        background: 'rgba(255,255,255,0.05)',
-                    }}
-                />
-
-                <CardContent sx={{p: {xs: 3, md: 4}, position: 'relative', zIndex: 1}}>
-                    <Box display="flex" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={2}>
-                        <Box>
-                            <Typography
-                                variant="overline"
-                                sx={{color: 'rgba(255,255,255,0.7)', fontWeight: 600, letterSpacing: 1}}
-                            >
-                                {t('vocabDash.todayProgress')}
-                            </Typography>
-                            <Typography variant="h2" fontWeight={800} sx={{color: 'white', mt: 0.5}}>
-                                {Math.round(progress)}%
-                            </Typography>
-                        </Box>
-
-                        {streak > 0 && (
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 1,
-                                    backgroundColor: 'rgba(255,255,255,0.15)',
-                                    backdropFilter: 'blur(8px)',
-                                    borderRadius: '12px',
-                                    px: 2,
-                                    py: 1,
-                                }}
-                            >
-                                <FireIcon sx={{color: '#fbbf24', fontSize: 24}}/>
-                                <Box>
-                                    <Typography variant="h6" sx={{color: 'white', fontWeight: 700, lineHeight: 1}}>
-                                        {streak}
-                                    </Typography>
-                                    <Typography variant="caption" sx={{color: 'rgba(255,255,255,0.8)'}}>
-                                        {t('vocabDash.days')}
-                                    </Typography>
-                                </Box>
-                            </Box>
-                        )}
-                    </Box>
-
-                    <Box sx={{my: 3}}>
-                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                            <Typography variant="body2" sx={{color: 'rgba(255,255,255,0.8)'}}>
-                                {learnedCount} / {totalWords} {t('vocabDash.wordsLearned')}
-                            </Typography>
-                        </Box>
-                        <LinearProgress
-                            variant="determinate"
-                            value={progress}
+            {/* 상단 2열 레이아웃: 오늘의 학습 + 연속 학습 */}
+            <Grid container spacing={3} sx={{mb: 3}}>
+                {/* 오늘의 학습 카드 */}
+                <Grid size={{xs: 12, md: 8}}>
+                    <Card
+                        sx={{
+                            height: '100%',
+                            background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                            position: 'relative',
+                            overflow: 'hidden',
+                        }}
+                    >
+                        <Box
                             sx={{
-                                height: 10,
-                                borderRadius: 5,
-                                backgroundColor: 'rgba(255,255,255,0.2)',
-                                '& .MuiLinearProgress-bar': {
-                                    backgroundColor: 'white',
-                                    borderRadius: 5,
-                                },
+                                position: 'absolute',
+                                top: -40,
+                                right: -40,
+                                width: 160,
+                                height: 160,
+                                borderRadius: '50%',
+                                background: 'rgba(255,255,255,0.1)',
                             }}
                         />
-                    </Box>
-
-                    <Box display="flex" gap={4} mb={4} flexWrap="wrap">
-                        <Box>
-                            <Typography variant="caption" sx={{
-                                color: 'rgba(255,255,255,0.7)',
-                                textTransform: 'uppercase',
-                                letterSpacing: 0.5
-                            }}>
-                                {isKorean ? '새 단어' : 'New Words'}
-                            </Typography>
-                            <Typography variant="h5" sx={{color: 'white', fontWeight: 700}}>
-                                {newWordsCount} <Typography component="span" variant="body2"
-                                                            sx={{color: 'rgba(255,255,255,0.6)'}}>/ {DAILY_GOAL.NEW_WORDS}</Typography>
-                            </Typography>
-                        </Box>
-                        <Box>
-                            <Typography variant="caption" sx={{
-                                color: 'rgba(255,255,255,0.7)',
-                                textTransform: 'uppercase',
-                                letterSpacing: 0.5
-                            }}>
-                                {isKorean ? '복습' : 'Review'}
-                            </Typography>
-                            <Typography variant="h5" sx={{color: 'white', fontWeight: 700}}>
-                                {reviewWordsCount} <Typography component="span" variant="body2"
-                                                               sx={{color: 'rgba(255,255,255,0.6)'}}>/ {DAILY_GOAL.REVIEW_WORDS}</Typography>
-                            </Typography>
-                        </Box>
-                    </Box>
-
-                    <Button
-                        variant="contained"
-                        size="large"
-                        startIcon={<PlayIcon/>}
-                        onClick={() => navigate('/vocab/daily')}
-                        sx={{
-                            backgroundColor: 'white',
-                            color: '#059669',
-                            fontWeight: 700,
-                            px: 4,
-                            py: 1.5,
-                            '&:hover': {
-                                backgroundColor: 'rgba(255,255,255,0.95)',
-                                transform: 'translateY(-2px)',
-                            },
-                        }}
-                    >
-                        {dailyData?.isCompleted ? (isKorean ? '다시 복습' : 'Review Again') : t('vocabDash.startDailyLearning')}
-                    </Button>
-                </CardContent>
-            </Card>
-
-            {/* Quick Actions */}
-            <Grid container spacing={3} sx={{mb: 4}}>
-                <Grid item xs={12} sm={4}>
-                    <Card
-                        sx={{
-                            height: '100%',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            '&:hover': {
-                                transform: 'translateY(-4px)',
-                                boxShadow: '0 12px 24px -8px rgba(0,0,0,0.15)',
-                            },
-                        }}
-                        onClick={() => navigate('/vocab/stats')}
-                    >
-                        <CardContent sx={{p: 3}}>
-                            <Box
-                                sx={{
-                                    width: 52,
-                                    height: 52,
-                                    borderRadius: '14px',
-                                    backgroundColor: '#ecfdf5',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    mb: 2,
-                                }}
-                            >
-                                <TrendingIcon sx={{fontSize: 28, color: '#059669'}}/>
+                        <CardContent sx={{p: 3, position: 'relative', zIndex: 1}}>
+                            <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+                                <Box>
+                                    <Typography variant="overline"
+                                                sx={{color: 'rgba(255,255,255,0.8)', letterSpacing: 1}}>
+                                        {isKorean ? '오늘의 학습' : "Today's Learning"}
+                                    </Typography>
+                                    <Box display="flex" alignItems="baseline" gap={1}>
+                                        <Typography variant="h2" fontWeight={800} sx={{color: 'white'}}>
+                                            {Math.round(progress)}
+                                        </Typography>
+                                        <Typography variant="h4" sx={{color: 'rgba(255,255,255,0.8)'}}>%</Typography>
+                                    </Box>
+                                </Box>
+                                {isCompleted && (
+                                    <Chip
+                                        icon={<CheckIcon sx={{fontSize: 16, color: '#059669 !important'}}/>}
+                                        label={isKorean ? '완료' : 'Done'}
+                                        sx={{
+                                            backgroundColor: 'white',
+                                            color: '#059669',
+                                            fontWeight: 700,
+                                        }}
+                                    />
+                                )}
                             </Box>
-                            <Typography variant="h6" fontWeight={600} gutterBottom>
-                                {t('vocabDash.viewStats')}
-                            </Typography>
-                            <Typography variant="h3" fontWeight={800} color="primary.main" sx={{mb: 0.5}}>
-                                {statsData?.totalWords || 0}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                                {t('vocabDash.wordsLearned')}
-                            </Typography>
-                            <Chip
-                                label={`${statsData?.accuracy?.toFixed(0) || 0}% ${t('vocabDash.accuracy')}`}
-                                size="small"
+
+                            <Box sx={{mb: 3}}>
+                                <Box display="flex" justifyContent="space-between" mb={1}>
+                                    <Typography variant="body2" sx={{color: 'rgba(255,255,255,0.9)'}}>
+                                        {learnedCount} / {totalWords} {isKorean ? '단어' : 'words'}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{color: 'rgba(255,255,255,0.7)'}}>
+                                        {totalWords - learnedCount} {isKorean ? '남음' : 'left'}
+                                    </Typography>
+                                </Box>
+                                <LinearProgress
+                                    variant="determinate"
+                                    value={progress}
+                                    sx={{
+                                        height: 8,
+                                        borderRadius: 4,
+                                        backgroundColor: 'rgba(255,255,255,0.2)',
+                                        '& .MuiLinearProgress-bar': {
+                                            backgroundColor: 'white',
+                                            borderRadius: 4,
+                                        },
+                                    }}
+                                />
+                            </Box>
+
+                            <Button
+                                variant="contained"
+                                size="large"
+                                startIcon={<PlayIcon/>}
+                                onClick={() => navigate('/vocab/daily')}
                                 sx={{
-                                    mt: 2,
-                                    backgroundColor: '#ecfdf5',
+                                    backgroundColor: 'white',
                                     color: '#059669',
-                                    fontWeight: 600,
+                                    fontWeight: 700,
+                                    px: 3,
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(255,255,255,0.95)',
+                                    },
                                 }}
-                            />
+                            >
+                                {isCompleted ? (isKorean ? '복습하기' : 'Review') : (isKorean ? '학습 시작' : 'Start Learning')}
+                            </Button>
                         </CardContent>
                     </Card>
                 </Grid>
 
-                <Grid item xs={12} sm={4}>
-                    <Card
-                        sx={{
-                            height: '100%',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            '&:hover': {
-                                transform: 'translateY(-4px)',
-                                boxShadow: '0 12px 24px -8px rgba(0,0,0,0.15)',
-                            },
-                        }}
-                        onClick={() => navigate('/vocab/test')}
-                    >
-                        <CardContent sx={{p: 3}}>
+                {/* 연속 학습 카드 */}
+                <Grid size={{xs: 12, md: 4}}>
+                    <Card sx={{height: '100%', background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)'}}>
+                        <CardContent sx={{p: 3, textAlign: 'center'}}>
+                            <FireIcon sx={{fontSize: 48, color: 'white', mb: 1}}/>
+                            <Typography variant="h2" fontWeight={800} sx={{color: 'white'}}>
+                                {currentStreak}
+                            </Typography>
+                            <Typography variant="body1" sx={{color: 'rgba(255,255,255,0.9)', mb: 2}}>
+                                {isKorean ? '일 연속 학습' : 'Day Streak'}
+                            </Typography>
                             <Box
                                 sx={{
-                                    width: 52,
-                                    height: 52,
-                                    borderRadius: '14px',
-                                    backgroundColor: '#fff7ed',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    mb: 2,
+                                    backgroundColor: 'rgba(255,255,255,0.2)',
+                                    borderRadius: 2,
+                                    p: 1.5,
                                 }}
                             >
-                                <TestIcon sx={{fontSize: 28, color: '#f97316'}}/>
+                                <Typography variant="caption" sx={{color: 'rgba(255,255,255,0.8)'}}>
+                                    {isKorean ? '최장 기록' : 'Best'}: <strong>{longestStreak}</strong> {isKorean ? '일' : 'days'}
+                                </Typography>
                             </Box>
-                            <Typography variant="h6" fontWeight={600} gutterBottom>
-                                {t('vocabDash.takeQuiz')}
-                            </Typography>
-                            <Typography variant="h3" fontWeight={800} color="secondary.main" sx={{mb: 0.5}}>
-                                {statsData?.avgSuccessRate?.toFixed(0) || 0}%
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                                {isKorean ? '평균 점수' : 'average score'}
-                            </Typography>
-                            <Chip
-                                label={`${statsData?.testCount || 0} ${isKorean ? '회 응시' : 'tests taken'}`}
-                                size="small"
-                                sx={{
-                                    mt: 2,
-                                    backgroundColor: '#fff7ed',
-                                    color: '#f97316',
-                                    fontWeight: 600,
-                                }}
-                            />
-                        </CardContent>
-                    </Card>
-                </Grid>
-
-                <Grid item xs={12} sm={4}>
-                    <Card
-                        sx={{
-                            height: '100%',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            '&:hover': {
-                                transform: 'translateY(-4px)',
-                                boxShadow: '0 12px 24px -8px rgba(0,0,0,0.15)',
-                            },
-                        }}
-                        onClick={() => navigate('/vocab/words')}
-                    >
-                        <CardContent sx={{p: 3}}>
-                            <Box
-                                sx={{
-                                    width: 52,
-                                    height: 52,
-                                    borderRadius: '14px',
-                                    backgroundColor: '#f0fdf4',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    mb: 2,
-                                }}
-                            >
-                                <TrophyIcon sx={{fontSize: 28, color: '#16a34a'}}/>
-                            </Box>
-                            <Typography variant="h6" fontWeight={600} gutterBottom>
-                                {t('vocabDash.viewWordList')}
-                            </Typography>
-                            <Typography variant="h3" fontWeight={800} sx={{color: '#16a34a', mb: 0.5}}>
-                                {statsData?.wordStatusCounts?.MASTERED || 0}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                                {isKorean ? '마스터' : 'mastered'}
-                            </Typography>
-                            <Chip
-                                label={`${statsData?.bookmarkedCount || 0} ${isKorean ? '북마크' : 'bookmarked'}`}
-                                size="small"
-                                sx={{
-                                    mt: 2,
-                                    backgroundColor: '#f0fdf4',
-                                    color: '#16a34a',
-                                    fontWeight: 600,
-                                }}
-                            />
                         </CardContent>
                     </Card>
                 </Grid>
             </Grid>
 
-            {/* Weekly Progress */}
-            <Card sx={{mb: 4}}>
-                <CardContent sx={{p: 3}}>
-                    <Typography variant="h6" fontWeight={700} gutterBottom>
-                        {t('vocabDash.weeklyProgress')}
-                    </Typography>
-                    <Box
-                        display="flex"
-                        justifyContent="space-between"
-                        mt={3}
-                        sx={{
-                            gap: 1,
-                        }}
+            {/* 통계 요약 카드 4개 */}
+            <Grid container spacing={2} sx={{mb: 3}}>
+                <Grid size={{xs: 6, sm: 3}}>
+                    <Card
+                        sx={{cursor: 'pointer', '&:hover': {boxShadow: 4}}}
+                        onClick={() => navigate('/vocab/stats')}
                     >
-                        {(isKorean ? ['월', '화', '수', '목', '금', '토', '일'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']).map((day, index) => {
-                            const stat = weeklyStats[index]
-                            const isCompleted = stat?.isCompleted
-                            const hasProgress = stat?.learnedCount > 0
-                            const isToday = index === new Date().getDay() - 1 || (new Date().getDay() === 0 && index === 6)
+                        <CardContent sx={{p: 2, textAlign: 'center'}}>
+                            <Box
+                                sx={{
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: '10px',
+                                    backgroundColor: '#ecfdf5',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    mx: 'auto',
+                                    mb: 1,
+                                }}
+                            >
+                                <LearnIcon sx={{fontSize: 22, color: '#059669'}}/>
+                            </Box>
+                            <Typography variant="h4" fontWeight={700} color="#059669">
+                                {wordsLearned}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                {isKorean ? '학습한 단어' : 'Words Learned'}
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
 
-                            return (
-                                <Box
-                                    key={day}
-                                    textAlign="center"
-                                    sx={{
-                                        flex: 1,
-                                        p: 1.5,
-                                        borderRadius: '12px',
-                                        backgroundColor: isToday ? 'rgba(5, 150, 105, 0.08)' : 'transparent',
-                                        border: isToday ? '2px solid' : '2px solid transparent',
-                                        borderColor: isToday ? 'primary.main' : 'transparent',
-                                        transition: 'all 0.2s ease',
-                                    }}
-                                >
-                                    <Typography
-                                        variant="caption"
-                                        sx={{
-                                            color: isToday ? 'primary.main' : 'text.secondary',
-                                            fontWeight: isToday ? 700 : 500,
-                                        }}
-                                    >
-                                        {day}
-                                    </Typography>
+                <Grid size={{xs: 6, sm: 3}}>
+                    <Card
+                        sx={{cursor: 'pointer', '&:hover': {boxShadow: 4}}}
+                        onClick={() => navigate('/vocab/stats')}
+                    >
+                        <CardContent sx={{p: 2, textAlign: 'center'}}>
+                            <Box
+                                sx={{
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: '10px',
+                                    backgroundColor: '#dcfce7',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    mx: 'auto',
+                                    mb: 1,
+                                }}
+                            >
+                                <TrendingIcon sx={{fontSize: 22, color: '#16a34a'}}/>
+                            </Box>
+                            <Typography variant="h4" fontWeight={700} color="#16a34a">
+                                {successRate.toFixed?.(0) || 0}%
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                {isKorean ? '정답률' : 'Accuracy'}
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                <Grid size={{xs: 6, sm: 3}}>
+                    <Card
+                        sx={{cursor: 'pointer', '&:hover': {boxShadow: 4}}}
+                        onClick={() => navigate('/vocab/test')}
+                    >
+                        <CardContent sx={{p: 2, textAlign: 'center'}}>
+                            <Box
+                                sx={{
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: '10px',
+                                    backgroundColor: '#fef3c7',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    mx: 'auto',
+                                    mb: 1,
+                                }}
+                            >
+                                <TestIcon sx={{fontSize: 22, color: '#d97706'}}/>
+                            </Box>
+                            <Typography variant="h4" fontWeight={700} color="#d97706">
+                                {testsCompleted}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                {isKorean ? '테스트 완료' : 'Tests Done'}
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                <Grid size={{xs: 6, sm: 3}}>
+                    <Card
+                        sx={{cursor: 'pointer', '&:hover': {boxShadow: 4}}}
+                        onClick={() => navigate('/vocab/words')}
+                    >
+                        <CardContent sx={{p: 2, textAlign: 'center'}}>
+                            <Box
+                                sx={{
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: '10px',
+                                    backgroundColor: '#f3e8ff',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    mx: 'auto',
+                                    mb: 1,
+                                }}
+                            >
+                                <StatsIcon sx={{fontSize: 22, color: '#9333ea'}}/>
+                            </Box>
+                            <Typography variant="h4" fontWeight={700} color="#9333ea">
+                                {weeklyCompleted}/7
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                {isKorean ? '이번주 완료' : 'This Week'}
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+
+            {/* 빠른 액션 */}
+            <Grid container spacing={2} sx={{mb: 3}}>
+                <Grid size={{xs: 12, sm: 4}}>
+                    <Card
+                        sx={{
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            '&:hover': {transform: 'translateY(-2px)', boxShadow: 4},
+                        }}
+                        onClick={() => navigate('/vocab/test')}
+                    >
+                        <CardContent sx={{p: 2, display: 'flex', alignItems: 'center', gap: 2}}>
+                            <Box
+                                sx={{
+                                    width: 48,
+                                    height: 48,
+                                    borderRadius: '12px',
+                                    backgroundColor: '#fff7ed',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                <TestIcon sx={{fontSize: 24, color: '#f97316'}}/>
+                            </Box>
+                            <Box flex={1}>
+                                <Typography variant="subtitle1" fontWeight={600}>
+                                    {isKorean ? '퀴즈 풀기' : 'Take Quiz'}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    {isKorean ? '실력을 테스트해보세요' : 'Test your knowledge'}
+                                </Typography>
+                            </Box>
+                            <ArrowIcon sx={{color: 'text.disabled'}}/>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                <Grid size={{xs: 12, sm: 4}}>
+                    <Card
+                        sx={{
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            '&:hover': {transform: 'translateY(-2px)', boxShadow: 4},
+                        }}
+                        onClick={() => navigate('/vocab/words')}
+                    >
+                        <CardContent sx={{p: 2, display: 'flex', alignItems: 'center', gap: 2}}>
+                            <Box
+                                sx={{
+                                    width: 48,
+                                    height: 48,
+                                    borderRadius: '12px',
+                                    backgroundColor: '#ecfdf5',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                <VocabIcon sx={{fontSize: 24, color: '#059669'}}/>
+                            </Box>
+                            <Box flex={1}>
+                                <Typography variant="subtitle1" fontWeight={600}>
+                                    {isKorean ? '단어장' : 'Word List'}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    {isKorean ? '학습한 단어 보기' : 'View your words'}
+                                </Typography>
+                            </Box>
+                            <ArrowIcon sx={{color: 'text.disabled'}}/>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                <Grid size={{xs: 12, sm: 4}}>
+                    <Card
+                        sx={{
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            '&:hover': {transform: 'translateY(-2px)', boxShadow: 4},
+                        }}
+                        onClick={() => navigate('/vocab/stats')}
+                    >
+                        <CardContent sx={{p: 2, display: 'flex', alignItems: 'center', gap: 2}}>
+                            <Box
+                                sx={{
+                                    width: 48,
+                                    height: 48,
+                                    borderRadius: '12px',
+                                    backgroundColor: '#ede9fe',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                <StatsIcon sx={{fontSize: 24, color: '#7c3aed'}}/>
+                            </Box>
+                            <Box flex={1}>
+                                <Typography variant="subtitle1" fontWeight={600}>
+                                    {isKorean ? '학습 통계' : 'Statistics'}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    {isKorean ? '상세 통계 보기' : 'View detailed stats'}
+                                </Typography>
+                            </Box>
+                            <ArrowIcon sx={{color: 'text.disabled'}}/>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+
+            {/* 주간 학습 현황 */}
+            <Card sx={{mb: 3}}>
+                <CardContent sx={{p: 3}}>
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                        <Typography variant="h6" fontWeight={700}>
+                            {isKorean ? '이번주 학습 현황' : 'This Week'}
+                        </Typography>
+                        <Chip
+                            label={`${weeklyCompleted}/7 ${isKorean ? '완료' : 'done'}`}
+                            size="small"
+                            color={weeklyCompleted >= 7 ? 'success' : 'default'}
+                        />
+                    </Box>
+
+                    <Box display="flex" justifyContent="space-between" gap={1}>
+                        {(() => {
+                            const days = isKorean ? ['월', '화', '수', '목', '금', '토', '일'] : ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+                            const today = new Date()
+                            const dayOfWeek = today.getDay()
+                            const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
+
+                            return days.map((day, index) => {
+                                const date = new Date(today)
+                                date.setDate(today.getDate() + mondayOffset + index)
+                                const dateStr = date.toISOString().split('T')[0]
+
+                                // 해당 날짜의 통계 찾기
+                                const stat = weeklyStats.find(s => s?.period === dateStr || s?.date === dateStr)
+                                const isCompleted = stat?.isCompleted
+                                const hasProgress = (stat?.newWordsLearned || stat?.learnedCount || 0) > 0
+                                const isToday = date.toDateString() === today.toDateString()
+                                const isFuture = date > today
+
+                                return (
                                     <Box
+                                        key={index}
                                         sx={{
-                                            mt: 1,
-                                            display: 'flex',
-                                            justifyContent: 'center',
+                                            flex: 1,
+                                            textAlign: 'center',
+                                            p: 1.5,
+                                            borderRadius: 2,
+                                            backgroundColor: isToday ? 'rgba(5, 150, 105, 0.08)' : 'transparent',
+                                            border: isToday ? '2px solid' : '2px solid transparent',
+                                            borderColor: isToday ? 'primary.main' : 'transparent',
                                         }}
                                     >
-                                        {isCompleted ? (
-                                            <Box
-                                                sx={{
-                                                    width: 32,
-                                                    height: 32,
-                                                    borderRadius: '10px',
-                                                    backgroundColor: '#059669',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                }}
-                                            >
+                                        <Typography
+                                            variant="caption"
+                                            sx={{
+                                                color: isToday ? 'primary.main' : 'text.secondary',
+                                                fontWeight: isToday ? 700 : 500,
+                                                display: 'block',
+                                                mb: 0.5,
+                                            }}
+                                        >
+                                            {day}
+                                        </Typography>
+                                        <Typography
+                                            variant="caption"
+                                            sx={{color: 'text.disabled', fontSize: 10, display: 'block', mb: 1}}
+                                        >
+                                            {date.getDate()}
+                                        </Typography>
+                                        <Box
+                                            sx={{
+                                                width: 36,
+                                                height: 36,
+                                                borderRadius: '10px',
+                                                mx: 'auto',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                backgroundColor: isCompleted
+                                                    ? '#059669'
+                                                    : hasProgress
+                                                        ? '#fbbf24'
+                                                        : isFuture
+                                                            ? (isDark ? '#292524' : '#f5f5f5')
+                                                            : (isDark ? '#450a0a' : '#fee2e2'),
+                                                border: isFuture ? `2px dashed ${isDark ? '#44403c' : '#e5e5e5'}` : 'none',
+                                            }}
+                                        >
+                                            {isCompleted ? (
                                                 <CheckIcon sx={{color: 'white', fontSize: 20}}/>
-                                            </Box>
-                                        ) : hasProgress ? (
-                                            <Box
-                                                sx={{
-                                                    width: 32,
-                                                    height: 32,
-                                                    borderRadius: '10px',
-                                                    backgroundColor: '#fbbf24',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                }}
-                                            >
+                                            ) : hasProgress ? (
                                                 <Typography variant="caption" sx={{color: 'white', fontWeight: 700}}>
-                                                    {stat?.learnedCount}
+                                                    {stat?.newWordsLearned || stat?.learnedCount || 0}
                                                 </Typography>
-                                            </Box>
-                                        ) : (
-                                            <Box
-                                                sx={{
-                                                    width: 32,
-                                                    height: 32,
-                                                    borderRadius: '10px',
-                                                    backgroundColor: '#f5f5f4',
-                                                    border: '2px dashed #d6d3d1',
-                                                }}
-                                            />
-                                        )}
+                                            ) : isFuture ? null : (
+                                                <Typography variant="caption" sx={{color: '#ef4444', fontWeight: 600}}>
+                                                    X
+                                                </Typography>
+                                            )}
+                                        </Box>
                                     </Box>
-                                </Box>
-                            )
-                        })}
+                                )
+                            })
+                        })()}
                     </Box>
                 </CardContent>
             </Card>
 
-            {/* Weak Words */}
+            {/* 취약 단어 */}
             {weakWords.length > 0 && (
                 <Card>
                     <CardContent sx={{p: 3}}>
-                        <Box display="flex" alignItems="center" gap={1} mb={1}>
+                        <Box display="flex" alignItems="center" gap={1} mb={2}>
+                            <WarningIcon sx={{color: '#f59e0b', fontSize: 20}}/>
                             <Typography variant="h6" fontWeight={700}>
-                                {t('vocabDash.focusWords')}
+                                {isKorean ? '복습이 필요한 단어' : 'Words to Review'}
                             </Typography>
-                            <Chip label={isKorean ? '연습 필요' : 'Needs practice'} size="small" color="warning"/>
+                            <Chip
+                                label={`${weakWords.length}${isKorean ? '개' : ''}`}
+                                size="small"
+                                sx={{backgroundColor: '#fef3c7', color: '#d97706'}}
+                            />
                         </Box>
-                        <Typography variant="body2" color="text.secondary" mb={3}>
-                            {isKorean ? '추가 연습이 필요한 단어입니다' : 'These words need extra attention'}
-                        </Typography>
 
-                        {weakWords.map((word, index) => (
-                            <Box
-                                key={word.wordId}
-                                sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    py: 2,
-                                    px: 2,
-                                    mx: -2,
-                                    borderRadius: '12px',
-                                    transition: 'all 0.2s ease',
-                                    '&:hover': {
-                                        backgroundColor: 'rgba(0,0,0,0.02)',
-                                    },
-                                    borderBottom: index < weakWords.length - 1 ? '1px solid' : 'none',
-                                    borderColor: 'divider',
-                                }}
-                            >
-                                <Box flex={1}>
-                                    <Box display="flex" alignItems="center" gap={1.5}>
-                                        <Typography variant="h6" fontWeight={700}>
+                        <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
+                            {weakWords.map((word) => (
+                                <Box
+                                    key={word.wordId}
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        p: 2,
+                                        borderRadius: 2,
+                                        backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#fafafa',
+                                        '&:hover': {backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#f5f5f5'},
+                                    }}
+                                >
+                                    <Box flex={1}>
+                                        <Typography variant="subtitle1" fontWeight={600}>
                                             {word.english}
                                         </Typography>
-                                        <Chip
-                                            label={LEVEL_LABELS[word.level]}
-                                            size="small"
-                                            sx={{
-                                                height: 22,
-                                                fontSize: 11,
-                                                fontWeight: 600,
-                                                backgroundColor: word.level === 'BEGINNER' ? '#ecfdf5' : word.level === 'INTERMEDIATE' ? '#fff7ed' : '#fef2f2',
-                                                color: word.level === 'BEGINNER' ? '#059669' : word.level === 'INTERMEDIATE' ? '#f97316' : '#ef4444',
-                                            }}
-                                        />
+                                        <Typography variant="body2" color="text.secondary">
+                                            {word.korean}
+                                        </Typography>
                                     </Box>
-                                    <Typography variant="body2" color="text.secondary" sx={{mt: 0.5}}>
-                                        {word.korean}
-                                    </Typography>
-                                </Box>
 
-                                <Box display="flex" alignItems="center" gap={1}>
-                                    <Chip
-                                        label={`${word.accuracy?.toFixed(0) || 0}%`}
-                                        size="small"
-                                        sx={{
-                                            backgroundColor: '#fef2f2',
-                                            color: '#ef4444',
-                                            fontWeight: 700,
-                                        }}
-                                    />
-                                    <Tooltip title="Listen">
-                                        <IconButton
+                                    <Box display="flex" alignItems="center" gap={1}>
+                                        <Chip
+                                            label={`${word.incorrectCount || 0}${isKorean ? '회 오답' : ' wrong'}`}
                                             size="small"
-                                            onClick={() => handlePlayTTS(word)}
-                                            disabled={playingTTS === word.wordId}
-                                            sx={{
-                                                backgroundColor: playingTTS === word.wordId ? 'primary.main' : 'transparent',
-                                                '&:hover': {backgroundColor: 'rgba(5, 150, 105, 0.1)'},
-                                            }}
-                                        >
-                                            <VolumeIcon
-                                                fontSize="small"
-                                                sx={{color: playingTTS === word.wordId ? 'white' : 'text.secondary'}}
-                                            />
-                                        </IconButton>
-                                    </Tooltip>
-                                    <Tooltip title={word.bookmarked ? 'Remove bookmark' : 'Bookmark'}>
-                                        <IconButton size="small" onClick={() => handleToggleBookmark(word)}>
-                                            {word.bookmarked ? (
-                                                <StarIcon fontSize="small" sx={{color: '#fbbf24'}}/>
-                                            ) : (
-                                                <StarBorderIcon fontSize="small" sx={{color: 'text.secondary'}}/>
-                                            )}
-                                        </IconButton>
-                                    </Tooltip>
+                                            sx={{backgroundColor: '#fee2e2', color: '#dc2626', fontWeight: 600}}
+                                        />
+                                        <Tooltip title={isKorean ? '발음 듣기' : 'Listen'}>
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => handlePlayTTS(word)}
+                                                disabled={playingTTS === word.wordId}
+                                            >
+                                                <VolumeIcon fontSize="small"/>
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Tooltip
+                                            title={word.bookmarked ? (isKorean ? '북마크 해제' : 'Unbookmark') : (isKorean ? '북마크' : 'Bookmark')}>
+                                            <IconButton size="small" onClick={() => handleToggleBookmark(word)}>
+                                                {word.bookmarked ? (
+                                                    <StarIcon fontSize="small" sx={{color: '#fbbf24'}}/>
+                                                ) : (
+                                                    <StarBorderIcon fontSize="small"/>
+                                                )}
+                                            </IconButton>
+                                        </Tooltip>
+                                    </Box>
                                 </Box>
-                            </Box>
-                        ))}
+                            ))}
+                        </Box>
                     </CardContent>
                 </Card>
             )}

@@ -2,10 +2,13 @@ import {useState} from 'react'
 import {Box, CircularProgress, FormControl, IconButton, MenuItem, Select, TextField, Tooltip,} from '@mui/material'
 import {School as SchoolIcon, Send as SendIcon} from '@mui/icons-material'
 import {useSettings} from '../../../contexts/SettingsContext'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 import {GRAMMAR_LEVEL_COLORS, GRAMMAR_LEVELS, TEXT_LIMITS,} from '../constants/grammarConstants'
 
 export default function ChatInput({onSend, loading = false, level, onLevelChange}) {
     const {t, isKorean} = useSettings()
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
     const [message, setMessage] = useState('')
 
     const handleSend = () => {
@@ -34,8 +37,8 @@ export default function ChatInput({onSend, loading = false, level, onLevelChange
             sx={{
                 p: 2,
                 borderTop: '1px solid',
-                borderColor: 'divider',
-                backgroundColor: '#fff',
+                borderColor: isDark ? '#3f3f46' : 'divider',
+                backgroundColor: isDark ? '#27272a' : '#fff',
             }}
         >
             <Box
@@ -116,18 +119,18 @@ export default function ChatInput({onSend, loading = false, level, onLevelChange
                     sx={{
                         '& .MuiOutlinedInput-root': {
                             borderRadius: '16px',
-                            backgroundColor: '#f9fafb',
+                            backgroundColor: isDark ? '#3f3f46' : '#f9fafb',
                             '&:hover': {
-                                backgroundColor: '#f3f4f6',
+                                backgroundColor: isDark ? '#52525b' : '#f3f4f6',
                             },
                             '&.Mui-focused': {
-                                backgroundColor: '#fff',
+                                backgroundColor: isDark ? '#3f3f46' : '#fff',
                             },
                             '& fieldset': {
-                                borderColor: '#e5e7eb',
+                                borderColor: isDark ? '#52525b' : '#e5e7eb',
                             },
                             '&:hover fieldset': {
-                                borderColor: '#d1d5db',
+                                borderColor: isDark ? '#71717a' : '#d1d5db',
                             },
                             '&.Mui-focused fieldset': {
                                 borderColor: GRAMMAR_LEVEL_COLORS[level],

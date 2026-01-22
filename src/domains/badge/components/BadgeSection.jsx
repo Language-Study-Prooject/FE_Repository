@@ -4,9 +4,12 @@ import {EmojiEvents as TrophyIcon, WorkspacePremium as BadgeIcon,} from '@mui/ic
 import BadgeGrid from './BadgeGrid'
 import {badgeService} from '../services/badgeService'
 import {useSettings} from '../../../contexts/SettingsContext'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 
 export default function BadgeSection() {
     const {isKorean} = useSettings()
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
     const [badges, setBadges] = useState([])
     const [totalCount, setTotalCount] = useState(0)
     const [earnedCount, setEarnedCount] = useState(0)
@@ -43,7 +46,7 @@ export default function BadgeSection() {
                 borderRadius: '20px',
                 border: '1px solid',
                 borderColor: 'divider',
-                backgroundColor: '#fff',
+                backgroundColor: isDark ? '#27272a' : '#fff',
             }}
         >
             {/* Header */}
@@ -122,7 +125,7 @@ export default function BadgeSection() {
                     sx={{
                         height: 10,
                         borderRadius: 5,
-                        backgroundColor: '#f3f4f6',
+                        backgroundColor: isDark ? '#3f3f46' : '#f3f4f6',
                         '& .MuiLinearProgress-bar': {
                             borderRadius: 5,
                             background:

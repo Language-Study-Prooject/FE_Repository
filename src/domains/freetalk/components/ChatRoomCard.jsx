@@ -1,5 +1,6 @@
 import {Box, Button, Card, CardContent, Chip, Typography} from '@mui/material'
 import {AccessTime as TimeIcon, Lock as LockIcon, People as PeopleIcon} from '@mui/icons-material'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 
 const levelColors = {
     beginner: {bg: '#e8f5e9', color: '#2e7d32', label: '초급'},
@@ -26,6 +27,8 @@ const formatDate = (date) => {
 }
 
 const ChatRoomCard = ({room, onClick}) => {
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
     const level = levelColors[room.level] || levelColors.beginner
 
     const handleEnterClick = (e) => {

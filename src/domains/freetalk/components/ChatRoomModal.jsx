@@ -8,44 +8,55 @@ import {
     Fade,
     IconButton,
     Paper,
-    Tab,
-    Tabs,
+    Popover,
+    Slider,
     TextField,
     Typography,
     useTheme,
 } from '@mui/material'
 import {
-    Chat as ChatIcon,
+    Circle as CircleIcon,
     Close as CloseIcon,
     ExitToApp as ExitToAppIcon,
     Minimize as MinimizeIcon,
+    Opacity as OpacityIcon,
     OpenInFull as MaximizeIcon,
     Refresh as RefreshIcon,
     Send as SendIcon,
-    SportsEsports as GameIcon,
     VolumeUp as VolumeUpIcon,
 } from '@mui/icons-material'
 import {
     chatRoomService,
-    GAME_STATUS,
-    gameService,
-    MESSAGE_TYPES,
     messageService,
-    TEMP_USER_ID,
     voiceService
 } from '../../chat/services/chatService'
 import {useSettings} from '../../../contexts/SettingsContext'
+import {useAuth} from '../../../contexts/AuthContext'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 import {DESIGN_TOKENS, getChatStyles} from '../../../theme/theme'
-import GameModePanel from './GameModePanel'
+import {useChatWebSocket} from '../hooks/useChatWebSocket'
 
 const ChatRoomModal = ({open, onClose, room, onLeave}) => {
     const theme = useTheme()
-    const isDark = theme.palette.mode === 'dark'
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
     const {settings} = useSettings()
+    const {user} = useAuth()
+    const currentUserId = user?.userId || user?.username || user?.sub
     const messagesEndRef = useRef(null)
     const dragRef = useRef(null)
 
-    const [messages, setMessages] = useState([])
+    // WebSocket 훅 사용
+    const {
+        isConnected,
+        messages,
+        error: wsError,
+        connect: wsConnect,
+        disconnect: wsDisconnect,
+        sendMessage: wsSendMessage,
+        setMessages,
+    } = useChatWebSocket(room?.id, currentUserId)
+
     const [newMessage, setNewMessage] = useState('')
     const [loading, setLoading] = useState(true)
     const [sendingMessage, setSendingMessage] = useState(false)
@@ -56,8 +67,8 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
     const [savedPosition, setSavedPosition] = useState({x: 0, y: 0})
     const [isDragging, setIsDragging] = useState(false)
     const [dragOffset, setDragOffset] = useState({x: 0, y: 0})
-    const [activeTab, setActiveTab] = useState(0) // 0: 채팅, 1: 게임
-    const [gameStatus, setGameStatus] = useState(GAME_STATUS.NONE)
+    const [opacity, setOpacity] = useState(100)
+    const [opacityAnchorEl, setOpacityAnchorEl] = useState(null)
     // 메시지 목록 조회
     const fetchMessages = useCallback(async () => {
         if (!room?.id) return
@@ -71,7 +82,7 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                 userId: msg.userId,
                 messageType: msg.messageType,
                 createdAt: new Date(msg.createdAt),
-                isOwn: msg.userId === TEMP_USER_ID,
+                isOwn: msg.userId === currentUserId,
             }))
             setMessages(transformedMessages.reverse())
         } catch (err) {
@@ -80,58 +91,35 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
         }
     }, [room?.id])
 
-    // 게임 상태 조회
-    const fetchGameStatus = useCallback(async () => {
-        if (!room?.id) return
-        try {
-            const response = await gameService.getStatus(room.id)
-            const data = response.data || response
-            setGameStatus(data.gameStatus || GAME_STATUS.NONE)
-            // 게임 중이면 게임 탭으로 전환
-            if (data.gameStatus === GAME_STATUS.PLAYING) {
-                setActiveTab(1)
-            }
-        } catch (err) {
-            console.error('Failed to fetch game status:', err)
+    // WebSocket 에러 통합
+    useEffect(() => {
+        if (wsError) {
+            setError(wsError)
         }
-    }, [room?.id])
+    }, [wsError])
 
     // 초기 로드
     useEffect(() => {
-        if (open && room?.id) {
+        console.log('[ChatRoomModal] useEffect triggered:', {open, roomId: room?.id, currentUserId})
+        if (open && room?.id && currentUserId) {
+            console.log('[ChatRoomModal] Initializing...', {roomId: room.id, userId: currentUserId})
             setLoading(true)
-            setMessages([])
             setMinimized(false)
-            setActiveTab(0)
-            Promise.all([
-                fetchMessages(),
-                fetchGameStatus(),
-            ]).finally(() => setLoading(false))
-        }
-    }, [open, room?.id, fetchMessages, fetchGameStatus])
 
-    // 게임 메시지 처리
-    const handleGameMessage = (gameMessage) => {
-        const systemMessage = {
-            id: `game-${Date.now()}`,
-            content: gameMessage.content,
-            userId: 'SYSTEM',
-            messageType: gameMessage.type,
-            createdAt: new Date(),
-            isOwn: false,
-            isSystem: true,
-        }
-        setMessages((prev) => [...prev, systemMessage])
+            // WebSocket 연결
+            wsConnect()
 
-        // 게임 시작 시 게임 탭으로 전환
-        if (gameMessage.type === MESSAGE_TYPES.GAME_START) {
-            setGameStatus(GAME_STATUS.PLAYING)
-            setActiveTab(1)
-        } else if (gameMessage.type === MESSAGE_TYPES.GAME_END) {
-            setGameStatus(GAME_STATUS.NONE)
-            setActiveTab(0)
+            // 기존 메시지 로드
+            fetchMessages().finally(() => setLoading(false))
         }
-    }
+
+        return () => {
+            if (open && room?.id) {
+                console.log('[ChatRoomModal] Disconnecting WebSocket...')
+                wsDisconnect()
+            }
+        }
+    }, [open, room?.id, currentUserId]) // eslint-disable-line react-hooks/exhaustive-deps
 
     // 스크롤 맨 아래로
     const scrollToBottom = (instant = false) => {
@@ -194,7 +182,7 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
         }
     }, [isDragging, dragOffset])
 
-    // 메시지 전송
+    // 메시지 전송 (WebSocket 사용)
     const handleSendMessage = async () => {
         if (!newMessage.trim() || sendingMessage) return
 
@@ -202,25 +190,38 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
         const messageContent = newMessage.trim()
         setNewMessage('')
 
-        const tempMessage = {
-            id: `temp-${Date.now()}`,
-            content: messageContent,
-            userId: TEMP_USER_ID,
-            messageType: 'TEXT',
-            createdAt: new Date(),
-            isOwn: true,
-        }
-        setMessages((prev) => [...prev, tempMessage])
+        // /start, /stop 명령어는 서버 응답(WebSocket game_start/game_end)을 기다림
+        // 탭 전환은 useEffect의 wsGameState 감지에서 처리
 
-        try {
-            await messageService.send(room.id, messageContent)
-            await fetchMessages()
-        } catch (err) {
-            console.error('Failed to send message:', err)
-            setMessages((prev) => prev.filter((m) => m.id !== tempMessage.id))
-            setError('메시지 전송에 실패했습니다')
-        } finally {
+        // WebSocket으로 전송
+        if (isConnected) {
+            const success = wsSendMessage(messageContent, 'TEXT')
+            if (!success) {
+                setError('메시지 전송에 실패했습니다')
+            }
             setSendingMessage(false)
+        } else {
+            // WebSocket 연결이 안 된 경우 REST API fallback
+            const tempMessage = {
+                id: `temp-${Date.now()}`,
+                content: messageContent,
+                userId: currentUserId,
+                messageType: 'TEXT',
+                createdAt: new Date(),
+                isOwn: true,
+            }
+            setMessages((prev) => [...prev, tempMessage])
+
+            try {
+                await messageService.send(room.id, messageContent)
+                await fetchMessages()
+            } catch (err) {
+                console.error('Failed to send message:', err)
+                setMessages((prev) => prev.filter((m) => m.id !== tempMessage.id))
+                setError('메시지 전송에 실패했습니다')
+            } finally {
+                setSendingMessage(false)
+            }
         }
     }
 
@@ -278,10 +279,15 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
     }
 
     const formatTime = (date) => {
+        // date가 문자열이거나 Date 객체일 수 있음
+        const dateObj = date instanceof Date ? date : new Date(date)
+        if (isNaN(dateObj.getTime())) {
+            return '' // 유효하지 않은 날짜는 빈 문자열 반환
+        }
         return new Intl.DateTimeFormat('ko-KR', {
             hour: '2-digit',
             minute: '2-digit',
-        }).format(date)
+        }).format(dateObj)
     }
 
     if (!open) return null
@@ -291,6 +297,7 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
             <Paper
                 ref={dragRef}
                 elevation={8}
+                style={{opacity: opacity / 100}}
                 sx={{
                     position: 'fixed',
                     bottom: position.y || 20,
@@ -306,9 +313,10 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                     zIndex: 1300,
                     cursor: isDragging ? 'grabbing' : 'default',
                     border: isDark ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                    pointerEvents: opacity < 50 ? 'none' : 'auto',
                 }}
             >
-                {/* 헤더 - 드래그 가능 */}
+                {/* 헤더 - 드래그 가능, 항상 조작 가능 */}
                 <Box
                     onMouseDown={handleMouseDown}
                     sx={{
@@ -320,12 +328,21 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                         justifyContent: 'space-between',
                         cursor: 'grab',
                         userSelect: 'none',
+                        pointerEvents: 'auto',
                     }}
                 >
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1, flex: 1, minWidth: 0}}>
                         <Typography variant="subtitle2" fontWeight={600} noWrap>
                             {room?.name || '채팅방'}
                         </Typography>
+                        {/* 연결 상태 표시 */}
+                        <CircleIcon
+                            sx={{
+                                fontSize: 8,
+                                color: isConnected ? '#4caf50' : '#f44336',
+                            }}
+                            titleAccess={isConnected ? '실시간 연결' : '오프라인'}
+                        />
                         {room?.level && (
                             <Chip
                                 label={DESIGN_TOKENS.level[room.level]?.label || room.level}
@@ -340,6 +357,39 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                         )}
                     </Box>
                     <Box sx={{display: 'flex'}}>
+                        <IconButton
+                            size="small"
+                            onClick={(e) => setOpacityAnchorEl(e.currentTarget)}
+                            sx={{color: 'white'}}
+                            title="투명도"
+                        >
+                            <OpacityIcon fontSize="small"/>
+                        </IconButton>
+                        <Popover
+                            open={Boolean(opacityAnchorEl)}
+                            anchorEl={opacityAnchorEl}
+                            onClose={() => setOpacityAnchorEl(null)}
+                            anchorOrigin={{vertical: 'top', horizontal: 'center'}}
+                            transformOrigin={{vertical: 'bottom', horizontal: 'center'}}
+                            slotProps={{
+                                paper: {
+                                    sx: {pointerEvents: 'auto'}
+                                }
+                            }}
+                        >
+                            <Box sx={{width: 150, px: 2, py: 1}}>
+                                <Typography variant="caption" color="text.secondary">
+                                    투명도: {opacity}%
+                                </Typography>
+                                <Slider
+                                    value={opacity}
+                                    onChange={(e, v) => setOpacity(v)}
+                                    min={10}
+                                    max={100}
+                                    size="small"
+                                />
+                            </Box>
+                        </Popover>
                         <IconButton size="small" onClick={fetchMessages} sx={{color: 'white'}} title="새로고침">
                             <RefreshIcon fontSize="small"/>
                         </IconButton>
@@ -358,30 +408,6 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
 
                 {!minimized && (
                     <>
-                        {/* 탭 (채팅/게임) */}
-                        <Tabs
-                            value={activeTab}
-                            onChange={(e, v) => setActiveTab(v)}
-                            variant="fullWidth"
-                            sx={{
-                                minHeight: 36,
-                                '& .MuiTab-root': {minHeight: 36, py: 0.5},
-                            }}
-                        >
-                            <Tab
-                                icon={<ChatIcon sx={{fontSize: 16}}/>}
-                                iconPosition="start"
-                                label="채팅"
-                                sx={{fontSize: '0.75rem'}}
-                            />
-                            <Tab
-                                icon={<GameIcon sx={{fontSize: 16}}/>}
-                                iconPosition="start"
-                                label="캐치마인드"
-                                sx={{fontSize: '0.75rem'}}
-                            />
-                        </Tabs>
-
                         {/* 에러 메시지 */}
                         {error && (
                             <Alert severity="error" onClose={() => setError(null)} sx={{borderRadius: 0}}>
@@ -389,16 +415,8 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                             </Alert>
                         )}
 
-                        {/* 게임 모드 */}
-                        {activeTab === 1 && (
-                            <Box sx={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
-                                <GameModePanel roomId={room?.id} onGameMessage={handleGameMessage}/>
-                            </Box>
-                        )}
-
-                        {/* 채팅 모드 - 메시지 영역 */}
-                        {activeTab === 0 && (
-                            loading ? (
+                        {/* 메시지 영역 */}
+                        {loading ? (
                                 <Box sx={{
                                     display: 'flex',
                                     justifyContent: 'center',
@@ -484,15 +502,14 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                                                                 maxWidth: '70%',
                                                             }}
                                                         >
-                                                            {!message.isOwn && (
-                                                                <Typography variant="caption" sx={{
-                                                                    mb: 0.25,
-                                                                    ml: 0.5,
-                                                                    fontSize: '0.6rem'
-                                                                }}>
-                                                                    {message.userId}
-                                                                </Typography>
-                                                            )}
+                                                            <Typography variant="caption" sx={{
+                                                                mb: 0.25,
+                                                                ml: message.isOwn ? 0 : 0.5,
+                                                                mr: message.isOwn ? 0.5 : 0,
+                                                                fontSize: '0.6rem'
+                                                            }}>
+                                                                {message.userId}
+                                                            </Typography>
 
                                                             <Box sx={{
                                                                 display: 'flex',
@@ -581,8 +598,7 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                                     )}
                                     <div ref={messagesEndRef}/>
                                 </Box>
-                            )
-                        )}
+                            )}
 
                         {/* 입력 영역 */}
                         <Box
@@ -594,6 +610,7 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                                 borderTop: 1,
                                 borderColor: 'divider',
                                 bgcolor: 'background.paper',
+                                pointerEvents: 'auto',
                             }}
                         >
                             <TextField

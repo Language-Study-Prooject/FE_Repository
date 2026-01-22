@@ -15,6 +15,7 @@ import {
     School as LearnIcon,
     Settings as SettingsIcon,
     SmartToy as AiIcon,
+    SportsEsports as GameIcon,
     TrendingUp as TrendingIcon,
 } from '@mui/icons-material'
 import {useThemeMode} from '../../../contexts/ThemeContext'
@@ -43,7 +44,7 @@ const HorizontalNav = () => {
             id: 'speaking',
             label: t('sidebar.speaking'),
             icon: SpeakingIcon,
-            color: '#3b82f6',
+            color: '#059669',
             children: [
                 {
                     id: 'opic',
@@ -120,6 +121,21 @@ const HorizontalNav = () => {
             ],
         },
         {
+            id: 'games',
+            label: t('games.title'),
+            icon: GameIcon,
+            color: '#8b5cf6',
+            children: [
+                {
+                    id: 'catchmind',
+                    label: t('games.catchmindTitle'),
+                    icon: GameIcon,
+                    path: '/games/catchmind',
+                    desc: t('games.catchmindDesc')
+                },
+            ],
+        },
+        {
             id: 'dashboard',
             label: t('nav.dashboard'),
             icon: DashboardIcon,
@@ -137,7 +153,7 @@ const HorizontalNav = () => {
             id: 'settings',
             label: t('nav.settings'),
             icon: SettingsIcon,
-            color: '#6b7280',
+            color: mode === 'dark' ? '#a1a1aa' : '#6b7280',
             path: '/settings',
         },
     ]
@@ -282,7 +298,7 @@ const HorizontalNav = () => {
                                             width: DROPDOWN_ITEM_WIDTH + DROPDOWN_PADDING * 2,
                                             // 최대 하위 메뉴 개수 기준으로 고정 높이 설정
                                             minHeight: maxChildren * DROPDOWN_ITEM_HEIGHT + DROPDOWN_PADDING * 2,
-                                            backgroundColor: mode === 'dark' ? '#1e1e1e' : 'white',
+                                            backgroundColor: mode === 'dark' ? '#27272a' : 'white',
                                             boxShadow: mode === 'dark'
                                                 ? '0 10px 40px -10px rgba(0,0,0,0.5)'
                                                 : '0 10px 40px -10px rgba(0,0,0,0.15)',

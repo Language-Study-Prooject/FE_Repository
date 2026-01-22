@@ -31,6 +31,7 @@ import {
     WORD_STATUS_LABELS,
 } from '../constants/vocabConstants'
 import {useTranslation} from '../../../contexts/SettingsContext'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 
 export default function WordDetailModal({
                                             open,
@@ -44,6 +45,8 @@ export default function WordDetailModal({
                                             isPlayingTTS,
                                         }) {
     const {t} = useTranslation()
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
     const [selectedVoice, setSelectedVoice] = useState(VOICE_TYPES.FEMALE)
 
     if (!word) return null
@@ -189,7 +192,7 @@ export default function WordDetailModal({
                 <Box mb={4}>
                     <Typography
                         variant="h4"
-                        sx={{fontWeight: 700, color: '#1c1917', mb: 1}}
+                        sx={{fontWeight: 700, color: isDark ? '#fafafa' : '#1c1917', mb: 1}}
                     >
                         {wordData.korean}
                     </Typography>
@@ -223,7 +226,7 @@ export default function WordDetailModal({
                         </Typography>
                         <Typography
                             variant="body1"
-                            sx={{fontStyle: 'italic', color: '#1c1917'}}
+                            sx={{fontStyle: 'italic', color: isDark ? '#fafafa' : '#1c1917'}}
                         >
                             "{wordData.example}"
                         </Typography>

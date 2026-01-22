@@ -2,6 +2,7 @@ import {useCallback, useEffect, useRef, useState} from 'react'
 import {Alert, Box, Drawer, IconButton, Typography, useMediaQuery, useTheme,} from '@mui/material'
 import {Edit as EditIcon, Menu as MenuIcon, SmartToy as AiIcon,} from '@mui/icons-material'
 import {useSettings} from '../../../contexts/SettingsContext'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 import ChatMessage from '../components/ChatMessage'
 import ChatInput from '../components/ChatInput'
 import SessionSidebar from '../components/SessionSidebar'
@@ -12,6 +13,8 @@ import {GRAMMAR_LEVELS} from '../constants/grammarConstants'
 export default function WritingPage() {
     const {t, isKorean} = useSettings()
     const theme = useTheme()
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
     const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
     const [sidebarOpen, setSidebarOpen] = useState(!isMobile)
@@ -124,17 +127,22 @@ export default function WritingPage() {
             if (response.session) {
                 setLevel(response.session.level || GRAMMAR_LEVELS.BEGINNER)
             }
-            // Convert messages to our format
-            const formattedMessages = (response.messages || []).map((msg) => ({
-                id: msg.messageId,
-                content: msg.content,
-                correctedContent: msg.correctedContent,
-                grammarScore: msg.grammarScore,
-                errors: msg.errorsJson ? JSON.parse(msg.errorsJson) : [],
-                aiResponse: msg.role === 'ASSISTANT' ? msg.content : null,
-                isUser: msg.role === 'USER',
-                createdAt: msg.createdAt,
-            }))
+            // Convert messages to our format and sort by createdAt (oldest first)
+            const formattedMessages = (response.messages || [])
+                .map((msg) => ({
+                    id: msg.messageId,
+                    content: msg.content,
+                    correctedContent: msg.correctedContent,
+                    grammarScore: msg.grammarScore,
+                    errors: msg.errors || (msg.errorsJson ? JSON.parse(msg.errorsJson) : []),
+                    feedback: msg.feedback || null,
+                    isCorrect: msg.isCorrect,
+                    aiResponse: msg.role === 'ASSISTANT' ? msg.content : null,
+                    conversationTip: msg.conversationTip || null,
+                    isUser: msg.role === 'USER',
+                    createdAt: msg.createdAt,
+                }))
+                .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
             setMessages(formattedMessages)
         } catch (err) {
             console.error('Failed to load session messages:', err)
@@ -221,10 +229,10 @@ export default function WritingPage() {
                 height: 'calc(100vh - 120px)',
                 display: 'flex',
                 overflow: 'hidden',
-                backgroundColor: '#fff',
+                backgroundColor: isDark ? '#18181b' : '#fff',
                 borderRadius: {xs: 0, md: '20px'},
                 border: {xs: 'none', md: '1px solid'},
-                borderColor: 'divider',
+                borderColor: isDark ? '#3f3f46' : 'divider',
                 mx: {xs: 0, md: 3},
                 my: {xs: 0, md: 2},
             }}
@@ -260,11 +268,11 @@ export default function WritingPage() {
                     sx={{
                         p: 2,
                         borderBottom: '1px solid',
-                        borderColor: 'divider',
+                        borderColor: isDark ? '#3f3f46' : 'divider',
                         display: 'flex',
                         alignItems: 'center',
                         gap: 2,
-                        backgroundColor: '#fafafa',
+                        backgroundColor: isDark ? '#27272a' : '#fafafa',
                     }}
                 >
                     <IconButton onClick={() => setSidebarOpen(!sidebarOpen)} sx={{mr: 0.5}}>
@@ -302,7 +310,7 @@ export default function WritingPage() {
                         flex: 1,
                         overflow: 'auto',
                         py: 2,
-                        backgroundColor: '#fff',
+                        backgroundColor: isDark ? '#18181b' : '#fff',
                     }}
                 >
                     {error && (
@@ -355,7 +363,7 @@ export default function WritingPage() {
                                     mt: 4,
                                     p: 2,
                                     borderRadius: '12px',
-                                    backgroundColor: '#f3f4f6',
+                                    backgroundColor: isDark ? '#3f3f46' : '#f3f4f6',
                                     maxWidth: 400,
                                 }}
                             >

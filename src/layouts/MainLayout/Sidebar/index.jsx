@@ -34,6 +34,7 @@ import {
     School as LearnIcon,
     Settings as SettingsIcon,
     SmartToy as AiIcon,
+    SportsEsports as GameIcon,
     TrendingUp as TrendingIcon,
 } from '@mui/icons-material'
 import {useThemeMode} from '../../../contexts/ThemeContext'
@@ -52,7 +53,7 @@ const Sidebar = ({open, collapsed, onToggleCollapse, onClose}) => {
 
     const [expandedMenus, setExpandedMenus] = useState(() => {
         const saved = localStorage.getItem('expandedMenus')
-        return saved ? JSON.parse(saved) : {speaking: true, writing: true, vocab: true}
+        return saved ? JSON.parse(saved) : {speaking: true, writing: true, vocab: true, games: true}
     })
 
     useEffect(() => {
@@ -67,8 +68,8 @@ const Sidebar = ({open, collapsed, onToggleCollapse, onClose}) => {
                     id: 'speaking',
                     label: t('sidebar.speaking'),
                     icon: SpeakingIcon,
-                    color: '#3b82f6',
-                    bgColor: '#eff6ff',
+                    color: '#059669',
+                    bgColor: '#ecfdf5',
                     children: [
                         {
                             id: 'opic',
@@ -146,6 +147,22 @@ const Sidebar = ({open, collapsed, onToggleCollapse, onClose}) => {
                         },
                     ],
                 },
+                {
+                    id: 'games',
+                    label: t('games.title'),
+                    icon: GameIcon,
+                    color: '#8b5cf6',
+                    bgColor: '#f3e8ff',
+                    children: [
+                        {
+                            id: 'catchmind',
+                            label: t('games.catchmindTitle'),
+                            icon: GameIcon,
+                            path: '/games/catchmind',
+                            description: t('games.catchmindDesc'),
+                        },
+                    ],
+                },
             ],
         },
         {
@@ -175,7 +192,7 @@ const Sidebar = ({open, collapsed, onToggleCollapse, onClose}) => {
                     icon: SettingsIcon,
                     path: '/settings',
                     description: t('sidebar.settingsDesc'),
-                    color: '#6b7280',
+                    color: mode === 'dark' ? '#a1a1aa' : '#6b7280',
                     bgColor: '#f3f4f6',
                 },
             ],

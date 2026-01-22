@@ -1,8 +1,11 @@
 import {Box, Container, Link, Typography} from '@mui/material'
 import {useTranslation} from '../../../contexts/SettingsContext'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 
 const Footer = () => {
     const {t} = useTranslation()
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
 
     return (
         <Box
@@ -11,9 +14,9 @@ const Footer = () => {
                 py: 3,
                 px: 2,
                 mt: 'auto',
-                backgroundColor: 'background.paper',
+                backgroundColor: isDark ? '#27272a' : '#ffffff',
                 borderTop: 1,
-                borderColor: 'divider',
+                borderColor: isDark ? '#3f3f46' : 'divider',
             }}
         >
             <Container maxWidth="lg">

@@ -8,6 +8,7 @@ import {
 } from '@mui/icons-material'
 import {useState} from 'react'
 import {useSettings} from '../../../contexts/SettingsContext'
+import {useThemeMode} from '../../../contexts/ThemeContext'
 import {getScoreColor, GRAMMAR_ERROR_BG_COLORS, GRAMMAR_ERROR_COLORS,} from '../constants/grammarConstants'
 
 // 커서 깜빡임 애니메이션
@@ -23,6 +24,8 @@ export default function ChatMessage({
                                         streamingText = '',
                                     }) {
     const {t, isKorean} = useSettings()
+    const {mode} = useThemeMode()
+    const isDark = mode === 'dark'
     const [showDetails, setShowDetails] = useState(false)
 
     const {
@@ -30,6 +33,8 @@ export default function ChatMessage({
         correctedContent,
         grammarScore,
         errors = [],
+        feedback,
+        isCorrect,
         aiResponse,
         conversationTip,
     } = message
@@ -176,6 +181,23 @@ export default function ChatMessage({
                                     </Box>
                                 ))}
                             </Box>
+
+                            {/* Feedback */}
+                            {feedback && (
+                                <Box
+                                    sx={{
+                                        mt: 2,
+                                        p: 1.5,
+                                        borderRadius: '8px',
+                                        backgroundColor: '#fef3c7',
+                                        border: '1px solid #fcd34d',
+                                    }}
+                                >
+                                    <Typography variant="caption" sx={{color: '#92400e', lineHeight: 1.5}}>
+                                        💡 {feedback}
+                                    </Typography>
+                                </Box>
+                            )}
                         </Box>
                     </Collapse>
                 </Box>
@@ -186,7 +208,7 @@ export default function ChatMessage({
                         width: 36,
                         height: 36,
                         borderRadius: '50%',
-                        backgroundColor: '#e5e7eb',
+                        backgroundColor: isDark ? '#3f3f46' : '#e5e7eb',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -194,7 +216,7 @@ export default function ChatMessage({
                         flexShrink: 0,
                     }}
                 >
-                    <PersonIcon sx={{fontSize: 20, color: '#6b7280'}}/>
+                    <PersonIcon sx={{fontSize: 20, color: isDark ? '#a1a1aa' : '#6b7280'}}/>
                 </Box>
             </Box>
         )
@@ -234,14 +256,14 @@ export default function ChatMessage({
                     sx={{
                         p: 2,
                         borderRadius: '20px 20px 20px 4px',
-                        backgroundColor: '#f3f4f6',
-                        border: '1px solid #e5e7eb',
+                        backgroundColor: isDark ? '#3f3f46' : '#f3f4f6',
+                        border: `1px solid ${isDark ? '#52525b' : '#e5e7eb'}`,
                         minHeight: isStreaming ? 48 : 'auto',
                     }}
                 >
                     <Typography
                         component="div"
-                        sx={{fontSize: '1rem', lineHeight: 1.6, color: '#374151'}}
+                        sx={{fontSize: '1rem', lineHeight: 1.6, color: isDark ? '#fafafa' : '#374151'}}
                     >
                         {displayText}
                         {/* 스트리밍 커서 */}
