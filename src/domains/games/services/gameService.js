@@ -30,14 +30,20 @@ export const gameRoomService = {
 
         console.log('[gameService] getList params:', params.toString())
         const response = await chatApi.get(`/chat/rooms?${params.toString()}`)
-        console.log('[gameService] getList full response:', response)
-        console.log('[gameService] getList data:', response.data)
 
-        // 디버그: 필터 없이 전체 조회 테스트
-        const allRoomsResponse = await chatApi.get('/chat/rooms?limit=20')
-        console.log('[gameService] ALL rooms (no filter):', allRoomsResponse)
+        // 백엔드가 type 필터를 지원하지 않을 경우, 클라이언트 사이드 필터링
+        let data = response.data
+        if (data?.rooms) {
+            data.rooms = data.rooms.filter(room =>
+                room.type === 'GAME' || room.gameType === 'CATCHMIND'
+            )
+        } else if (Array.isArray(data)) {
+            data = data.filter(room =>
+                room.type === 'GAME' || room.gameType === 'CATCHMIND'
+            )
+        }
 
-        return response.data
+        return data
     },
 
     /**
