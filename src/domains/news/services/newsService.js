@@ -135,6 +135,8 @@ export const getQuizHistory = async () => {
 
 /**
  * 단어 수집
+ * - 단어 수집 시 자동으로 단어장(user-words)에 NEWS 카테고리로 추가됨
+ * - meaning, example은 기사 키워드에서 자동 추출됨
  */
 export const collectWord = async (articleId, word, context) => {
     return fetchWithAuth(`/news/${articleId}/words`, {
@@ -177,16 +179,32 @@ export const getNewsStats = async () => {
 }
 
 /**
+ * 대시보드 통합 통계 조회
+ * GET /stats/dashboard
+ * Response: {
+ *   today: { wordsLearned, articlesRead, quizScore, studyTime },
+ *   overall: { totalWords, totalArticles, averageQuizScore, totalStudyTime },
+ *   weeklyProgress: [{ date, wordsLearned, articlesRead }],
+ *   levelDistribution: { BEGINNER, INTERMEDIATE, ADVANCED }
+ * }
+ */
+export const getDashboardStats = async () => {
+    return fetchWithAuth('/stats/dashboard')
+}
+
+/**
  * 카테고리 목록
  */
 export const NEWS_CATEGORIES = [
-    { id: 'TECH', label: '기술', labelEn: 'Tech', color: '#6366F1' },
-    { id: 'BUSINESS', label: '비즈니스', labelEn: 'Business', color: '#F59E0B' },
+    { id: 'WORLD', label: '국제', labelEn: 'World', color: '#14B8A6' },
+    { id: 'POLITICS', label: '정치', labelEn: 'Politics', color: '#6366F1' },
+    { id: 'BUSINESS', label: '경제', labelEn: 'Business', color: '#F59E0B' },
+    { id: 'TECH', label: '기술', labelEn: 'Tech', color: '#3B82F6' },
+    { id: 'SCIENCE', label: '과학', labelEn: 'Science', color: '#06B6D4' },
+    { id: 'HEALTH', label: '건강', labelEn: 'Health', color: '#10B981' },
     { id: 'SPORTS', label: '스포츠', labelEn: 'Sports', color: '#EF4444' },
     { id: 'ENTERTAINMENT', label: '엔터테인먼트', labelEn: 'Entertainment', color: '#EC4899' },
-    { id: 'WORLD', label: '세계', labelEn: 'World', color: '#14B8A6' },
-    { id: 'CULTURE', label: '문화', labelEn: 'Culture', color: '#F97316' },
-    { id: 'SCIENCE', label: '과학', labelEn: 'Science', color: '#06B6D4' },
+    { id: 'LIFESTYLE', label: '라이프스타일', labelEn: 'Lifestyle', color: '#F97316' },
 ]
 
 /**
@@ -226,6 +244,7 @@ export default {
     deleteCollectedWord,
     syncToVocab,
     getNewsStats,
+    getDashboardStats,
     NEWS_CATEGORIES,
     LEVEL_COLORS,
     TTS_VOICES,

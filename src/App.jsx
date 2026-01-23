@@ -33,7 +33,7 @@ import CatchmindWaitingPage from './domains/games/pages/CatchmindWaitingPage'
 import CatchmindPlayPage from './domains/games/pages/CatchmindPlayPage'
 import {NewsListPage, NewsDetailPage, NewsQuizPage, NewsWordsPage, NewsStatsPage} from './domains/news'
 import {dailyService, statsService} from './domains/vocab/services/vocabService'
-import {getNewsStats} from './domains/news/services/newsService'
+import {getNewsStats, getDashboardStats} from './domains/news/services/newsService'
 import {useChat} from './contexts/ChatContext'
 import {useSettings} from './contexts/SettingsContext'
 import {useAuth} from './contexts/AuthContext'
@@ -96,42 +96,66 @@ function Dashboard() {
     const [activityData, setActivityData] = useState(null)
     const [loadingActivity, setLoadingActivity] = useState(true)
 
-    // 최근 활동 데이터 로드
+    // 최근 활동 데이터 로드 - 통합 대시보드 API 사용
     useEffect(() => {
         const fetchActivityData = async () => {
             try {
                 setLoadingActivity(true)
-                // Vocab daily, stats와 News stats를 병렬로 가져오기
-                const [dailyRes, statsRes, newsRes] = await Promise.allSettled([
-                    dailyService.getWords().catch(() => null),
-                    statsService.getOverall().catch(() => null),
-                    getNewsStats().catch(() => null),
-                ])
 
-                const dailyData = dailyRes.status === 'fulfilled' ? dailyRes.value : null
-                const statsData = statsRes.status === 'fulfilled' ? statsRes.value : null
-                const newsData = newsRes.status === 'fulfilled' ? newsRes.value?.data : null
+                // 통합 대시보드 API 호출
+                const dashboardRes = await getDashboardStats().catch(() => null)
+                const dashboard = dashboardRes?.data || dashboardRes
 
-                // daily API 응답 구조 처리
-                const daily = dailyData?.data || dailyData
-                const todayLearned = daily?.progress?.learned || daily?.dailyStudy?.learnedCount || 0
-                const totalWords = daily?.progress?.total || daily?.dailyStudy?.totalWords || 0
+                console.log('📊 Dashboard Stats:', dashboard)
 
-                // stats API 응답 구조 처리
-                const stats = statsData?.data || statsData
-                const vocabStreak = stats?.currentStreak || stats?.streakDays || 0
-                const totalLearned = stats?.newWordsLearned || stats?.totalLearned || 0
+                if (dashboard) {
+                    // 통합 API 응답 구조:
+                    // { today, overall, weeklyProgress, levelDistribution }
+                    setActivityData({
+                        todayWords: dashboard.today?.wordsLearned || 0,
+                        totalWords: dashboard.overall?.totalWordsLearned || 0,
+                        dailyTotal: dashboard.today?.wordsTotal || 25,
+                        vocabStreak: dashboard.overall?.currentStreak || 0,
+                        newsRead: dashboard.today?.newsRead || 0,
+                        totalNewsRead: dashboard.overall?.totalNewsRead || 0,
+                        quizzesTaken: dashboard.today?.quizzesTaken || 0,
+                        totalQuizzes: dashboard.overall?.totalQuizzes || 0,
+                        averageAccuracy: dashboard.overall?.averageAccuracy || 0,
+                        longestStreak: dashboard.overall?.longestStreak || 0,
+                        weeklyProgress: dashboard.weeklyProgress || [],
+                        levelDistribution: dashboard.levelDistribution || {},
+                    })
+                } else {
+                    // 통합 API 실패 시 개별 API 폴백
+                    const [dailyRes, statsRes, newsRes] = await Promise.allSettled([
+                        dailyService.getWords().catch(() => null),
+                        statsService.getOverall().catch(() => null),
+                        getNewsStats().catch(() => null),
+                    ])
 
-                setActivityData({
-                    todayWords: todayLearned,
-                    totalWords: totalLearned,
-                    dailyTotal: totalWords,
-                    vocabStreak: vocabStreak,
-                    newsRead: newsData?.todayRead || 0,
-                    totalNewsRead: newsData?.totalRead || 0,
-                    newsStreak: newsData?.currentStreak || 0,
-                    quizScore: newsData?.averageQuizScore || 0,
-                })
+                    const dailyData = dailyRes.status === 'fulfilled' ? dailyRes.value : null
+                    const statsData = statsRes.status === 'fulfilled' ? statsRes.value : null
+                    const newsData = newsRes.status === 'fulfilled' ? newsRes.value?.data : null
+
+                    const daily = dailyData?.data || dailyData
+                    const todayLearned = daily?.progress?.learned || daily?.dailyStudy?.learnedCount || 0
+                    const totalWords = daily?.progress?.total || daily?.dailyStudy?.totalWords || 0
+
+                    const stats = statsData?.data || statsData
+                    const vocabStreak = stats?.currentStreak || stats?.streakDays || 0
+                    const totalLearned = stats?.newWordsLearned || stats?.totalLearned || 0
+
+                    setActivityData({
+                        todayWords: todayLearned,
+                        totalWords: totalLearned,
+                        dailyTotal: totalWords,
+                        vocabStreak: vocabStreak,
+                        newsRead: newsData?.todayRead || 0,
+                        totalNewsRead: newsData?.totalRead || 0,
+                        newsStreak: newsData?.currentStreak || 0,
+                        quizScore: newsData?.averageQuizScore || 0,
+                    })
+                }
             } catch (err) {
                 console.error('Failed to fetch activity data:', err)
             } finally {
@@ -172,8 +196,8 @@ function Dashboard() {
             title: t('dashboard.writingTitle'),
             description: t('dashboard.writingDesc'),
             icon: WritingCategoryIcon,
-            color: '#10b981',
-            bgColor: '#ecfdf5',
+            color: '#8b5cf6',
+            bgColor: '#f5f3ff',
             children: [
                 {
                     id: 'chat-people',
@@ -234,8 +258,8 @@ function Dashboard() {
             title: t('games.title'),
             description: t('games.description'),
             icon: GameIcon,
-            color: '#8b5cf6',
-            bgColor: '#f3e8ff',
+            color: '#06b6d4',
+            bgColor: '#ecfeff',
             children: [
                 {
                     id: 'catchmind',
@@ -467,7 +491,7 @@ function Dashboard() {
                                     transition: 'all 0.2s ease',
                                     '&:hover': {
                                         transform: 'translateY(-4px)',
-                                        boxShadow: '0 12px 24px -8px rgba(5, 150, 105, 0.2)',
+                                        boxShadow: '0 12px 24px -8px rgba(249, 115, 22, 0.2)',
                                     },
                                 }}
                             >
@@ -477,7 +501,7 @@ function Dashboard() {
                                             width: 48,
                                             height: 48,
                                             borderRadius: '14px',
-                                            backgroundColor: '#ecfdf5',
+                                            backgroundColor: '#fff7ed',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
@@ -485,9 +509,9 @@ function Dashboard() {
                                             mb: 1.5,
                                         }}
                                     >
-                                        <VocabIcon sx={{color: '#059669', fontSize: 24}}/>
+                                        <VocabIcon sx={{color: '#f97316', fontSize: 24}}/>
                                     </Box>
-                                    <Typography variant="h4" fontWeight={800} color="#059669">
+                                    <Typography variant="h4" fontWeight={800} color="#f97316">
                                         {activityData?.todayWords || 0}
                                         {activityData?.dailyTotal > 0 && (
                                             <Typography component="span" variant="h6" fontWeight={600} color="text.secondary">
@@ -512,7 +536,7 @@ function Dashboard() {
                                     transition: 'all 0.2s ease',
                                     '&:hover': {
                                         transform: 'translateY(-4px)',
-                                        boxShadow: '0 12px 24px -8px rgba(59, 130, 246, 0.2)',
+                                        boxShadow: '0 12px 24px -8px rgba(139, 92, 246, 0.2)',
                                     },
                                 }}
                             >
@@ -522,7 +546,7 @@ function Dashboard() {
                                             width: 48,
                                             height: 48,
                                             borderRadius: '14px',
-                                            backgroundColor: '#eff6ff',
+                                            backgroundColor: '#f5f3ff',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
@@ -530,9 +554,9 @@ function Dashboard() {
                                             mb: 1.5,
                                         }}
                                     >
-                                        <NewsIcon sx={{color: '#3b82f6', fontSize: 24}}/>
+                                        <NewsIcon sx={{color: '#8b5cf6', fontSize: 24}}/>
                                     </Box>
-                                    <Typography variant="h4" fontWeight={800} color="#3b82f6">
+                                    <Typography variant="h4" fontWeight={800} color="#8b5cf6">
                                         {activityData?.newsRead || 0}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
@@ -552,7 +576,7 @@ function Dashboard() {
                                     transition: 'all 0.2s ease',
                                     '&:hover': {
                                         transform: 'translateY(-4px)',
-                                        boxShadow: '0 12px 24px -8px rgba(245, 158, 11, 0.2)',
+                                        boxShadow: '0 12px 24px -8px rgba(249, 115, 22, 0.2)',
                                     },
                                 }}
                             >
@@ -562,7 +586,7 @@ function Dashboard() {
                                             width: 48,
                                             height: 48,
                                             borderRadius: '14px',
-                                            backgroundColor: '#fef3c7',
+                                            backgroundColor: '#fff7ed',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
@@ -570,9 +594,9 @@ function Dashboard() {
                                             mb: 1.5,
                                         }}
                                     >
-                                        <WordListIcon sx={{color: '#f59e0b', fontSize: 24}}/>
+                                        <WordListIcon sx={{color: '#f97316', fontSize: 24}}/>
                                     </Box>
-                                    <Typography variant="h4" fontWeight={800} color="#f59e0b">
+                                    <Typography variant="h4" fontWeight={800} color="#f97316">
                                         {activityData?.totalWords || 0}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
@@ -798,14 +822,14 @@ function ReportsPage() {
 
             {/* 뉴스 학습 통계 */}
             {(stats.newsRead > 0 || stats.newsQuizScore > 0) && (
-                <Card sx={{p: 3, borderRadius: '20px', mb: 4, backgroundColor: '#eff6ff'}}>
-                    <Typography variant="h6" fontWeight={700} gutterBottom color="#3b82f6">
+                <Card sx={{p: 3, borderRadius: '20px', mb: 4, backgroundColor: '#f5f3ff'}}>
+                    <Typography variant="h6" fontWeight={700} gutterBottom color="#8b5cf6">
                         {isKorean ? '뉴스 학습' : 'News Learning'}
                     </Typography>
                     <Grid container spacing={3}>
                         <Grid size={{xs: 6}}>
                             <Box sx={{textAlign: 'center'}}>
-                                <Typography variant="h3" fontWeight={800} color="#3b82f6">
+                                <Typography variant="h3" fontWeight={800} color="#8b5cf6">
                                     {stats.newsRead}
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary">
@@ -815,7 +839,7 @@ function ReportsPage() {
                         </Grid>
                         <Grid size={{xs: 6}}>
                             <Box sx={{textAlign: 'center'}}>
-                                <Typography variant="h3" fontWeight={800} color="#3b82f6">
+                                <Typography variant="h3" fontWeight={800} color="#8b5cf6">
                                     {stats.newsQuizScore}%
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary">

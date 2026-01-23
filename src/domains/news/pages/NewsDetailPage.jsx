@@ -64,7 +64,21 @@ const NewsDetailPage = () => {
             try {
                 setLoading(true)
                 const response = await getNewsDetail(articleId)
-                setArticle(response.data)
+                console.log('📰 Article Response:', response)
+                console.log('📰 Article Data:', response.data)
+
+                // 새 API 응답 구조: data.article (중첩) 또는 기존 data 직접
+                const articleData = response.data?.article || response.data
+                setArticle(articleData)
+
+                // 북마크/읽음 상태 초기화 (새 API에서 제공)
+                if (response.data?.isBookmarked !== undefined) {
+                    setIsBookmarked(response.data.isBookmarked)
+                }
+                if (response.data?.isRead !== undefined) {
+                    setIsRead(response.data.isRead)
+                }
+
                 setError(null)
             } catch (err) {
                 console.error('Failed to fetch article:', err)
@@ -157,7 +171,12 @@ const NewsDetailPage = () => {
         if (collectedWords.has(keyword.word)) return
 
         try {
-            const response = await collectWord(articleId, keyword.word, `From article: ${article.title}`)
+            // 단어 수집 - 백엔드에서 자동으로 단어장에 NEWS 카테고리로 추가됨
+            const response = await collectWord(
+                articleId,
+                keyword.word,
+                `From article: ${article.title}`
+            )
             setCollectedWords(prev => new Set([...prev, keyword.word]))
 
             if (response.data?.newBadges?.length > 0) {
@@ -288,12 +307,12 @@ const NewsDetailPage = () => {
 
             {/* Title */}
             <Typography variant="h4" fontWeight={800} sx={{ mb: 2, lineHeight: 1.3 }}>
-                {article.title}
+                {article.title || (isKorean ? '제목 없음' : 'No Title')}
             </Typography>
 
             {/* Source & Date */}
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                {article.source} | {new Date(article.publishedAt).toLocaleDateString()}
+                {article.source || 'Unknown'} | {article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : (isKorean ? '날짜 없음' : 'No Date')}
             </Typography>
 
             {/* Image */}
@@ -314,6 +333,7 @@ const NewsDetailPage = () => {
             )}
 
             {/* Summary */}
+            {article.summary && (
             <Card sx={{ borderRadius: '16px', mb: 4, backgroundColor: '#f8fafc' }}>
                 <CardContent sx={{ p: 3 }}>
                     <Typography variant="subtitle2" fontWeight={700} color="primary" gutterBottom>
@@ -324,16 +344,49 @@ const NewsDetailPage = () => {
                     </Typography>
                 </CardContent>
             </Card>
+            )}
 
             <Divider sx={{ my: 4 }} />
 
-            {/* Keywords */}
+            {/* Keywords - 단어 카드 (keywords 배열 사용) */}
+            {article.keywords && article.keywords.length > 0 && (
             <Box sx={{ mb: 4 }}>
-                <Typography variant="h6" fontWeight={700} gutterBottom>
-                    {isKorean ? '핵심 단어' : 'Key Vocabulary'}
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                    {article.keywords?.map((keyword, index) => {
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <Box
+                        sx={{
+                            width: 6,
+                            height: 24,
+                            borderRadius: 3,
+                            background: 'linear-gradient(180deg, #8B5CF6 0%, #A78BFA 100%)',
+                        }}
+                    />
+                    <Typography variant="h6" fontWeight={700}>
+                        {isKorean ? '핵심 단어' : 'Key Vocabulary'}
+                    </Typography>
+                    <Chip
+                        label={`${article.keywords.length} ${isKorean ? '개' : 'words'}`}
+                        size="small"
+                        sx={{
+                            ml: 1,
+                            backgroundColor: '#EDE9FE',
+                            color: '#7C3AED',
+                            fontWeight: 600,
+                            fontSize: 11,
+                        }}
+                    />
+                </Box>
+                <Box
+                    sx={{
+                        display: 'grid',
+                        gridTemplateColumns: {
+                            xs: 'repeat(2, 1fr)',
+                            sm: 'repeat(3, 1fr)',
+                            md: 'repeat(4, 1fr)',
+                        },
+                        gap: 2,
+                    }}
+                >
+                    {article.keywords.map((keyword, index) => {
                         const isCollected = collectedWords.has(keyword.word)
                         const keywordLevelColor = LEVEL_COLORS[keyword.level] || LEVEL_COLORS.INTERMEDIATE
 
@@ -341,47 +394,177 @@ const NewsDetailPage = () => {
                             <Card
                                 key={index}
                                 sx={{
-                                    borderRadius: '12px',
-                                    minWidth: 140,
+                                    borderRadius: '16px',
+                                    position: 'relative',
+                                    overflow: 'visible',
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                     border: '2px solid',
                                     borderColor: isCollected ? '#10B981' : 'transparent',
+                                    boxShadow: isCollected
+                                        ? '0 8px 24px -4px rgba(16, 185, 129, 0.25)'
+                                        : '0 4px 12px -2px rgba(0, 0, 0, 0.08)',
+                                    '&:hover': {
+                                        transform: 'translateY(-4px)',
+                                        boxShadow: '0 12px 28px -8px rgba(0, 0, 0, 0.15)',
+                                    },
                                 }}
                             >
-                                <CardContent sx={{ p: 2, textAlign: 'center' }}>
-                                    <Typography variant="subtitle1" fontWeight={700}>
+                                {/* 난이도 뱃지 (카드 우상단) */}
+                                <Chip
+                                    label={getLevelLabel(keyword.level)}
+                                    size="small"
+                                    sx={{
+                                        position: 'absolute',
+                                        top: -8,
+                                        right: 12,
+                                        backgroundColor: keywordLevelColor.bg,
+                                        color: keywordLevelColor.main,
+                                        fontWeight: 700,
+                                        fontSize: 10,
+                                        height: 20,
+                                        border: '2px solid white',
+                                        boxShadow: '0 2px 8px -2px rgba(0, 0, 0, 0.15)',
+                                    }}
+                                />
+
+                                {/* 수집 완료 표시 */}
+                                {isCollected && (
+                                    <Box
+                                        sx={{
+                                            position: 'absolute',
+                                            top: -8,
+                                            left: 12,
+                                            width: 20,
+                                            height: 20,
+                                            borderRadius: '50%',
+                                            backgroundColor: '#10B981',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            border: '2px solid white',
+                                            boxShadow: '0 2px 8px -2px rgba(16, 185, 129, 0.4)',
+                                        }}
+                                    >
+                                        <CheckIcon sx={{ fontSize: 12, color: 'white' }} />
+                                    </Box>
+                                )}
+
+                                <CardContent sx={{ p: 2.5, pt: 3 }}>
+                                    {/* 단어 */}
+                                    <Typography
+                                        variant="h6"
+                                        fontWeight={800}
+                                        sx={{
+                                            color: '#1F2937',
+                                            mb: 1,
+                                            fontSize: 18,
+                                            textAlign: 'center',
+                                        }}
+                                    >
                                         {keyword.word}
                                     </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {keyword.meaning}
-                                    </Typography>
-                                    <Chip
-                                        label={getLevelLabel(keyword.level)}
-                                        size="small"
+
+                                    {/* 뜻 */}
+                                    <Typography
+                                        variant="body2"
                                         sx={{
-                                            mt: 1,
-                                            backgroundColor: keywordLevelColor.bg,
-                                            color: keywordLevelColor.main,
-                                            fontSize: 10,
+                                            color: '#6B7280',
+                                            textAlign: 'center',
+                                            mb: 1.5,
+                                            minHeight: 40,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            lineHeight: 1.4,
                                         }}
-                                    />
-                                    <IconButton
-                                        size="small"
-                                        onClick={() => handleCollectWord(keyword)}
-                                        disabled={isCollected}
-                                        sx={{ mt: 1 }}
+                                    >
+                                        {isKorean && keyword.meaningKo ? keyword.meaningKo : keyword.meaning}
+                                    </Typography>
+
+                                    {/* 영어 정의 (한국어 모드일 때) */}
+                                    {isKorean && keyword.meaningKo && keyword.meaning && (
+                                        <Typography
+                                            variant="caption"
+                                            sx={{
+                                                display: 'block',
+                                                textAlign: 'center',
+                                                color: '#9CA3AF',
+                                                fontSize: 10,
+                                                mb: 1.5,
+                                                fontStyle: 'italic',
+                                            }}
+                                        >
+                                            {keyword.meaning}
+                                        </Typography>
+                                    )}
+
+                                    {/* 예문 (있을 경우) */}
+                                    {keyword.example && (
+                                        <Box
+                                            sx={{
+                                                backgroundColor: '#F9FAFB',
+                                                borderRadius: '8px',
+                                                p: 1.5,
+                                                mb: 2,
+                                            }}
+                                        >
+                                            <Typography
+                                                variant="caption"
+                                                sx={{
+                                                    color: '#6B7280',
+                                                    fontStyle: 'italic',
+                                                    lineHeight: 1.5,
+                                                    display: 'block',
+                                                    fontSize: 11,
+                                                }}
+                                            >
+                                                "{keyword.example}"
+                                            </Typography>
+                                        </Box>
+                                    )}
+
+                                    {/* 수집 버튼 */}
+                                    <Box
+                                        onClick={() => !isCollected && handleCollectWord(keyword)}
+                                        sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: 0.5,
+                                            py: 1,
+                                            borderRadius: '8px',
+                                            cursor: isCollected ? 'default' : 'pointer',
+                                            backgroundColor: isCollected ? '#D1FAE5' : '#F3F4F6',
+                                            color: isCollected ? '#059669' : '#6B7280',
+                                            transition: 'all 0.2s ease',
+                                            '&:hover': !isCollected && {
+                                                backgroundColor: '#E5E7EB',
+                                            },
+                                        }}
                                     >
                                         {isCollected ? (
-                                            <CheckIcon sx={{ color: '#10B981' }} />
+                                            <>
+                                                <CheckIcon sx={{ fontSize: 16 }} />
+                                                <Typography variant="caption" fontWeight={600}>
+                                                    {isKorean ? '수집됨' : 'Collected'}
+                                                </Typography>
+                                            </>
                                         ) : (
-                                            <AddIcon />
+                                            <>
+                                                <AddIcon sx={{ fontSize: 16 }} />
+                                                <Typography variant="caption" fontWeight={600}>
+                                                    {isKorean ? '단어 수집' : 'Collect'}
+                                                </Typography>
+                                            </>
                                         )}
-                                    </IconButton>
+                                    </Box>
                                 </CardContent>
                             </Card>
                         )
                     })}
                 </Box>
             </Box>
+            )}
 
             <Divider sx={{ my: 4 }} />
 

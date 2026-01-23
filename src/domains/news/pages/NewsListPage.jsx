@@ -65,10 +65,20 @@ const NewsListPage = () => {
 
             const newArticles = response.data?.articles || []
 
+            // 북마크 상태 초기화 (API에서 isBookmarked 제공)
+            const bookmarked = new Set()
+            newArticles.forEach(article => {
+                if (article.isBookmarked) {
+                    bookmarked.add(article.articleId)
+                }
+            })
+
             if (isLoadMore) {
                 setArticles(prev => [...prev, ...newArticles])
+                setBookmarkedIds(prev => new Set([...prev, ...bookmarked]))
             } else {
                 setArticles(newArticles)
+                setBookmarkedIds(bookmarked)
             }
 
             setCursor(response.data?.nextCursor || null)
