@@ -10,6 +10,7 @@ import {
     LibraryBooks as WordListIcon,
     MenuBook as VocabIcon,
     Mic as SpeakingIcon,
+    Newspaper as NewsIcon,
     People as PeopleIcon,
     Quiz as QuizIcon,
     School as LearnIcon,
@@ -82,13 +83,20 @@ const HorizontalNav = () => {
                     path: '/writing',
                     desc: t('sidebar.writingPracticeDesc')
                 },
+                {
+                    id: 'news-learning',
+                    label: t('sidebar.newsLearning'),
+                    icon: NewsIcon,
+                    path: '/news',
+                    desc: t('sidebar.newsLearningDesc')
+                },
             ],
         },
         {
             id: 'vocab',
             label: t('sidebar.vocab'),
             icon: VocabIcon,
-            color: '#059669',
+            color: '#f97316',
             children: [
                 {
                     id: 'vocab-daily',
@@ -124,7 +132,7 @@ const HorizontalNav = () => {
             id: 'games',
             label: t('games.title'),
             icon: GameIcon,
-            color: '#8b5cf6',
+            color: '#06b6d4',
             children: [
                 {
                     id: 'catchmind',

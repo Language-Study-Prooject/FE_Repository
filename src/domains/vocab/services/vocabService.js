@@ -415,15 +415,16 @@ export const userWordService = {
  * 나의 단어장 API - 북마크/오답 필터링
  */
 export const myWordService = {
-    // GET /user-words/review - 나의 단어 목록 (필터링)
-    getList: (userId, {bookmarked, incorrectOnly, limit = 20, cursor} = {}) =>
+    // GET /user-words - 나의 단어 목록 (필터링)
+    // category: NEWS, DAILY, BUSINESS, ACADEMIC, TRAVEL, TECHNOLOGY
+    getList: (userId, {category, bookmarked, incorrectOnly, limit = 20, cursor} = {}) =>
         withMock(
             () => vocabApi.get('/vocab/user-words', {
-                params: {userId, bookmarked, incorrectOnly, limit, cursor}
+                params: {userId, category, bookmarked, incorrectOnly, limit, cursor}
             }),
             {
                 userWords: mockUserWords
-                    .filter(w => (!bookmarked || w.bookmarked) && (!incorrectOnly || w.incorrectCount > 0))
+                    .filter(w => (!category || w.category === category) && (!bookmarked || w.bookmarked) && (!incorrectOnly || w.incorrectCount > 0))
                     .slice(0, limit),
                 hasMore: false,
             }

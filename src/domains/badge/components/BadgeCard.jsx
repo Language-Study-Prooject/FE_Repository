@@ -3,7 +3,10 @@ import {Box, Fade, LinearProgress, Tooltip, Typography,} from '@mui/material'
 import {EmojiEvents as TrophyIcon, Lock as LockIcon,} from '@mui/icons-material'
 import {useSettings} from '../../../contexts/SettingsContext'
 import {useThemeMode} from '../../../contexts/ThemeContext'
-import {BADGE_CATEGORY_COLORS, BADGE_DESCRIPTIONS_EN, BADGE_NAMES_EN,} from '../constants/badgeConstants'
+import {BADGE_CATEGORY_COLORS, BADGE_DESCRIPTIONS_EN, BADGE_NAMES_EN, NEWS_BADGE_TYPES,} from '../constants/badgeConstants'
+
+// 뉴스 뱃지 색상
+const NEWS_BADGE_COLOR = '#10b981'
 
 export default function BadgeCard({badge, size = 'medium'}) {
     const {isKorean} = useSettings()
@@ -13,6 +16,8 @@ export default function BadgeCard({badge, size = 'medium'}) {
 
     const isEarned = badge.earned
     const progress = Math.min((badge.progress / badge.threshold) * 100, 100)
+    const isNewsBadge = NEWS_BADGE_TYPES.includes(badge.badgeType) || badge.badgeType?.startsWith('NEWS_')
+    const badgeColor = isNewsBadge ? NEWS_BADGE_COLOR : BADGE_CATEGORY_COLORS[badge.category]
 
     // Size configurations
     const sizes = {
@@ -66,7 +71,7 @@ export default function BadgeCard({badge, size = 'medium'}) {
                             backgroundColor: '#e5e7eb',
                             '& .MuiLinearProgress-bar': {
                                 borderRadius: 3,
-                                background: `linear-gradient(135deg, ${BADGE_CATEGORY_COLORS[badge.category]} 0%, ${BADGE_CATEGORY_COLORS[badge.category]}99 100%)`,
+                                background: `linear-gradient(135deg, ${badgeColor} 0%, ${badgeColor}99 100%)`,
                             },
                         }}
                     />
@@ -143,11 +148,11 @@ export default function BadgeCard({badge, size = 'medium'}) {
                         justifyContent: 'center',
                         position: 'relative',
                         background: isEarned
-                            ? `linear-gradient(135deg, ${BADGE_CATEGORY_COLORS[badge.category]}20 0%, ${BADGE_CATEGORY_COLORS[badge.category]}10 100%)`
+                            ? `linear-gradient(135deg, ${badgeColor}20 0%, ${badgeColor}10 100%)`
                             : isDark ? '#3f3f46' : '#f3f4f6',
-                        border: isEarned ? `3px solid ${BADGE_CATEGORY_COLORS[badge.category]}` : '3px solid #d1d5db',
+                        border: isEarned ? `3px solid ${badgeColor}` : '3px solid #d1d5db',
                         boxShadow: isEarned
-                            ? `0 8px 24px -4px ${BADGE_CATEGORY_COLORS[badge.category]}40`
+                            ? `0 8px 24px -4px ${badgeColor}40`
                             : 'none',
                         overflow: 'hidden',
                     }}
@@ -171,7 +176,7 @@ export default function BadgeCard({badge, size = 'medium'}) {
                         <TrophyIcon
                             sx={{
                                 fontSize: config.icon,
-                                color: isEarned ? BADGE_CATEGORY_COLORS[badge.category] : '#9ca3af',
+                                color: isEarned ? badgeColor : '#9ca3af',
                                 filter: isEarned ? 'none' : 'grayscale(100%)',
                                 opacity: isEarned ? 1 : 0.4,
                             }}
