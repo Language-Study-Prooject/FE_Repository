@@ -11,18 +11,28 @@ export const speakingApi = {
     async chat({ sessionId, audio, text, level = 'INTERMEDIATE' }) {
         const token = localStorage.getItem('accessToken')
 
+        // sessionId가 null/undefined면 body에서 제외
+        const requestBody = {
+            ...(sessionId && { sessionId }),  // null이 아닐 때만 포함
+            ...(audio && { audio }),
+            ...(text && { text }),
+            level,
+        }
+
+        console.log('[speakingApi] Request body:', {
+            hasSessionId: !!sessionId,
+            hasAudio: !!audio,
+            hasText: !!text,
+            level
+        })
+
         const response = await fetch(`${API_BASE_URL}/api/speaking/chat`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`,
             },
-            body: JSON.stringify({
-                sessionId,
-                audio,
-                text,
-                level,
-            }),
+            body: JSON.stringify(requestBody),
         })
 
         if (!response.ok) {

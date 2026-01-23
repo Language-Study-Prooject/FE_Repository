@@ -62,10 +62,10 @@ export default function SpeakingPage() {
 
     // 에러 처리
     useEffect(() => {
-        if (streamError) {
-            setError(streamError)
+        if (apiError) {
+            setError(apiError)
         }
-    }, [streamError])
+    }, [apiError])
 
     /**
      * 음성 전송
@@ -96,8 +96,8 @@ export default function SpeakingPage() {
      */
     const handleLevelChange = useCallback((newLevel) => {
         setLevel(newLevel)
-        setStreamLevel(newLevel)
-    }, [setStreamLevel])
+        setApiLevel(newLevel)
+    }, [setApiLevel])
 
     /**
      * 대화 초기화
