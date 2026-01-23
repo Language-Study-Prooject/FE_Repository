@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { speakingApi } from '../services/speakingApi'
+import { speakingService } from '../services/speakingService'
 
 /**
  * Speaking REST API 훅
@@ -20,7 +20,7 @@ export function useSpeaking() {
         setError(null)
 
         try {
-            const response = await speakingApi.chat({
+            const response = await speakingService.chat({
                 sessionId,
                 audio: audioBase64,
                 level: currentLevel,
@@ -47,7 +47,7 @@ export function useSpeaking() {
         setError(null)
 
         try {
-            const response = await speakingApi.chat({
+            const response = await speakingService.chat({
                 sessionId,
                 text,
                 level: currentLevel,
@@ -84,7 +84,7 @@ export function useSpeaking() {
         }
 
         try {
-            await speakingApi.reset(sessionId)
+            await speakingService.reset(sessionId)
         } catch (err) {
             console.error('[useSpeaking] Reset error:', err)
         } finally {

@@ -9,7 +9,7 @@ export { default as SpeakingInput } from './components/SpeakingInput'
 export { useSpeaking } from './hooks/useSpeaking'
 
 // Services
-export { speakingApi } from './services/speakingApi'
+export { speakingService } from './services/speakingService'
 
 // Constants
 export * from './constants/speakingConstants'
