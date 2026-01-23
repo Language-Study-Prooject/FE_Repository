@@ -8,7 +8,7 @@ export default defineConfig({
         open: true,
         proxy: {
             '/api': {
-                target: 'https://gc8l9ijhzc.execute-api.ap-northeast-2.amazonaws.com/dev',
+                target: 'https://xgepjbg2c9.execute-api.ap-northeast-2.amazonaws.com/test',
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/api/, ''),
                 secure: true,

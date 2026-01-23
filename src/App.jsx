@@ -1,4 +1,4 @@
-import {useState} from 'react'
+import {useState, useEffect} from 'react'
 import {Navigate, Route, Routes, useNavigate} from 'react-router-dom'
 import {Box, Button, Card, CardContent, CircularProgress, Collapse, Container, Grid, Typography} from '@mui/material'
 import {
@@ -9,6 +9,7 @@ import {
     LibraryBooks as WordListIcon,
     MenuBook as VocabIcon,
     Mic as SpeakingIcon,
+    Newspaper as NewsIcon,
     People as PeopleIcon,
     Quiz as QuizIcon,
     School as LearnIcon,
@@ -30,6 +31,9 @@ import {BadgeSection} from './domains/badge'
 import CatchmindLobbyPage from './domains/games/pages/CatchmindLobbyPage'
 import CatchmindWaitingPage from './domains/games/pages/CatchmindWaitingPage'
 import CatchmindPlayPage from './domains/games/pages/CatchmindPlayPage'
+import {NewsListPage, NewsDetailPage, NewsQuizPage, NewsWordsPage, NewsStatsPage} from './domains/news'
+import {dailyService, statsService} from './domains/vocab/services/vocabService'
+import {getNewsStats} from './domains/news/services/newsService'
 import {useChat} from './contexts/ChatContext'
 import {useSettings} from './contexts/SettingsContext'
 import {useAuth} from './contexts/AuthContext'
@@ -88,7 +92,55 @@ function PublicRoute({children}) {
 function Dashboard() {
     const navigate = useNavigate()
     const [expandedCard, setExpandedCard] = useState(null)
-    const {t} = useSettings()
+    const {t, isKorean} = useSettings()
+    const [activityData, setActivityData] = useState(null)
+    const [loadingActivity, setLoadingActivity] = useState(true)
+
+    // 최근 활동 데이터 로드
+    useEffect(() => {
+        const fetchActivityData = async () => {
+            try {
+                setLoadingActivity(true)
+                // Vocab daily, stats와 News stats를 병렬로 가져오기
+                const [dailyRes, statsRes, newsRes] = await Promise.allSettled([
+                    dailyService.getWords().catch(() => null),
+                    statsService.getOverall().catch(() => null),
+                    getNewsStats().catch(() => null),
+                ])
+
+                const dailyData = dailyRes.status === 'fulfilled' ? dailyRes.value : null
+                const statsData = statsRes.status === 'fulfilled' ? statsRes.value : null
+                const newsData = newsRes.status === 'fulfilled' ? newsRes.value?.data : null
+
+                // daily API 응답 구조 처리
+                const daily = dailyData?.data || dailyData
+                const todayLearned = daily?.progress?.learned || daily?.dailyStudy?.learnedCount || 0
+                const totalWords = daily?.progress?.total || daily?.dailyStudy?.totalWords || 0
+
+                // stats API 응답 구조 처리
+                const stats = statsData?.data || statsData
+                const vocabStreak = stats?.currentStreak || stats?.streakDays || 0
+                const totalLearned = stats?.newWordsLearned || stats?.totalLearned || 0
+
+                setActivityData({
+                    todayWords: todayLearned,
+                    totalWords: totalLearned,
+                    dailyTotal: totalWords,
+                    vocabStreak: vocabStreak,
+                    newsRead: newsData?.todayRead || 0,
+                    totalNewsRead: newsData?.totalRead || 0,
+                    newsStreak: newsData?.currentStreak || 0,
+                    quizScore: newsData?.averageQuizScore || 0,
+                })
+            } catch (err) {
+                console.error('Failed to fetch activity data:', err)
+            } finally {
+                setLoadingActivity(false)
+            }
+        }
+
+        fetchActivityData()
+    }, [])
 
     const learningModes = [
         {
@@ -136,6 +188,13 @@ function Dashboard() {
                     icon: WritingIcon,
                     path: '/writing',
                     description: t('dashboard.compositionDesc')
+                },
+                {
+                    id: 'news-learning',
+                    title: t('dashboard.newsTitle') || '뉴스 학습',
+                    icon: NewsIcon,
+                    path: '/news',
+                    description: t('dashboard.newsDesc') || '실제 뉴스로 영어 학습'
                 },
             ],
         },
@@ -381,43 +440,189 @@ function Dashboard() {
                 })}
             </Grid>
 
-            {/* Recent Activity */}
+            {/* Today's Activity Stats */}
             <Box sx={{mt: 6}}>
-                <Typography variant="h5" fontWeight={700} gutterBottom sx={{mb: 3}}>
-                    {t('dashboard.recentActivity')}
-                </Typography>
-                <Card>
-                    <CardContent sx={{py: 6, textAlign: 'center'}}>
-                        <Box
-                            sx={{
-                                width: 64,
-                                height: 64,
-                                borderRadius: '16px',
-                                backgroundColor: '#f5f5f4',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                mx: 'auto',
-                                mb: 2,
-                            }}
-                        >
-                            <LearnIcon sx={{fontSize: 32, color: '#a8a29e'}}/>
-                        </Box>
-                        <Typography color="text.secondary" variant="body1" fontWeight={500}>
-                            {t('dashboard.noHistory')}
-                        </Typography>
-                        <Typography color="text.disabled" variant="body2" sx={{mt: 0.5}}>
-                            {t('dashboard.startLearning')}
-                        </Typography>
-                        <Button
-                            variant="contained"
-                            sx={{mt: 3}}
-                            onClick={() => navigate('/vocab')}
-                        >
-                            {t('dashboard.startButton')}
-                        </Button>
-                    </CardContent>
-                </Card>
+                {loadingActivity ? (
+                    <Grid container spacing={2}>
+                        {[...Array(4)].map((_, i) => (
+                            <Grid key={i} size={{xs: 6, md: 3}}>
+                                <Card sx={{borderRadius: '16px', height: 140}}>
+                                    <CardContent sx={{p: 2.5, textAlign: 'center'}}>
+                                        <CircularProgress size={24}/>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                        ))}
+                    </Grid>
+                ) : (
+                    <Grid container spacing={2}>
+                        {/* 오늘 외운 단어 */}
+                        <Grid size={{xs: 6, md: 3}}>
+                            <Card
+                                onClick={() => navigate('/vocab')}
+                                sx={{
+                                    borderRadius: '16px',
+                                    height: '100%',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                        transform: 'translateY(-4px)',
+                                        boxShadow: '0 12px 24px -8px rgba(5, 150, 105, 0.2)',
+                                    },
+                                }}
+                            >
+                                <CardContent sx={{p: 2.5, textAlign: 'center'}}>
+                                    <Box
+                                        sx={{
+                                            width: 48,
+                                            height: 48,
+                                            borderRadius: '14px',
+                                            backgroundColor: '#ecfdf5',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            mx: 'auto',
+                                            mb: 1.5,
+                                        }}
+                                    >
+                                        <VocabIcon sx={{color: '#059669', fontSize: 24}}/>
+                                    </Box>
+                                    <Typography variant="h4" fontWeight={800} color="#059669">
+                                        {activityData?.todayWords || 0}
+                                        {activityData?.dailyTotal > 0 && (
+                                            <Typography component="span" variant="h6" fontWeight={600} color="text.secondary">
+                                                /{activityData.dailyTotal}
+                                            </Typography>
+                                        )}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {isKorean ? '오늘 외운 단어' : 'Words Today'}
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                        {/* 읽은 뉴스 */}
+                        <Grid size={{xs: 6, md: 3}}>
+                            <Card
+                                onClick={() => navigate('/news')}
+                                sx={{
+                                    borderRadius: '16px',
+                                    height: '100%',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                        transform: 'translateY(-4px)',
+                                        boxShadow: '0 12px 24px -8px rgba(59, 130, 246, 0.2)',
+                                    },
+                                }}
+                            >
+                                <CardContent sx={{p: 2.5, textAlign: 'center'}}>
+                                    <Box
+                                        sx={{
+                                            width: 48,
+                                            height: 48,
+                                            borderRadius: '14px',
+                                            backgroundColor: '#eff6ff',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            mx: 'auto',
+                                            mb: 1.5,
+                                        }}
+                                    >
+                                        <NewsIcon sx={{color: '#3b82f6', fontSize: 24}}/>
+                                    </Box>
+                                    <Typography variant="h4" fontWeight={800} color="#3b82f6">
+                                        {activityData?.newsRead || 0}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {isKorean ? '오늘 읽은 뉴스' : 'News Today'}
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                        {/* 총 학습 단어 */}
+                        <Grid size={{xs: 6, md: 3}}>
+                            <Card
+                                onClick={() => navigate('/vocab/words')}
+                                sx={{
+                                    borderRadius: '16px',
+                                    height: '100%',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                        transform: 'translateY(-4px)',
+                                        boxShadow: '0 12px 24px -8px rgba(245, 158, 11, 0.2)',
+                                    },
+                                }}
+                            >
+                                <CardContent sx={{p: 2.5, textAlign: 'center'}}>
+                                    <Box
+                                        sx={{
+                                            width: 48,
+                                            height: 48,
+                                            borderRadius: '14px',
+                                            backgroundColor: '#fef3c7',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            mx: 'auto',
+                                            mb: 1.5,
+                                        }}
+                                    >
+                                        <WordListIcon sx={{color: '#f59e0b', fontSize: 24}}/>
+                                    </Box>
+                                    <Typography variant="h4" fontWeight={800} color="#f59e0b">
+                                        {activityData?.totalWords || 0}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {isKorean ? '총 학습 단어' : 'Total Words'}
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                        {/* 연속 학습 */}
+                        <Grid size={{xs: 6, md: 3}}>
+                            <Card
+                                onClick={() => navigate('/reports')}
+                                sx={{
+                                    borderRadius: '16px',
+                                    height: '100%',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                        transform: 'translateY(-4px)',
+                                        boxShadow: '0 12px 24px -8px rgba(236, 72, 153, 0.2)',
+                                    },
+                                }}
+                            >
+                                <CardContent sx={{p: 2.5, textAlign: 'center'}}>
+                                    <Box
+                                        sx={{
+                                            width: 48,
+                                            height: 48,
+                                            borderRadius: '14px',
+                                            backgroundColor: '#fce7f3',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            mx: 'auto',
+                                            mb: 1.5,
+                                        }}
+                                    >
+                                        <LearnIcon sx={{color: '#ec4899', fontSize: 24}}/>
+                                    </Box>
+                                    <Typography variant="h4" fontWeight={800} color="#ec4899">
+                                        {Math.max(activityData?.vocabStreak || 0, activityData?.newsStreak || 0)}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {isKorean ? '연속 학습' : 'Day Streak'}
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                    </Grid>
+                )}
             </Box>
         </Container>
     )
@@ -445,15 +650,64 @@ function FreetalkAiPage() {
 
 function ReportsPage() {
     const {isKorean} = useSettings()
+    const [loading, setLoading] = useState(true)
+    const [stats, setStats] = useState({
+        totalStudyDays: 0,
+        totalWords: 0,
+        totalTests: 0,
+        averageScore: 0,
+        currentStreak: 0,
+        bestStreak: 0,
+        newsRead: 0,
+        newsQuizScore: 0,
+    })
 
-    // 더미 통계 데이터
-    const stats = {
-        totalStudyDays: 15,
-        totalWords: 285,
-        totalTests: 12,
-        averageScore: 82,
-        currentStreak: 5,
-        bestStreak: 8,
+    useEffect(() => {
+        const fetchReportData = async () => {
+            try {
+                setLoading(true)
+                const [vocabStatsRes, vocabHistoryRes, newsStatsRes] = await Promise.allSettled([
+                    statsService.getOverall().catch(() => null),
+                    statsService.getDaily(null, {limit: 30}).catch(() => null),
+                    getNewsStats().catch(() => null),
+                ])
+
+                const vocabStats = vocabStatsRes.status === 'fulfilled' ? (vocabStatsRes.value?.data || vocabStatsRes.value) : null
+                const vocabHistory = vocabHistoryRes.status === 'fulfilled' ? (vocabHistoryRes.value?.data || vocabHistoryRes.value) : null
+                const newsStats = newsStatsRes.status === 'fulfilled' ? newsStatsRes.value?.data : null
+
+                // 학습일 계산 (히스토리에서 학습한 날 수)
+                const historyData = vocabHistory?.history || vocabHistory?.dailyStats || []
+                const studyDays = historyData.filter(d => (d.newWordsLearned || d.learnedCount || 0) > 0).length
+
+                setStats({
+                    totalStudyDays: studyDays || 0,
+                    totalWords: vocabStats?.newWordsLearned || vocabStats?.totalLearned || 0,
+                    totalTests: vocabStats?.testsCompleted || vocabStats?.testCount || 0,
+                    averageScore: Math.round(vocabStats?.successRate || vocabStats?.averageAccuracy || 0),
+                    currentStreak: vocabStats?.currentStreak || vocabStats?.streakDays || 0,
+                    bestStreak: vocabStats?.longestStreak || 0,
+                    newsRead: newsStats?.totalRead || 0,
+                    newsQuizScore: newsStats?.averageQuizScore || 0,
+                })
+            } catch (err) {
+                console.error('Failed to fetch report data:', err)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchReportData()
+    }, [])
+
+    if (loading) {
+        return (
+            <Container maxWidth="lg" sx={{py: 4}}>
+                <Box display="flex" justifyContent="center" alignItems="center" minHeight="40vh">
+                    <CircularProgress/>
+                </Box>
+            </Container>
+        )
     }
 
     return (
@@ -541,6 +795,37 @@ function ReportsPage() {
                     </Card>
                 </Grid>
             </Grid>
+
+            {/* 뉴스 학습 통계 */}
+            {(stats.newsRead > 0 || stats.newsQuizScore > 0) && (
+                <Card sx={{p: 3, borderRadius: '20px', mb: 4, backgroundColor: '#eff6ff'}}>
+                    <Typography variant="h6" fontWeight={700} gutterBottom color="#3b82f6">
+                        {isKorean ? '뉴스 학습' : 'News Learning'}
+                    </Typography>
+                    <Grid container spacing={3}>
+                        <Grid size={{xs: 6}}>
+                            <Box sx={{textAlign: 'center'}}>
+                                <Typography variant="h3" fontWeight={800} color="#3b82f6">
+                                    {stats.newsRead}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    {isKorean ? '읽은 기사' : 'Articles Read'}
+                                </Typography>
+                            </Box>
+                        </Grid>
+                        <Grid size={{xs: 6}}>
+                            <Box sx={{textAlign: 'center'}}>
+                                <Typography variant="h3" fontWeight={800} color="#3b82f6">
+                                    {stats.newsQuizScore}%
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    {isKorean ? '퀴즈 평균' : 'Quiz Average'}
+                                </Typography>
+                            </Box>
+                        </Grid>
+                    </Grid>
+                </Card>
+            )}
 
             {/* 연속 학습 */}
             <Card sx={{p: 3, borderRadius: '20px', mb: 4}}>
@@ -875,6 +1160,11 @@ function App() {
                     <Route path="/games/catchmind" element={<CatchmindLobbyPage/>}/>
                     <Route path="/games/catchmind/:roomId/waiting" element={<CatchmindWaitingPage/>}/>
                     <Route path="/games/catchmind/:roomId/play" element={<CatchmindPlayPage/>}/>
+                    <Route path="/news" element={<NewsListPage/>}/>
+                    <Route path="/news/:articleId" element={<NewsDetailPage/>}/>
+                    <Route path="/news/:articleId/quiz" element={<NewsQuizPage/>}/>
+                    <Route path="/news/words" element={<NewsWordsPage/>}/>
+                    <Route path="/news/stats" element={<NewsStatsPage/>}/>
                 </Route>
 
                 {/* 404 */}
