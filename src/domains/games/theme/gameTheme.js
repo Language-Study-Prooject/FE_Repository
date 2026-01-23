@@ -4,10 +4,10 @@
  */
 
 export const GAME_COLORS = {
-    // 브랜드
-    primary: '#8B5CF6',
-    primaryLight: '#A78BFA',
-    primaryBg: '#F3E8FF',
+    // 브랜드 (청록색 - 사이드바와 통일)
+    primary: '#06b6d4',
+    primaryLight: '#22d3ee',
+    primaryBg: '#ecfeff',
 
     // 게임 상태
     status: {
