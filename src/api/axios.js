@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { fetchAuthSession, signOut } from 'aws-amplify/auth'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL
 
@@ -14,8 +15,7 @@ const api = axios.create({
 api.interceptors.request.use(
     async (config) => {
         try {
-            // Cognito 세션에서 토큰 가져오기
-            const session = await fetchAuthSession()
+
             const token = localStorage.getItem('accessToken')
 
             if (token) {
@@ -45,16 +45,27 @@ api.interceptors.response.use(
 
             try {
                 // 토큰 갱신 시도
-                const session = await fetchAuthSession({forceRefresh: true})
+                const session = await fetchAuthSession({ forceRefresh: true })
                 const newToken = session.tokens?.accessToken?.toString()
 
                 if (newToken) {
+                    localStorage.setItem('accessToken', newToken)
                     originalRequest.headers['Authorization'] = `Bearer ${newToken}`
                     return api(originalRequest)
                 }
             } catch (refreshError) {
-                // 토큰 갱신 실패 시 로그인 페이지로 리다이렉트
-                window.location.href = '/login'
+                try {
+                    await signOut()
+                } catch (e) {
+                    console.error('[Axios] Sign out error:', e)
+                }
+
+                localStorage.removeItem('accessToken')
+
+                // 로그인 페이지로 리다이렉트 (무한 루프 방지)
+                if (window.location.pathname !== '/login') {
+                    window.location.href = '/login'
+                }
             }
         }
         return Promise.reject(error)
