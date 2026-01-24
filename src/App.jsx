@@ -32,12 +32,15 @@ import { BadgeSection } from './domains/badge'
 import CatchmindLobbyPage from './domains/games/pages/CatchmindLobbyPage'
 import CatchmindWaitingPage from './domains/games/pages/CatchmindWaitingPage'
 import CatchmindPlayPage from './domains/games/pages/CatchmindPlayPage'
-import {NewsListPage, NewsDetailPage, NewsQuizPage, NewsWordsPage, NewsStatsPage} from './domains/news'
-import {dailyService, statsService} from './domains/vocab/services/vocabService'
-import {getNewsStats, getDashboardStats} from './domains/news/services/newsService'
-import {useChat} from './contexts/ChatContext'
-import {useSettings} from './contexts/SettingsContext'
-import {useAuth} from './contexts/AuthContext'
+import WordchainLobbyPage from './domains/games/pages/WordchainLobbyPage'
+import WordchainWaitingPage from './domains/games/pages/WordchainWaitingPage'
+import WordchainPlayPage from './domains/games/pages/WordchainPlayPage'
+import { NewsListPage, NewsDetailPage, NewsQuizPage, NewsWordsPage, NewsStatsPage } from './domains/news'
+import { dailyService, statsService } from './domains/vocab/services/vocabService'
+import { getNewsStats, getDashboardStats } from './domains/news/services/newsService'
+import { useChat } from './contexts/ChatContext'
+import { useSettings } from './contexts/SettingsContext'
+import { useAuth } from './contexts/AuthContext'
 import LoginPage from './pages/Login'
 import SignUpPage from './pages/SignUp'
 
@@ -93,7 +96,7 @@ function PublicRoute({ children }) {
 function Dashboard() {
     const navigate = useNavigate()
     const [expandedCard, setExpandedCard] = useState(null)
-    const {t, isKorean} = useSettings()
+    const { t, isKorean } = useSettings()
     const [activityData, setActivityData] = useState(null)
     const [loadingActivity, setLoadingActivity] = useState(true)
 
@@ -268,6 +271,13 @@ function Dashboard() {
                     icon: GameIcon,
                     path: '/games/catchmind',
                     description: t('games.catchmindDesc')
+                },
+                {
+                    id: 'wordchain',
+                    title: '끝말잇기',
+                    icon: GameIcon,
+                    path: '/games/wordchain',
+                    description: '영어 끝말잇기'
                 },
             ],
         },
@@ -466,14 +476,14 @@ function Dashboard() {
             </Grid>
 
             {/* Today's Activity Stats */}
-            <Box sx={{mt: 6}}>
+            <Box sx={{ mt: 6 }}>
                 {loadingActivity ? (
                     <Grid container spacing={2}>
                         {[...Array(4)].map((_, i) => (
-                            <Grid key={i} size={{xs: 6, md: 3}}>
-                                <Card sx={{borderRadius: '16px', height: 140}}>
-                                    <CardContent sx={{p: 2.5, textAlign: 'center'}}>
-                                        <CircularProgress size={24}/>
+                            <Grid key={i} size={{ xs: 6, md: 3 }}>
+                                <Card sx={{ borderRadius: '16px', height: 140 }}>
+                                    <CardContent sx={{ p: 2.5, textAlign: 'center' }}>
+                                        <CircularProgress size={24} />
                                     </CardContent>
                                 </Card>
                             </Grid>
@@ -482,7 +492,7 @@ function Dashboard() {
                 ) : (
                     <Grid container spacing={2}>
                         {/* 오늘 외운 단어 */}
-                        <Grid size={{xs: 6, md: 3}}>
+                        <Grid size={{ xs: 6, md: 3 }}>
                             <Card
                                 onClick={() => navigate('/vocab')}
                                 sx={{
@@ -496,7 +506,7 @@ function Dashboard() {
                                     },
                                 }}
                             >
-                                <CardContent sx={{p: 2.5, textAlign: 'center'}}>
+                                <CardContent sx={{ p: 2.5, textAlign: 'center' }}>
                                     <Box
                                         sx={{
                                             width: 48,
@@ -510,7 +520,7 @@ function Dashboard() {
                                             mb: 1.5,
                                         }}
                                     >
-                                        <VocabIcon sx={{color: '#f97316', fontSize: 24}}/>
+                                        <VocabIcon sx={{ color: '#f97316', fontSize: 24 }} />
                                     </Box>
                                     <Typography variant="h4" fontWeight={800} color="#f97316">
                                         {activityData?.todayWords || 0}
@@ -527,7 +537,7 @@ function Dashboard() {
                             </Card>
                         </Grid>
                         {/* 읽은 뉴스 */}
-                        <Grid size={{xs: 6, md: 3}}>
+                        <Grid size={{ xs: 6, md: 3 }}>
                             <Card
                                 onClick={() => navigate('/news')}
                                 sx={{
@@ -541,7 +551,7 @@ function Dashboard() {
                                     },
                                 }}
                             >
-                                <CardContent sx={{p: 2.5, textAlign: 'center'}}>
+                                <CardContent sx={{ p: 2.5, textAlign: 'center' }}>
                                     <Box
                                         sx={{
                                             width: 48,
@@ -555,7 +565,7 @@ function Dashboard() {
                                             mb: 1.5,
                                         }}
                                     >
-                                        <NewsIcon sx={{color: '#8b5cf6', fontSize: 24}}/>
+                                        <NewsIcon sx={{ color: '#8b5cf6', fontSize: 24 }} />
                                     </Box>
                                     <Typography variant="h4" fontWeight={800} color="#8b5cf6">
                                         {activityData?.newsRead || 0}
@@ -567,7 +577,7 @@ function Dashboard() {
                             </Card>
                         </Grid>
                         {/* 총 학습 단어 */}
-                        <Grid size={{xs: 6, md: 3}}>
+                        <Grid size={{ xs: 6, md: 3 }}>
                             <Card
                                 onClick={() => navigate('/vocab/words')}
                                 sx={{
@@ -581,7 +591,7 @@ function Dashboard() {
                                     },
                                 }}
                             >
-                                <CardContent sx={{p: 2.5, textAlign: 'center'}}>
+                                <CardContent sx={{ p: 2.5, textAlign: 'center' }}>
                                     <Box
                                         sx={{
                                             width: 48,
@@ -595,7 +605,7 @@ function Dashboard() {
                                             mb: 1.5,
                                         }}
                                     >
-                                        <WordListIcon sx={{color: '#f97316', fontSize: 24}}/>
+                                        <WordListIcon sx={{ color: '#f97316', fontSize: 24 }} />
                                     </Box>
                                     <Typography variant="h4" fontWeight={800} color="#f97316">
                                         {activityData?.totalWords || 0}
@@ -607,7 +617,7 @@ function Dashboard() {
                             </Card>
                         </Grid>
                         {/* 연속 학습 */}
-                        <Grid size={{xs: 6, md: 3}}>
+                        <Grid size={{ xs: 6, md: 3 }}>
                             <Card
                                 onClick={() => navigate('/reports')}
                                 sx={{
@@ -621,7 +631,7 @@ function Dashboard() {
                                     },
                                 }}
                             >
-                                <CardContent sx={{p: 2.5, textAlign: 'center'}}>
+                                <CardContent sx={{ p: 2.5, textAlign: 'center' }}>
                                     <Box
                                         sx={{
                                             width: 48,
@@ -635,7 +645,7 @@ function Dashboard() {
                                             mb: 1.5,
                                         }}
                                     >
-                                        <LearnIcon sx={{color: '#ec4899', fontSize: 24}}/>
+                                        <LearnIcon sx={{ color: '#ec4899', fontSize: 24 }} />
                                     </Box>
                                     <Typography variant="h4" fontWeight={800} color="#ec4899">
                                         {Math.max(activityData?.vocabStreak || 0, activityData?.newsStreak || 0)}
@@ -665,7 +675,7 @@ function OpicPage() {
 
 
 function ReportsPage() {
-    const {isKorean} = useSettings()
+    const { isKorean } = useSettings()
     const [loading, setLoading] = useState(true)
     const [stats, setStats] = useState({
         totalStudyDays: 0,
@@ -684,7 +694,7 @@ function ReportsPage() {
                 setLoading(true)
                 const [vocabStatsRes, vocabHistoryRes, newsStatsRes] = await Promise.allSettled([
                     statsService.getOverall().catch(() => null),
-                    statsService.getDaily(null, {limit: 30}).catch(() => null),
+                    statsService.getDaily(null, { limit: 30 }).catch(() => null),
                     getNewsStats().catch(() => null),
                 ])
 
@@ -718,9 +728,9 @@ function ReportsPage() {
 
     if (loading) {
         return (
-            <Container maxWidth="lg" sx={{py: 4}}>
+            <Container maxWidth="lg" sx={{ py: 4 }}>
                 <Box display="flex" justifyContent="center" alignItems="center" minHeight="40vh">
-                    <CircularProgress/>
+                    <CircularProgress />
                 </Box>
             </Container>
         )
@@ -814,13 +824,13 @@ function ReportsPage() {
 
             {/* 뉴스 학습 통계 */}
             {(stats.newsRead > 0 || stats.newsQuizScore > 0) && (
-                <Card sx={{p: 3, borderRadius: '20px', mb: 4, backgroundColor: '#f5f3ff'}}>
+                <Card sx={{ p: 3, borderRadius: '20px', mb: 4, backgroundColor: '#f5f3ff' }}>
                     <Typography variant="h6" fontWeight={700} gutterBottom color="#8b5cf6">
                         {isKorean ? '뉴스 학습' : 'News Learning'}
                     </Typography>
                     <Grid container spacing={3}>
-                        <Grid size={{xs: 6}}>
-                            <Box sx={{textAlign: 'center'}}>
+                        <Grid size={{ xs: 6 }}>
+                            <Box sx={{ textAlign: 'center' }}>
                                 <Typography variant="h3" fontWeight={800} color="#8b5cf6">
                                     {stats.newsRead}
                                 </Typography>
@@ -829,8 +839,8 @@ function ReportsPage() {
                                 </Typography>
                             </Box>
                         </Grid>
-                        <Grid size={{xs: 6}}>
-                            <Box sx={{textAlign: 'center'}}>
+                        <Grid size={{ xs: 6 }}>
+                            <Box sx={{ textAlign: 'center' }}>
                                 <Typography variant="h3" fontWeight={800} color="#8b5cf6">
                                     {stats.newsQuizScore}%
                                 </Typography>
@@ -1160,27 +1170,30 @@ function App() {
                     <MainLayout />
                 </ProtectedRoute>
                 }>
-                    <Route path="/" element={<Dashboard/>}/>
-                    <Route path="/dashboard" element={<Dashboard/>}/>
-                    <Route path="/opic" element={<OpicPage/>}/>
-                    <Route path="/freetalk/people" element={<FreetalkPeoplePage/>}/>
-                    <Route path="/freetalk/ai" element={<SpeakingPage/>}/>
-                    <Route path="/writing" element={<WritingPage/>}/>
-                    <Route path="/vocab" element={<VocabDashboard/>}/>
-                    <Route path="/vocab/daily" element={<DailyLearning/>}/>
-                    <Route path="/vocab/test" element={<TestPage/>}/>
-                    <Route path="/vocab/words" element={<WordListPage/>}/>
-                    <Route path="/vocab/stats" element={<StatsPage/>}/>
-                    <Route path="/reports" element={<ReportsPage/>}/>
-                    <Route path="/settings" element={<SettingsPage/>}/>
-                    <Route path="/games/catchmind" element={<CatchmindLobbyPage/>}/>
-                    <Route path="/games/catchmind/:roomId/waiting" element={<CatchmindWaitingPage/>}/>
-                    <Route path="/games/catchmind/:roomId/play" element={<CatchmindPlayPage/>}/>
-                    <Route path="/news" element={<NewsListPage/>}/>
-                    <Route path="/news/:articleId" element={<NewsDetailPage/>}/>
-                    <Route path="/news/:articleId/quiz" element={<NewsQuizPage/>}/>
-                    <Route path="/news/words" element={<NewsWordsPage/>}/>
-                    <Route path="/news/stats" element={<NewsStatsPage/>}/>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/opic" element={<OpicPage />} />
+                    <Route path="/freetalk/people" element={<FreetalkPeoplePage />} />
+                    <Route path="/freetalk/ai" element={<SpeakingPage />} />
+                    <Route path="/writing" element={<WritingPage />} />
+                    <Route path="/vocab" element={<VocabDashboard />} />
+                    <Route path="/vocab/daily" element={<DailyLearning />} />
+                    <Route path="/vocab/test" element={<TestPage />} />
+                    <Route path="/vocab/words" element={<WordListPage />} />
+                    <Route path="/vocab/stats" element={<StatsPage />} />
+                    <Route path="/reports" element={<ReportsPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="/games/catchmind" element={<CatchmindLobbyPage />} />
+                    <Route path="/games/catchmind/:roomId/waiting" element={<CatchmindWaitingPage />} />
+                    <Route path="/games/catchmind/:roomId/play" element={<CatchmindPlayPage />} />
+                    <Route path="/games/wordchain" element={<WordchainLobbyPage />} />
+                    <Route path="/games/wordchain/:roomId/waiting" element={<WordchainWaitingPage />} />
+                    <Route path="/games/wordchain/:roomId/play" element={<WordchainPlayPage />} />
+                    <Route path="/news" element={<NewsListPage />} />
+                    <Route path="/news/:articleId" element={<NewsDetailPage />} />
+                    <Route path="/news/:articleId/quiz" element={<NewsQuizPage />} />
+                    <Route path="/news/words" element={<NewsWordsPage />} />
+                    <Route path="/news/stats" element={<NewsStatsPage />} />
                 </Route>
 
                 {/* 404 */}

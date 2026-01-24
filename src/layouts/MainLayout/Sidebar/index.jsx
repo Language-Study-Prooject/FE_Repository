@@ -169,6 +169,13 @@ const Sidebar = ({open, collapsed, onToggleCollapse, onClose}) => {
                             path: '/games/catchmind',
                             description: t('games.catchmindDesc'),
                         },
+                        {
+                            id: 'wordchain',
+                            label: '끝말잇기',
+                            icon: GameIcon,
+                            path: '/games/wordchain',
+                            description: '영어 끝말잇기',
+                        },
                     ],
                 },
             ],
