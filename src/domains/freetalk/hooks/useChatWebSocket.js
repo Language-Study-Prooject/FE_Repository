@@ -165,14 +165,21 @@ export function useChatWebSocket(roomId, userId) {
                 },
 
                 onSystemCommand: (data) => {
-                    console.log('[useChatWebSocket] System command:', data)
-                    const commandData = data.data || data
+                    const commandData = data.data || {}
                     const commandMessage = {
                         id: `syscmd-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                         messageType: 'SYSTEM_COMMAND',
-                        userId: commandData.userId,
-                        createdAt: new Date().toISOString(),
-                        data: commandData,
+                        userId: commandData.userId || commandData.nickname || data.userId,
+                        createdAt: data.createdAt || new Date().toISOString(),
+                        data: {
+                            commandType: commandData.type || 'help',
+                            userId: commandData.userId || commandData.nickname,
+                            displayText: data.content || data.message || '',
+                            result: typeof commandData.result === 'object'
+                                ? commandData.result
+                                : { value: commandData.result },
+                            raw: commandData,
+                        },
                     }
                     setMessages((prev) => [...prev, commandMessage])
                 },

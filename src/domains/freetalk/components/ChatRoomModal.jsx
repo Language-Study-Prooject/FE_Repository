@@ -35,6 +35,8 @@ import {useAuth} from '../../../contexts/AuthContext'
 import {useThemeMode} from '../../../contexts/ThemeContext'
 import {DESIGN_TOKENS, getChatStyles} from '../../../theme/theme'
 import {useChatWebSocket} from '../hooks/useChatWebSocket'
+import SystemCommandMessage from './SystemCommandMessage'
+import {MessageType} from '../types/chatCommandTypes'
 
 const ChatRoomModal = ({open, onClose, room, onLeave}) => {
     const theme = useTheme()
@@ -456,7 +458,15 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                                             </Typography>
                                         </Box>
                                     ) : (
-                                        messages.map((message) => (
+                                        messages.map((message) => {
+                                            // 시스템 명령어 메시지 (SYSTEM_COMMAND)
+                                            if (message.messageType === MessageType.SYSTEM_COMMAND || message.messageType === 'SYSTEM_COMMAND') {
+                                                return (
+                                                    <SystemCommandMessage key={message.id} data={message.data} />
+                                                )
+                                            }
+
+                                            return (
                                             <Box
                                                 key={message.id}
                                                 sx={{
@@ -594,7 +604,7 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                                                     </>
                                                 )}
                                             </Box>
-                                        ))
+                                        )})
                                     )}
                                     <div ref={messagesEndRef}/>
                                 </Box>
