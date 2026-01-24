@@ -177,8 +177,33 @@ class ChatWebSocketConnection {
                 break
             case 'system_command':
             case 'SYSTEM_COMMAND':
-                // 시스템 명령어 응답 (예: /member, /help 등)
-                this.callbacks.onMessage?.(data)
+                // 시스템 명령어 응답 (예: /dice, /coin, /random, /members, /help 등)
+                this.callbacks.onSystemCommand?.(data)
+                break
+            case 'poll_create':
+            case 'POLL_CREATE':
+                console.log('[ChatWebSocket] Poll create received:', data)
+                this.callbacks.onPollCreate?.(data)
+                break
+            case 'poll_vote':
+            case 'POLL_VOTE':
+                console.log('[ChatWebSocket] Poll vote received:', data)
+                this.callbacks.onPollVote?.(data)
+                break
+            case 'poll_end':
+            case 'POLL_END':
+                console.log('[ChatWebSocket] Poll end received:', data)
+                this.callbacks.onPollEnd?.(data)
+                break
+            case 'clear_chat':
+            case 'CLEAR_CHAT':
+                console.log('[ChatWebSocket] Clear chat received:', data)
+                this.callbacks.onClearChat?.(data)
+                break
+            case 'leave_room':
+            case 'LEAVE_ROOM':
+                console.log('[ChatWebSocket] Leave room received:', data)
+                this.callbacks.onLeaveRoom?.(data)
                 break
             case 'error':
             case 'ERROR':
