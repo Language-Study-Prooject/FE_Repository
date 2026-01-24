@@ -167,12 +167,22 @@ export function useChatWebSocket(roomId, userId) {
                 onSystemCommand: (data) => {
                     console.log('[useChatWebSocket] System command:', data)
                     const commandData = data.data || data
+                    // 백엔드 응답 구조를 프론트엔드 형식으로 변환
                     const commandMessage = {
                         id: `syscmd-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                         messageType: 'SYSTEM_COMMAND',
-                        userId: commandData.userId,
-                        createdAt: new Date().toISOString(),
-                        data: commandData,
+                        userId: commandData.userId || commandData.nickname || data.userId,
+                        createdAt: data.createdAt || new Date().toISOString(),
+                        data: {
+                            commandType: commandData.type || commandData.commandType || 'help',
+                            userId: commandData.userId || commandData.nickname || data.userId,
+                            displayText: data.message || data.content || commandData.message || '',
+                            result: typeof commandData.result === 'object'
+                                ? commandData.result
+                                : { value: commandData.result },
+                            // 원본 데이터도 보존
+                            raw: commandData,
+                        },
                     }
                     setMessages((prev) => [...prev, commandMessage])
                 },

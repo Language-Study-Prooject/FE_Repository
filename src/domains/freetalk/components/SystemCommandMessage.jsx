@@ -18,8 +18,17 @@ const SystemCommandMessage = ({ data }) => {
   const { mode } = useThemeMode()
   const isDark = mode === 'dark'
 
-  const config = SystemCommandConfig[data.commandType] || SystemCommandConfig.help
+  // 명령어 타입 추출 (여러 가능한 필드 확인)
+  const commandType = data.commandType || data.type || data.raw?.type || 'help'
+  const config = SystemCommandConfig[commandType] || SystemCommandConfig.help
   const { icon, color, bgColor } = config
+
+  // 표시 텍스트 추출
+  const displayText = data.displayText || data.message || data.content || ''
+  const userId = data.userId || data.nickname || ''
+
+  // 결과 값 추출
+  const result = data.result || data.raw || {}
 
   return (
     <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', py: 1 }}>
@@ -49,29 +58,35 @@ const SystemCommandMessage = ({ data }) => {
 
           {/* 내용 */}
           <Box sx={{ flex: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-              <Typography
-                variant="caption"
-                sx={{
-                  fontWeight: 600,
-                  color: isDark ? '#9ca3af' : 'text.secondary',
-                }}
-              >
-                {data.userId}
-              </Typography>
+            {/* displayText가 있으면 그대로 표시 (백엔드에서 이미 포맷팅됨) */}
+            {displayText ? (
               <Typography
                 variant="body2"
                 sx={{
                   fontWeight: 500,
-                  color: isDark ? '#fafaf9' : color,
+                  color: isDark ? '#fafaf9' : 'text.primary',
+                  whiteSpace: 'pre-wrap',
                 }}
               >
-                {data.displayText}
+                {displayText}
               </Typography>
-            </Box>
-
-            {/* 추가 결과 정보 */}
-            {renderCommandResult(data.commandType, data.result, isDark)}
+            ) : (
+              <>
+                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: 600,
+                      color: isDark ? '#9ca3af' : 'text.secondary',
+                    }}
+                  >
+                    {userId}
+                  </Typography>
+                </Box>
+                {/* 추가 결과 정보 */}
+                {renderCommandResult(commandType, result, isDark)}
+              </>
+            )}
           </Box>
         </Box>
       </Paper>
