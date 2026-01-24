@@ -129,14 +129,27 @@ export function useNotifications(userId, onNotification) {
   }, [connect])
 
   // userId 변경 시 연결/해제
+  // StrictMode에서 중복 연결 방지를 위한 debounce
   useEffect(() => {
+    let mounted = true
+    let connectTimeout = null
+
     if (userId) {
-      connect()
+      // 100ms 지연으로 StrictMode 중복 호출 방지
+      connectTimeout = setTimeout(() => {
+        if (mounted) {
+          connect()
+        }
+      }, 100)
     } else {
       disconnect()
     }
 
     return () => {
+      mounted = false
+      if (connectTimeout) {
+        clearTimeout(connectTimeout)
+      }
       disconnect()
     }
   }, [userId, connect, disconnect])
