@@ -377,6 +377,9 @@ const ChatRoomPage = () => {
                     </Box>
                 ) : (
                     messages.map((message) => {
+                        // 디버깅
+                        console.log('[ChatRoomPage] Rendering message:', message.messageType, message)
+
                         // 투표 메시지
                         if (message.messageType === MessageType.POLL_CREATE) {
                             return (
