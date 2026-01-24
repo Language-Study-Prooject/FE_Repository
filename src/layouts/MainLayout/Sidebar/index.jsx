@@ -29,6 +29,7 @@ import {
     LibraryBooks as WordListIcon,
     MenuBook as VocabIcon,
     Mic as SpeakingIcon,
+    Newspaper as NewsIcon,
     People as PeopleIcon,
     Quiz as QuizIcon,
     School as LearnIcon,
@@ -108,14 +109,21 @@ const Sidebar = ({open, collapsed, onToggleCollapse, onClose}) => {
                             path: '/writing',
                             description: t('sidebar.writingPracticeDesc'),
                         },
+                        {
+                            id: 'news-learning',
+                            label: t('sidebar.newsLearning'),
+                            icon: NewsIcon,
+                            path: '/news',
+                            description: t('sidebar.newsLearningDesc'),
+                        },
                     ],
                 },
                 {
                     id: 'vocab',
                     label: t('sidebar.vocab'),
                     icon: VocabIcon,
-                    color: '#059669',
-                    bgColor: '#ecfdf5',
+                    color: '#f97316',
+                    bgColor: '#fff7ed',
                     children: [
                         {
                             id: 'vocab-daily',
@@ -151,8 +159,8 @@ const Sidebar = ({open, collapsed, onToggleCollapse, onClose}) => {
                     id: 'games',
                     label: t('games.title'),
                     icon: GameIcon,
-                    color: '#8b5cf6',
-                    bgColor: '#f3e8ff',
+                    color: '#06b6d4',
+                    bgColor: '#ecfeff',
                     children: [
                         {
                             id: 'catchmind',

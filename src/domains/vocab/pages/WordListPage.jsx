@@ -19,6 +19,7 @@ import {
     Clear as ClearIcon,
     ErrorOutline as ErrorIcon,
     LibraryBooks as WordListIcon,
+    Newspaper as NewsIcon,
     Search as SearchIcon,
     Star as StarIcon,
     StarBorder as StarBorderIcon,
@@ -57,9 +58,22 @@ export default function WordListPage() {
     const loadMoreRef = useRef(null)
 
     const initialFilter = searchParams.get('filter')
+    const initialCategory = searchParams.get('category')
 
     const [filterMode, setFilterMode] = useState(initialFilter || 'all')
+    const [categoryFilter, setCategoryFilter] = useState(initialCategory || 'all')
     const [searchText, setSearchText] = useState('')
+
+    // 카테고리 목록
+    const categories = [
+        { id: 'all', label: t('wordList.categoryAll'), color: '#059669' },
+        { id: 'DAILY', label: '일상', labelEn: 'Daily', color: '#10B981' },
+        { id: 'BUSINESS', label: '비즈니스', labelEn: 'Business', color: '#F59E0B' },
+        { id: 'ACADEMIC', label: '학술', labelEn: 'Academic', color: '#8B5CF6' },
+        { id: 'TRAVEL', label: '여행', labelEn: 'Travel', color: '#06B6D4' },
+        { id: 'TECHNOLOGY', label: '기술', labelEn: 'Tech', color: '#3B82F6' },
+        { id: 'NEWS', label: '뉴스', labelEn: 'News', color: '#EC4899', icon: NewsIcon },
+    ]
 
     const [userWords, setUserWords] = useState([])
     const [loading, setLoading] = useState(false)
@@ -86,6 +100,11 @@ export default function WordListPage() {
                 cursor: reset ? undefined : cursor,
             }
 
+            // 카테고리 필터
+            if (categoryFilter && categoryFilter !== 'all') {
+                params.category = categoryFilter
+            }
+
             if (filterMode === 'bookmarked') {
                 params.bookmarked = true
             } else if (filterMode === 'incorrect') {
@@ -105,14 +124,14 @@ export default function WordListPage() {
         } finally {
             setLoading(false)
         }
-    }, [loading, cursor, filterMode])
+    }, [loading, cursor, filterMode, categoryFilter])
 
     useEffect(() => {
         setUserWords([])
         setCursor(null)
         setHasMore(true)
         fetchUserWords(true)
-    }, [filterMode])
+    }, [filterMode, categoryFilter])
 
     useEffect(() => {
         if (loading || !hasMore) return
@@ -285,7 +304,54 @@ export default function WordListPage() {
                 }}
             />
 
-            {/* 필터 탭 */}
+            {/* 카테고리 필터 */}
+            <Box sx={{ mb: 2 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                    {t('wordList.category') || '카테고리'}
+                </Typography>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        gap: 1,
+                        flexWrap: 'wrap',
+                    }}
+                >
+                    {categories.map((cat) => {
+                        const isSelected = categoryFilter === cat.id
+                        const IconComponent = cat.icon
+
+                        return (
+                            <Chip
+                                key={cat.id}
+                                label={cat.label}
+                                icon={IconComponent ? <IconComponent sx={{ fontSize: 16 }} /> : undefined}
+                                onClick={() => setCategoryFilter(cat.id)}
+                                sx={{
+                                    fontWeight: 600,
+                                    fontSize: 12,
+                                    backgroundColor: isSelected
+                                        ? (cat.color || '#059669')
+                                        : (isDark ? '#3f3f46' : '#F3F4F6'),
+                                    color: isSelected ? 'white' : (isDark ? '#a1a1aa' : '#6B7280'),
+                                    border: '2px solid',
+                                    borderColor: isSelected ? (cat.color || '#059669') : 'transparent',
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                        backgroundColor: isSelected
+                                            ? (cat.color || '#059669')
+                                            : (isDark ? '#52525b' : '#E5E7EB'),
+                                    },
+                                    '& .MuiChip-icon': {
+                                        color: isSelected ? 'white' : (cat.color || '#6B7280'),
+                                    },
+                                }}
+                            />
+                        )
+                    })}
+                </Box>
+            </Box>
+
+            {/* 상태 필터 탭 */}
             <Box sx={{mb: 3}}>
                 <ToggleButtonGroup
                     value={filterMode}
@@ -380,6 +446,23 @@ export default function WordListPage() {
                                                     fontWeight: 500,
                                                     backgroundColor: statusStyle.bg,
                                                     color: statusStyle.color,
+                                                }}
+                                            />
+                                        )}
+                                        {word.category === 'NEWS' && (
+                                            <Chip
+                                                icon={<NewsIcon sx={{ fontSize: 12 }} />}
+                                                label="뉴스"
+                                                size="small"
+                                                sx={{
+                                                    height: 22,
+                                                    fontSize: 11,
+                                                    fontWeight: 600,
+                                                    backgroundColor: '#FCE7F3',
+                                                    color: '#EC4899',
+                                                    '& .MuiChip-icon': {
+                                                        color: '#EC4899',
+                                                    },
                                                 }}
                                             />
                                         )}
