@@ -30,6 +30,7 @@ export function NotificationMenu({ anchorEl, open, onClose }) {
     notifications,
     unreadCount,
     isConnected,
+    isEnabled,
     connectionError,
     markAsRead,
     markAllAsRead,
@@ -94,28 +95,30 @@ export function NotificationMenu({ anchorEl, open, onClose }) {
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           {/* 연결 상태 */}
-          <IconButton
-            size="small"
-            onClick={reconnect}
-            title={
-              isConnected
-                ? isKorean
-                  ? '연결됨'
-                  : 'Connected'
-                : isKorean
-                ? '재연결'
-                : 'Reconnect'
-            }
-            sx={{
-              color: isConnected ? '#10b981' : '#ef4444',
-            }}
-          >
-            {isConnected ? (
-              <ConnectedIcon fontSize="small" />
-            ) : (
-              <RefreshIcon fontSize="small" />
-            )}
-          </IconButton>
+          {isEnabled && (
+            <IconButton
+              size="small"
+              onClick={reconnect}
+              title={
+                isConnected
+                  ? isKorean
+                    ? '연결됨'
+                    : 'Connected'
+                  : isKorean
+                  ? '재연결'
+                  : 'Reconnect'
+              }
+              sx={{
+                color: isConnected ? '#10b981' : '#ef4444',
+              }}
+            >
+              {isConnected ? (
+                <ConnectedIcon fontSize="small" />
+              ) : (
+                <RefreshIcon fontSize="small" />
+              )}
+            </IconButton>
+          )}
 
           {/* 모두 읽음 */}
           {unreadCount > 0 && (
@@ -143,8 +146,27 @@ export function NotificationMenu({ anchorEl, open, onClose }) {
 
       <Divider />
 
+      {/* 알림 비활성화 상태 표시 */}
+      {!isEnabled && (
+        <Box
+          sx={{
+            px: 2.5,
+            py: 1.5,
+            backgroundColor: '#f3f4f6',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+          }}
+        >
+          <DisconnectedIcon fontSize="small" sx={{ color: '#6b7280' }} />
+          <Typography variant="caption" color="text.secondary">
+            {isKorean ? '실시간 알림이 비활성화되어 있습니다' : 'Real-time notifications are disabled'}
+          </Typography>
+        </Box>
+      )}
+
       {/* 연결 에러 표시 */}
-      {connectionError && (
+      {isEnabled && connectionError && (
         <Box
           sx={{
             px: 2.5,

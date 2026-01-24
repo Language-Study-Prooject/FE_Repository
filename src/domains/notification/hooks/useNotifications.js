@@ -1,15 +1,10 @@
 import { useEffect, useCallback, useRef, useState } from 'react'
 
 const NOTIFICATION_URL = import.meta.env.VITE_NOTIFICATION_URL
+const NOTIFICATION_ENABLED = import.meta.env.VITE_NOTIFICATION_ENABLED === 'true'
 
 const MAX_RETRY_COUNT = 5
 const RETRY_DELAY_MS = 3000
-
-// 디버깅용: 브라우저 콘솔에서 직접 테스트
-// const es = new EventSource('https://flhf42jd6xgrh26wrqgwxmbmee0zmjnv.lambda-url.ap-northeast-2.on.aws/?userId=64983d3c-90a1-700e-48af-f1d7779cd66a');
-// es.onmessage = (e) => console.log('알림:', e.data);
-// es.onerror = (e) => console.log('에러:', e);
-// es.onopen = () => console.log('연결됨!');
 
 /**
  * SSE를 통한 실시간 알림 연결 훅
@@ -40,7 +35,12 @@ export function useNotifications(userId, onNotification) {
   }, [])
 
   const connect = useCallback(() => {
-    console.log('[Notifications] connect() called', { userId, NOTIFICATION_URL })
+    console.log('[Notifications] connect() called', { userId, NOTIFICATION_URL, NOTIFICATION_ENABLED })
+
+    if (!NOTIFICATION_ENABLED) {
+      console.log('[Notifications] Disabled by VITE_NOTIFICATION_ENABLED flag')
+      return
+    }
 
     if (!userId) {
       console.warn('[Notifications] Missing userId')
@@ -162,10 +162,12 @@ export function useNotifications(userId, onNotification) {
 
   return {
     isConnected,
+    isEnabled: NOTIFICATION_ENABLED,
     error,
     disconnect,
     reconnect,
   }
 }
 
+export { NOTIFICATION_ENABLED }
 export default useNotifications
