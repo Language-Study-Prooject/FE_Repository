@@ -20,7 +20,8 @@ export const gameRoomService = {
         const params = new URLSearchParams()
         // 게임방 필터
         params.append('type', 'GAME')
-        params.append('gameType', 'CATCHMIND')
+        const gameType = filters.gameType || 'CATCHMIND'
+        params.append('gameType', gameType)
 
         // 백엔드는 소문자 level 값 사용
         if (filters.status) params.append('status', filters.status)
@@ -35,11 +36,11 @@ export const gameRoomService = {
         let data = response.data
         if (data?.rooms) {
             data.rooms = data.rooms.filter(room =>
-                room.type === 'GAME' || room.gameType === 'CATCHMIND'
+                room.type === 'GAME' || room.gameType === gameType
             )
         } else if (Array.isArray(data)) {
             data = data.filter(room =>
-                room.type === 'GAME' || room.gameType === 'CATCHMIND'
+                room.type === 'GAME' || room.gameType === gameType
             )
         }
 
@@ -75,7 +76,7 @@ export const gameRoomService = {
             isPrivate: data.isPrivate || false,
             password: data.password,
             type: 'GAME',
-            gameType: 'CATCHMIND',
+            gameType: data.gameType || 'CATCHMIND',
             gameSettings: {
                 maxRounds: data.maxRounds || 5,
                 roundTimeLimit: data.roundTimeLimit || 60,
