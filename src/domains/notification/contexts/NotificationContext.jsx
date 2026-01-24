@@ -38,6 +38,7 @@ export function NotificationProvider({ children }) {
 
   // SSE 연결
   const userId = isAuthenticated && user?.username ? user.username : null
+  console.log('[NotificationContext] Auth state:', { isAuthenticated, user, userId })
   const { isConnected, error, reconnect } = useNotifications(userId, handleNotification)
 
   // 토스트 표시 로직 - 큐에서 하나씩 처리

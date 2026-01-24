@@ -5,6 +5,12 @@ const NOTIFICATION_URL = import.meta.env.VITE_NOTIFICATION_URL
 const MAX_RETRY_COUNT = 5
 const RETRY_DELAY_MS = 3000
 
+// 디버깅용: 브라우저 콘솔에서 직접 테스트
+// const es = new EventSource('https://flhf42jd6xgrh26wrqgwxmbmee0zmjnv.lambda-url.ap-northeast-2.on.aws/?userId=64983d3c-90a1-700e-48af-f1d7779cd66a');
+// es.onmessage = (e) => console.log('알림:', e.data);
+// es.onerror = (e) => console.log('에러:', e);
+// es.onopen = () => console.log('연결됨!');
+
 /**
  * SSE를 통한 실시간 알림 연결 훅
  * @param {string|null} userId - 로그인한 사용자 ID
@@ -34,8 +40,15 @@ export function useNotifications(userId, onNotification) {
   }, [])
 
   const connect = useCallback(() => {
-    if (!userId || !NOTIFICATION_URL) {
-      console.warn('[Notifications] Missing userId or NOTIFICATION_URL')
+    console.log('[Notifications] connect() called', { userId, NOTIFICATION_URL })
+
+    if (!userId) {
+      console.warn('[Notifications] Missing userId')
+      return
+    }
+
+    if (!NOTIFICATION_URL) {
+      console.warn('[Notifications] Missing NOTIFICATION_URL env variable')
       return
     }
 
@@ -50,13 +63,15 @@ export function useNotifications(userId, onNotification) {
       eventSourceRef.current = eventSource
 
       eventSource.onopen = () => {
-        console.log('[Notifications] Connected')
+        console.log('[Notifications] 연결됨!')
         setIsConnected(true)
         setError(null)
         retryCountRef.current = 0
       }
 
       eventSource.onmessage = (event) => {
+        console.log('[Notifications] 알림:', event.data)
+
         // Heartbeat 무시
         if (event.data === 'HEARTBEAT') {
           return
@@ -71,7 +86,7 @@ export function useNotifications(userId, onNotification) {
 
         try {
           const notification = JSON.parse(event.data)
-          console.log('[Notifications] Received:', notification)
+          console.log('[Notifications] Parsed:', notification)
           onNotification?.(notification)
         } catch (e) {
           console.error('[Notifications] Failed to parse:', e, event.data)
@@ -79,7 +94,8 @@ export function useNotifications(userId, onNotification) {
       }
 
       eventSource.onerror = (err) => {
-        console.error('[Notifications] Error:', err)
+        console.log('[Notifications] 에러:', err)
+        console.log('[Notifications] readyState:', eventSource.readyState)
         setIsConnected(false)
 
         // EventSource가 자동으로 재연결을 시도하지만,
