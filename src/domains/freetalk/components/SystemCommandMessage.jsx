@@ -18,17 +18,22 @@ const SystemCommandMessage = ({ data }) => {
   const { mode } = useThemeMode()
   const isDark = mode === 'dark'
 
+  // 디버깅
+  console.log('[SystemCommandMessage] received data:', data)
+
   // 명령어 타입 추출 (여러 가능한 필드 확인)
-  const commandType = data.commandType || data.type || data.raw?.type || 'help'
+  const commandType = data?.commandType || data?.type || data?.raw?.type || 'help'
   const config = SystemCommandConfig[commandType] || SystemCommandConfig.help
   const { icon, color, bgColor } = config
 
   // 표시 텍스트 추출
-  const displayText = data.displayText || data.message || data.content || ''
-  const userId = data.userId || data.nickname || ''
+  const displayText = data?.displayText || data?.message || data?.content || ''
+  const userId = data?.userId || data?.nickname || ''
 
   // 결과 값 추출
-  const result = data.result || data.raw || {}
+  const result = data?.result || data?.raw || {}
+
+  console.log('[SystemCommandMessage] displayText:', displayText)
 
   return (
     <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', py: 1 }}>
