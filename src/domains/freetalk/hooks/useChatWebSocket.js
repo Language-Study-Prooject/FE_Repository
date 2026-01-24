@@ -165,13 +165,7 @@ export function useChatWebSocket(roomId, userId) {
                 },
 
                 onSystemCommand: (data) => {
-                    console.log('[useChatWebSocket] System command:', data)
-                    console.log('[useChatWebSocket] data.content:', data.content)
                     const commandData = data.data || {}
-                    // 백엔드 응답 구조:
-                    // - content: 포맷팅된 메시지 (최상위)
-                    // - data.type: 명령어 타입 (dice, coin, etc.)
-                    // - data.result: 결과 값
                     const commandMessage = {
                         id: `syscmd-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                         messageType: 'SYSTEM_COMMAND',
@@ -187,8 +181,6 @@ export function useChatWebSocket(roomId, userId) {
                             raw: commandData,
                         },
                     }
-                    console.log('[useChatWebSocket] Adding command message:', commandMessage)
-                    console.log('[useChatWebSocket] displayText value:', commandMessage.data.displayText)
                     setMessages((prev) => [...prev, commandMessage])
                 },
 

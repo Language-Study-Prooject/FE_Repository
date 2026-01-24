@@ -142,7 +142,6 @@ const ChatRoomPage = () => {
     }
 
     useEffect(() => {
-        console.log('[ChatRoomPage] messages updated:', messages.length, messages.map(m => m.messageType))
         scrollToBottom()
     }, [messages])
 
@@ -378,9 +377,6 @@ const ChatRoomPage = () => {
                     </Box>
                 ) : (
                     messages.map((message) => {
-                        // 디버깅
-                        console.log('[ChatRoomPage] Rendering message:', message.messageType, 'expected:', MessageType.SYSTEM_COMMAND, 'match:', message.messageType === MessageType.SYSTEM_COMMAND)
-
                         // 투표 메시지
                         if (message.messageType === MessageType.POLL_CREATE) {
                             return (
