@@ -93,7 +93,6 @@ function PublicRoute({ children }) {
 function Dashboard() {
     const navigate = useNavigate()
     const [expandedCard, setExpandedCard] = useState(null)
-    const { t } = useSettings()
     const {t, isKorean} = useSettings()
     const [activityData, setActivityData] = useState(null)
     const [loadingActivity, setLoadingActivity] = useState(true)
