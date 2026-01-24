@@ -93,7 +93,6 @@ function PublicRoute({ children }) {
 function Dashboard() {
     const navigate = useNavigate()
     const [expandedCard, setExpandedCard] = useState(null)
-    const { t } = useSettings()
     const { t, isKorean } = useSettings()
     const [activityData, setActivityData] = useState(null)
     const [loadingActivity, setLoadingActivity] = useState(true)
@@ -1165,7 +1164,7 @@ function App() {
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/opic" element={<OpicPage />} />
                     <Route path="/freetalk/people" element={<FreetalkPeoplePage />} />
-                    <Route path="/freetalk/ai" element={<FreetalkAiPage />} />
+                    <Route path="/freetalk/ai" element={<SpeakingPage />} />
                     <Route path="/writing" element={<WritingPage />} />
                     <Route path="/vocab" element={<VocabDashboard />} />
                     <Route path="/vocab/daily" element={<DailyLearning />} />
