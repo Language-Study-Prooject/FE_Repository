@@ -10,6 +10,7 @@ import {SettingsProvider} from './contexts/SettingsContext'
 import './index.css'
 import {Amplify} from 'aws-amplify'
 import {AuthProvider} from './contexts/AuthContext.jsx'
+import {NotificationProvider, NotificationToast} from './domains/notification'
 import awsConfig from './aws-config'
 
 Amplify.configure(awsConfig)
@@ -22,7 +23,10 @@ createRoot(document.getElementById('root')).render(
                     <SettingsProvider>
                         <ChatProvider>
                             <AuthProvider>
-                                <App/>
+                                <NotificationProvider>
+                                    <App/>
+                                    <NotificationToast/>
+                                </NotificationProvider>
                             </AuthProvider>
                         </ChatProvider>
                     </SettingsProvider>

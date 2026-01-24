@@ -5,7 +5,6 @@ import {
     Avatar,
     Badge,
     Box,
-    Chip,
     Divider,
     IconButton,
     Menu,
@@ -29,6 +28,7 @@ import {useThemeMode} from '../../../contexts/ThemeContext'
 import {useSettings, useTranslation} from '../../../contexts/SettingsContext'
 import {LANGUAGE_LABELS, LANGUAGES} from '../../../i18n/translations'
 import {useAuth} from '../../../contexts/AuthContext'
+import {useNotificationContext, NotificationMenu} from '../../../domains/notification'
 
 const Header = ({onMenuClick, sidebarOpen}) => {
     const theme = useTheme()
@@ -42,6 +42,7 @@ const Header = ({onMenuClick, sidebarOpen}) => {
     const [notificationAnchor, setNotificationAnchor] = useState(null)
     const [langAnchor, setLangAnchor] = useState(null)
     const {logout} = useAuth()
+    const {unreadCount} = useNotificationContext()
 
     const handleProfileMenuOpen = (event) => {
         setAnchorEl(event.currentTarget)
@@ -206,7 +207,7 @@ const Header = ({onMenuClick, sidebarOpen}) => {
                         }}
                     >
                         <Badge
-                            badgeContent={3}
+                            badgeContent={unreadCount}
                             sx={{
                                 '& .MuiBadge-badge': {
                                     backgroundColor: '#ef4444',
@@ -214,6 +215,7 @@ const Header = ({onMenuClick, sidebarOpen}) => {
                                     fontSize: 10,
                                     minWidth: 18,
                                     height: 18,
+                                    display: unreadCount > 0 ? 'flex' : 'none',
                                 },
                             }}
                         >
@@ -298,75 +300,11 @@ const Header = ({onMenuClick, sidebarOpen}) => {
                 </Menu>
 
                 {/* Notification Menu */}
-                <Menu
+                <NotificationMenu
                     anchorEl={notificationAnchor}
                     open={Boolean(notificationAnchor)}
                     onClose={handleNotificationClose}
-                    PaperProps={{
-                        sx: {
-                            mt: 1,
-                            width: 340,
-                            maxHeight: 420,
-                            borderRadius: '16px',
-                            boxShadow: '0 10px 40px -10px rgba(0,0,0,0.2)',
-                        },
-                    }}
-                    transformOrigin={{horizontal: 'right', vertical: 'top'}}
-                    anchorOrigin={{horizontal: 'right', vertical: 'bottom'}}
-                >
-                    <Box sx={{px: 2.5, py: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                        <Typography variant="subtitle1" fontWeight={700}>
-                            {t('nav.notifications')}
-                        </Typography>
-                        <Chip
-                            label="3"
-                            size="small"
-                            sx={{
-                                height: 22,
-                                backgroundColor: '#ef4444',
-                                color: 'white',
-                                fontWeight: 600,
-                                fontSize: 11,
-                            }}
-                        />
-                    </Box>
-                    <Divider/>
-                    {[
-                        {
-                            text: language === 'ko' ? '면접 연습 세션이 완료되었습니다.' : 'Interview session completed.',
-                            time: language === 'ko' ? '10분 전' : '10 min ago'
-                        },
-                        {
-                            text: language === 'ko' ? 'OPIC 모의고사 결과가 도착했습니다.' : 'OPIC test results arrived.',
-                            time: language === 'ko' ? '1시간 전' : '1 hour ago'
-                        },
-                        {
-                            text: language === 'ko' ? '새로운 학습 리포트가 생성되었습니다.' : 'New learning report generated.',
-                            time: language === 'ko' ? '어제' : 'Yesterday'
-                        },
-                    ].map((item, index) => (
-                        <MenuItem
-                            key={index}
-                            onClick={handleNotificationClose}
-                            sx={{
-                                py: 2,
-                                px: 2.5,
-                                '&:hover': {
-                                    backgroundColor: 'rgba(5, 150, 105, 0.04)',
-                                },
-                            }}
-                        >
-                            <Box>
-                                <Typography variant="body2" fontWeight={500} sx={{mb: 0.5}}>
-                                    {item.text}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                    {item.time}
-                                </Typography>
-                            </Box>
-                        </MenuItem>
-                    ))}
-                </Menu>
+                />
 
                 {/* Profile Menu */}
                 <Menu
