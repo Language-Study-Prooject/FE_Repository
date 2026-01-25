@@ -1,6 +1,6 @@
-import {useCallback, useEffect, useRef, useState} from 'react'
-import {chatWebSocketService} from '../services/chatWebSocketService'
-import {chatRoomService} from '../../chat/services/chatService'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { chatWebSocketService } from '../services/chatWebSocketService'
+import { chatRoomService } from '../../chat/services/chatService'
 
 /**
  * Chat WebSocket 훅
@@ -26,10 +26,10 @@ export function useChatWebSocket(roomId, userId) {
      * WebSocket 연결
      */
     const connect = useCallback(async (forceNewToken = false) => {
-        console.log('[useChatWebSocket] Attempting to connect...', {roomId, userId, forceNewToken})
+        console.log('[useChatWebSocket] Attempting to connect...', { roomId, userId, forceNewToken })
 
         if (!roomId || !userId) {
-            console.error('[useChatWebSocket] roomId and userId are required', {roomId, userId})
+            console.error('[useChatWebSocket] roomId and userId are required', { roomId, userId })
             return
         }
 
@@ -74,6 +74,7 @@ export function useChatWebSocket(roomId, userId) {
                         id: messageId,
                         content: data.content,
                         userId: data.userId,
+                        nickname: data.nickname,
                         messageType: data.messageType || 'TEXT',
                         createdAt: data.createdAt || new Date().toISOString(),
                         isOwn: data.userId === userId,

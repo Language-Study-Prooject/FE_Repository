@@ -1,5 +1,6 @@
-import {useState} from 'react'
-import {useNavigate} from 'react-router-dom'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 import {
     AppBar,
     Avatar,
@@ -24,25 +25,26 @@ import {
     Settings as SettingsIcon,
     Translate as TranslateIcon,
 } from '@mui/icons-material'
-import {useThemeMode} from '../../../contexts/ThemeContext'
-import {useSettings, useTranslation} from '../../../contexts/SettingsContext'
-import {LANGUAGE_LABELS, LANGUAGES} from '../../../i18n/translations'
-import {useAuth} from '../../../contexts/AuthContext'
-import {useNotificationContext, NotificationMenu} from '../../../domains/notification'
+import { useThemeMode } from '../../../contexts/ThemeContext'
+import { useSettings, useTranslation } from '../../../contexts/SettingsContext'
+import { LANGUAGE_LABELS, LANGUAGES } from '../../../i18n/translations'
+import { useAuth } from '../../../contexts/AuthContext'
+import { useNotificationContext, NotificationMenu } from '../../../domains/notification'
 
-const Header = ({onMenuClick, sidebarOpen}) => {
+const Header = ({ onMenuClick, sidebarOpen }) => {
     const theme = useTheme()
     const navigate = useNavigate()
     const isMobile = useMediaQuery(theme.breakpoints.down('md'))
-    const {mode, toggleTheme} = useThemeMode()
-    const {setLanguage, language} = useSettings()
-    const {t} = useTranslation()
+    const { mode, toggleTheme } = useThemeMode()
+    const { setLanguage, language } = useSettings()
+    const { t } = useTranslation()
+    const { profile } = useSelector((state) => state.profile)
 
     const [anchorEl, setAnchorEl] = useState(null)
     const [notificationAnchor, setNotificationAnchor] = useState(null)
     const [langAnchor, setLangAnchor] = useState(null)
-    const {logout} = useAuth()
-    const {unreadCount} = useNotificationContext()
+    const { logout } = useAuth()
+    const { unreadCount } = useNotificationContext()
 
     const handleProfileMenuOpen = (event) => {
         setAnchorEl(event.currentTarget)
@@ -93,7 +95,7 @@ const Header = ({onMenuClick, sidebarOpen}) => {
                 borderColor: mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
             }}
         >
-            <Toolbar sx={{px: {xs: 2, md: 3}}}>
+            <Toolbar sx={{ px: { xs: 2, md: 3 } }}>
                 {/* Hamburger menu (mobile) */}
                 {isMobile && (
                     <IconButton
@@ -108,7 +110,7 @@ const Header = ({onMenuClick, sidebarOpen}) => {
                             },
                         }}
                     >
-                        <MenuIcon/>
+                        <MenuIcon />
                     </IconButton>
                 )}
 
@@ -145,7 +147,7 @@ const Header = ({onMenuClick, sidebarOpen}) => {
                             L
                         </Typography>
                     </Box>
-                    <Box sx={{display: {xs: 'none', sm: 'block'}}}>
+                    <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
                         <Typography
                             variant="h6"
                             noWrap
@@ -162,10 +164,10 @@ const Header = ({onMenuClick, sidebarOpen}) => {
                     </Box>
                 </Box>
 
-                <Box sx={{flexGrow: 1}}/>
+                <Box sx={{ flexGrow: 1 }} />
 
                 {/* Right side icons */}
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     {/* Language selector */}
                     <IconButton
                         onClick={handleLangOpen}
@@ -177,7 +179,7 @@ const Header = ({onMenuClick, sidebarOpen}) => {
                             },
                         }}
                     >
-                        <TranslateIcon fontSize="small"/>
+                        <TranslateIcon fontSize="small" />
                     </IconButton>
 
                     {/* Dark mode toggle */}
@@ -192,7 +194,7 @@ const Header = ({onMenuClick, sidebarOpen}) => {
                             },
                         }}
                     >
-                        {mode === 'dark' ? <LightModeIcon fontSize="small"/> : <DarkModeIcon fontSize="small"/>}
+                        {mode === 'dark' ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
                     </IconButton>
 
                     {/* Notifications */}
@@ -219,14 +221,14 @@ const Header = ({onMenuClick, sidebarOpen}) => {
                                 },
                             }}
                         >
-                            <NotificationsIcon fontSize="small"/>
+                            <NotificationsIcon fontSize="small" />
                         </Badge>
                     </IconButton>
 
                     {/* Profile */}
                     <IconButton
                         onClick={handleProfileMenuOpen}
-                        sx={{ml: 0.5}}
+                        sx={{ ml: 0.5 }}
                     >
                         <Avatar
                             sx={{
@@ -237,7 +239,7 @@ const Header = ({onMenuClick, sidebarOpen}) => {
                                 fontSize: 14,
                             }}
                         >
-                            U
+                            {profile?.nickname ? profile.nickname.substring(0, 1).toUpperCase() : 'U'}
                         </Avatar>
                     </IconButton>
                 </Box>
@@ -255,15 +257,15 @@ const Header = ({onMenuClick, sidebarOpen}) => {
                             minWidth: 160,
                         },
                     }}
-                    transformOrigin={{horizontal: 'right', vertical: 'top'}}
-                    anchorOrigin={{horizontal: 'right', vertical: 'bottom'}}
+                    transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                    anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
                 >
-                    <Box sx={{px: 2, py: 1.5}}>
+                    <Box sx={{ px: 2, py: 1.5 }}>
                         <Typography variant="subtitle2" fontWeight={700} color="text.primary">
                             {t('settings.language')}
                         </Typography>
                     </Box>
-                    <Divider/>
+                    <Divider />
                     {Object.entries(LANGUAGES).map(([key, value]) => (
                         <MenuItem
                             key={value}
@@ -319,26 +321,26 @@ const Header = ({onMenuClick, sidebarOpen}) => {
                             boxShadow: '0 10px 40px -10px rgba(0,0,0,0.2)',
                         },
                     }}
-                    transformOrigin={{horizontal: 'right', vertical: 'top'}}
-                    anchorOrigin={{horizontal: 'right', vertical: 'bottom'}}
+                    transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                    anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
                 >
-                    <Box sx={{px: 2.5, py: 2}}>
+                    <Box sx={{ px: 2.5, py: 2 }}>
                         <Typography variant="subtitle2" fontWeight={700}>
-                            {t('header.user')}
+                            {profile?.nickname || t('header.user')}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                            user@example.com
+                            {profile?.email || 'user@example.com'}
                         </Typography>
                     </Box>
-                    <Divider/>
+                    <Divider />
                     <MenuItem
                         onClick={() => {
                             handleProfileMenuClose();
                             navigate('/profile');
                         }}
-                        sx={{py: 1.5, px: 2.5}}
+                        sx={{ py: 1.5, px: 2.5 }}
                     >
-                        <PersonIcon sx={{mr: 1.5, fontSize: 20, color: 'text.secondary'}}/>
+                        <PersonIcon sx={{ mr: 1.5, fontSize: 20, color: 'text.secondary' }} />
                         <Typography variant="body2">{t('nav.profile')}</Typography>
                     </MenuItem>
                     <MenuItem
@@ -346,17 +348,17 @@ const Header = ({onMenuClick, sidebarOpen}) => {
                             handleProfileMenuClose();
                             navigate('/settings');
                         }}
-                        sx={{py: 1.5, px: 2.5}}
+                        sx={{ py: 1.5, px: 2.5 }}
                     >
-                        <SettingsIcon sx={{mr: 1.5, fontSize: 20, color: 'text.secondary'}}/>
+                        <SettingsIcon sx={{ mr: 1.5, fontSize: 20, color: 'text.secondary' }} />
                         <Typography variant="body2">{t('nav.settings')}</Typography>
                     </MenuItem>
-                    <Divider/>
+                    <Divider />
                     <MenuItem
                         onClick={handleLogout}
-                        sx={{py: 1.5, px: 2.5, color: 'error.main'}}
+                        sx={{ py: 1.5, px: 2.5, color: 'error.main' }}
                     >
-                        <LogoutIcon sx={{mr: 1.5, fontSize: 20}}/>
+                        <LogoutIcon sx={{ mr: 1.5, fontSize: 20 }} />
                         <Typography variant="body2">{t('nav.logout')}</Typography>
                     </MenuItem>
                 </Menu>
