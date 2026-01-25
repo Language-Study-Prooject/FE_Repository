@@ -42,18 +42,29 @@ api.interceptors.response.use(
         // 401 에러 && 재시도하지 않을 경우
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true
+            console.log('[Axios] 401 detected, attempting token refresh...')
 
             try {
-                // 토큰 갱신 시도
+                // 토큰 갱신 시도 (API Gateway는 idToken을 기대)
                 const session = await fetchAuthSession({ forceRefresh: true })
-                const newToken = session.tokens?.accessToken?.toString()
+                console.log('[Axios] Session fetched:', !!session, 'tokens:', !!session?.tokens)
+                const newToken = session.tokens?.idToken?.toString()
+                console.log('[Axios] New token obtained:', !!newToken, 'length:', newToken?.length)
 
                 if (newToken) {
                     localStorage.setItem('accessToken', newToken)
                     originalRequest.headers['Authorization'] = `Bearer ${newToken}`
+                    console.log('[Axios] Retrying request with new token')
                     return api(originalRequest)
+                } else {
+                    console.log('[Axios] No token received, redirecting to login')
+                    localStorage.removeItem('accessToken')
+                    if (window.location.pathname !== '/login') {
+                        window.location.href = '/login'
+                    }
                 }
             } catch (refreshError) {
+                console.error('[Axios] Token refresh failed:', refreshError)
                 try {
                     await signOut()
                 } catch (e) {

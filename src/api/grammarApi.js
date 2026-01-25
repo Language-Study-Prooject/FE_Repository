@@ -1,40 +1,15 @@
-import axios from 'axios'
+import api from './axios'
 
-const grammarApi = axios.create({
-    baseURL: import.meta.env.VITE_GRAMMAR_API_URL || import.meta.env.VITE_API_URL,
-    timeout: 30000,
-    headers: {
-        'Content-Type': 'application/json',
-    },
-})
+// 공통 axios 인스턴스 사용 (토큰 갱신 로직 포함)
+// Grammar API는 AI 처리로 인해 timeout 30초 필요
+const GRAMMAR_TIMEOUT = 30000
 
-// Request interceptor
-grammarApi.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('accessToken')
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`
-        }
-        return config
-    },
-    (error) => {
-        return Promise.reject(error)
-    }
-)
-
-// Response interceptor
-grammarApi.interceptors.response.use(
-    (response) => response.data,
-    (error) => {
-        console.error('Grammar API Error:', error.response?.data || error.message)
-
-        if (error.response?.status === 401) {
-            localStorage.removeItem('accessToken')
-            window.location.href = '/login'
-        }
-
-        return Promise.reject(error)
-    }
-)
+const grammarApi = {
+    get: (url, config) => api.get(url, { timeout: GRAMMAR_TIMEOUT, ...config }).then(res => res.data),
+    post: (url, data, config) => api.post(url, data, { timeout: GRAMMAR_TIMEOUT, ...config }).then(res => res.data),
+    put: (url, data, config) => api.put(url, data, { timeout: GRAMMAR_TIMEOUT, ...config }).then(res => res.data),
+    patch: (url, data, config) => api.patch(url, data, { timeout: GRAMMAR_TIMEOUT, ...config }).then(res => res.data),
+    delete: (url, config) => api.delete(url, { timeout: GRAMMAR_TIMEOUT, ...config }).then(res => res.data),
+}
 
 export default grammarApi
