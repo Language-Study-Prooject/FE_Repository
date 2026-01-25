@@ -1,5 +1,5 @@
-import {useCallback, useEffect, useRef, useState} from 'react'
-import {useNavigate, useParams} from 'react-router-dom'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import {
     Alert,
     AppBar,
@@ -21,27 +21,31 @@ import {
     Send as SendIcon,
     VolumeUp as VolumeUpIcon,
 } from '@mui/icons-material'
-import {chatRoomService, messageService, voiceService} from '../../chat/services/chatService'
-import {useAuth} from '../../../contexts/AuthContext'
-import {useChatWebSocket} from '../hooks/useChatWebSocket'
-import {useThemeMode} from '../../../contexts/ThemeContext'
+import { chatRoomService, messageService, voiceService } from '../../chat/services/chatService'
+import { useAuth } from '../../../contexts/AuthContext'
+import { useChatWebSocket } from '../hooks/useChatWebSocket'
+import { useThemeMode } from '../../../contexts/ThemeContext'
+import CommandAutocomplete from '../components/CommandAutocomplete'
+import PollCard from '../components/PollCard'
+import SystemCommandMessage from '../components/SystemCommandMessage'
+import { parseCommand, MessageType } from '../types/chatCommandTypes'
 
 const levelColors = {
-    beginner: {bg: '#e8f5e9', color: '#2e7d32', label: '초급'},
-    intermediate: {bg: '#fff3e0', color: '#ef6c00', label: '중급'},
-    advanced: {bg: '#fce4ec', color: '#c2185b', label: '고급'},
+    beginner: { bg: '#e8f5e9', color: '#2e7d32', label: '초급' },
+    intermediate: { bg: '#fff3e0', color: '#ef6c00', label: '중급' },
+    advanced: { bg: '#fce4ec', color: '#c2185b', label: '고급' },
 }
 
 const ChatRoomPage = () => {
-    const {roomId} = useParams()
+    const { roomId } = useParams()
     const navigate = useNavigate()
-    const {user} = useAuth()
-    const {mode} = useThemeMode()
+    const { user } = useAuth()
+    const { mode } = useThemeMode()
     const isDark = mode === 'dark'
     const currentUserId = user?.userId || user?.username || user?.sub
 
     // 디버깅: 사용자 정보 확인
-    console.log('[ChatRoomPage] User info:', {user, currentUserId, roomId})
+    console.log('[ChatRoomPage] User info:', { user, currentUserId, roomId })
 
     const messagesEndRef = useRef(null)
     const messagesContainerRef = useRef(null)
@@ -51,6 +55,7 @@ const ChatRoomPage = () => {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
     const [playingTTS, setPlayingTTS] = useState(null)
+    const [showCommandAutocomplete, setShowCommandAutocomplete] = useState(false)
 
     // WebSocket 훅 사용 (채팅방에서는 게임 관련 기능 제외)
     const {
@@ -85,11 +90,12 @@ const ChatRoomPage = () => {
     // 기존 메시지 목록 조회 (초기 로드용)
     const fetchMessages = useCallback(async () => {
         try {
-            const response = await messageService.getList(roomId, {limit: 50})
+            const response = await messageService.getList(roomId, { limit: 50 })
             const transformedMessages = (response.messages || []).map((msg, index) => ({
                 id: msg.messageId || `msg-${index}-${Date.now()}`,
                 content: msg.content,
                 userId: msg.userId,
+                nickname: msg.nickname,
                 messageType: msg.messageType,
                 createdAt: new Date(msg.createdAt),
                 isOwn: msg.userId === currentUserId,
@@ -117,12 +123,12 @@ const ChatRoomPage = () => {
 
     // WebSocket 연결 (별도 effect)
     useEffect(() => {
-        console.log('[ChatRoomPage] WebSocket effect triggered:', {roomId, currentUserId, isConnected})
+        console.log('[ChatRoomPage] WebSocket effect triggered:', { roomId, currentUserId, isConnected })
         if (currentUserId && roomId) {
-            console.log('[ChatRoomPage] Connecting WebSocket...', {roomId, currentUserId})
+            console.log('[ChatRoomPage] Connecting WebSocket...', { roomId, currentUserId })
             wsConnect()
         } else {
-            console.log('[ChatRoomPage] Missing required values:', {roomId, currentUserId})
+            console.log('[ChatRoomPage] Missing required values:', { roomId, currentUserId })
         }
 
         return () => {
@@ -133,7 +139,7 @@ const ChatRoomPage = () => {
 
     // 스크롤 맨 아래로
     const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({behavior: 'smooth'})
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
 
     useEffect(() => {
@@ -153,6 +159,19 @@ const ChatRoomPage = () => {
 
         const messageContent = newMessage.trim()
         setNewMessage('')
+        setShowCommandAutocomplete(false)
+
+        // 명령어 파싱
+        const { isCommand, command, args } = parseCommand(messageContent)
+
+        // /leave 명령어는 클라이언트에서 직접 처리
+        if (isCommand && command === '/leave') {
+            handleLeaveRoom()
+            return
+        }
+
+        // /clear 명령어는 서버로 전송 (서버에서 처리)
+        // 나머지 명령어들도 서버로 전송하여 처리
 
         // WebSocket으로 전송
         if (isConnected) {
@@ -219,6 +238,41 @@ const ChatRoomPage = () => {
         }
     }
 
+    // 투표하기
+    const handleVote = (pollId, optionId) => {
+        if (isConnected) {
+            wsSendMessage(`/vote ${pollId} ${optionId}`, 'TEXT')
+        }
+    }
+
+    // 투표 종료
+    const handleEndPoll = (pollId) => {
+        if (isConnected) {
+            wsSendMessage(`/endpoll ${pollId}`, 'TEXT')
+        }
+    }
+
+    // 명령어 자동완성 선택
+    const handleCommandSelect = (command) => {
+        if (command) {
+            setNewMessage(command + ' ')
+        }
+        setShowCommandAutocomplete(false)
+    }
+
+    // 입력값 변경 처리
+    const handleInputChange = (e) => {
+        const value = e.target.value
+        setNewMessage(value)
+
+        // "/" 입력 시 자동완성 표시
+        if (value.startsWith('/') && value.length > 0) {
+            setShowCommandAutocomplete(true)
+        } else {
+            setShowCommandAutocomplete(false)
+        }
+    }
+
     // 새로고침
     const handleRefresh = () => {
         fetchMessages()
@@ -240,23 +294,23 @@ const ChatRoomPage = () => {
 
     if (loading) {
         return (
-            <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh'}}>
-                <CircularProgress/>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                <CircularProgress />
             </Box>
         )
     }
 
     return (
-        <Box sx={{display: 'flex', flexDirection: 'column', height: '100vh', bgcolor: isDark ? '#1e293b' : '#b2c7d9'}}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', bgcolor: isDark ? '#1e293b' : '#b2c7d9' }}>
             {/* 헤더 */}
             <AppBar position="static" color="default" elevation={1}>
                 <Toolbar>
-                    <IconButton edge="start" onClick={() => navigate('/freetalk/people')} sx={{mr: 1}}>
-                        <ArrowBackIcon/>
+                    <IconButton edge="start" onClick={() => navigate('/freetalk/people')} sx={{ mr: 1 }}>
+                        <ArrowBackIcon />
                     </IconButton>
-                    <Box sx={{flex: 1}}>
-                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                            <Typography variant="h6" component="div" sx={{fontWeight: 600}}>
+                    <Box sx={{ flex: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
                                 {room?.name || '채팅방'}
                             </Typography>
                             {/* 연결 상태 표시 */}
@@ -267,7 +321,7 @@ const ChatRoomPage = () => {
                                 }}
                             />
                         </Box>
-                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             {room?.level && (
                                 <Chip
                                     label={levelColors[room.level]?.label}
@@ -289,17 +343,17 @@ const ChatRoomPage = () => {
                         </Box>
                     </Box>
                     <IconButton onClick={handleRefresh} title="새로고침">
-                        <RefreshIcon/>
+                        <RefreshIcon />
                     </IconButton>
                     <IconButton onClick={handleLeaveRoom} color="error" title="나가기">
-                        <ExitToAppIcon/>
+                        <ExitToAppIcon />
                     </IconButton>
                 </Toolbar>
             </AppBar>
 
             {/* 에러 메시지 */}
             {error && (
-                <Alert severity="error" onClose={handleCloseError} sx={{m: 1}}>
+                <Alert severity="error" onClose={handleCloseError} sx={{ m: 1 }}>
                     {error}
                 </Alert>
             )}
@@ -317,108 +371,132 @@ const ChatRoomPage = () => {
                 }}
             >
                 {messages.length === 0 ? (
-                    <Box sx={{textAlign: 'center', py: 4}}>
+                    <Box sx={{ textAlign: 'center', py: 4 }}>
                         <Typography variant="body2" color="text.secondary">
                             아직 메시지가 없습니다. 첫 메시지를 보내보세요!
                         </Typography>
                     </Box>
                 ) : (
-                    messages.map((message) => (
-                        <Box
-                            key={message.id}
-                            sx={{
-                                display: 'flex',
-                                flexDirection: message.isOwn ? 'row-reverse' : 'row',
-                                alignItems: 'flex-end',
-                                gap: 1,
-                            }}
-                        >
-                            {/* 시스템 메시지 */}
-                            {message.isSystem ? (
-                                <Box sx={{width: '100%', textAlign: 'center', py: 0.5}}>
-                                    <Typography variant="caption" color="text.secondary">
-                                        {message.content}
-                                    </Typography>
+                    messages.map((message) => {
+                        // 투표 메시지
+                        if (message.messageType === MessageType.POLL_CREATE) {
+                            return (
+                                <Box key={message.id} sx={{ width: '100%', display: 'flex', justifyContent: 'center', py: 1 }}>
+                                    <PollCard
+                                        poll={message.data}
+                                        currentUserId={currentUserId}
+                                        onVote={handleVote}
+                                        onEndPoll={handleEndPoll}
+                                    />
                                 </Box>
-                            ) : (
-                                <>
-                                    {/* 아바타 (상대방만) */}
-                                    {!message.isOwn && (
-                                        <Avatar sx={{width: 36, height: 36, bgcolor: 'primary.main'}}>
-                                            {message.userId?.charAt(0)?.toUpperCase() || 'U'}
-                                        </Avatar>
-                                    )}
+                            )
+                        }
 
-                                    <Box
-                                        sx={{
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: message.isOwn ? 'flex-end' : 'flex-start',
-                                            maxWidth: '70%',
-                                        }}
-                                    >
-                                        {/* 사용자 이름 (상대방만) */}
+                        // 시스템 명령어 메시지
+                        if (message.messageType === MessageType.SYSTEM_COMMAND) {
+                            return (
+                                <SystemCommandMessage key={message.id} data={message.data} />
+                            )
+                        }
+
+                        // 일반 메시지
+                        return (
+                            <Box
+                                key={message.id}
+                                sx={{
+                                    display: 'flex',
+                                    flexDirection: message.isOwn ? 'row-reverse' : 'row',
+                                    alignItems: 'flex-end',
+                                    gap: 1,
+                                }}
+                            >
+                                {/* 시스템 메시지 */}
+                                {message.isSystem ? (
+                                    <Box sx={{ width: '100%', textAlign: 'center', py: 0.5 }}>
+                                        <Typography variant="caption" color="text.secondary">
+                                            {message.content}
+                                        </Typography>
+                                    </Box>
+                                ) : (
+                                    <>
+                                        {/* 아바타 (상대방만) */}
                                         {!message.isOwn && (
-                                            <Typography variant="caption" sx={{mb: 0.5, ml: 1}}>
-                                                {message.userId}
-                                            </Typography>
+                                            <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main' }}>
+                                                {(message.nickname || message.userId)?.charAt(0)?.toUpperCase() || 'U'}
+                                            </Avatar>
                                         )}
 
-                                        {/* 메시지 버블 */}
-                                        <Box sx={{display: 'flex', alignItems: 'flex-end', gap: 0.5}}>
-                                            {message.isOwn && (
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {formatTime(message.createdAt)}
+                                        <Box
+                                            sx={{
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: message.isOwn ? 'flex-end' : 'flex-start',
+                                                maxWidth: '70%',
+                                            }}
+                                        >
+                                            {/* 사용자 이름 (상대방만) */}
+                                            {!message.isOwn && (
+                                                <Typography variant="caption" sx={{ mb: 0.5, ml: 1 }}>
+                                                    {message.nickname || message.userId}
                                                 </Typography>
                                             )}
 
-                                            <Paper
-                                                elevation={0}
-                                                sx={{
-                                                    px: 1.5,
-                                                    py: 1,
-                                                    bgcolor: message.isOwn
-                                                        ? (isDark ? '#facc15' : '#fee500')
-                                                        : (isDark ? '#374151' : '#ffffff'),
-                                                    color: message.isOwn
-                                                        ? '#1c1917'
-                                                        : (isDark ? '#fafaf9' : 'inherit'),
-                                                    borderRadius: message.isOwn ? '12px 12px 0 12px' : '12px 12px 12px 0',
-                                                    opacity: message.isPending ? 0.7 : 1,
-                                                }}
-                                            >
-                                                <Typography variant="body2" sx={{whiteSpace: 'pre-wrap'}}>
-                                                    {message.content}
-                                                </Typography>
-                                            </Paper>
-
-                                            {!message.isOwn && (
-                                                <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
-                                                    <IconButton
-                                                        size="small"
-                                                        onClick={() => handlePlayTTS(message.id)}
-                                                        disabled={playingTTS === message.id}
-                                                        sx={{p: 0.5}}
-                                                    >
-                                                        {playingTTS === message.id ? (
-                                                            <CircularProgress size={16}/>
-                                                        ) : (
-                                                            <VolumeUpIcon fontSize="small"/>
-                                                        )}
-                                                    </IconButton>
+                                            {/* 메시지 버블 */}
+                                            <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 0.5 }}>
+                                                {message.isOwn && (
                                                     <Typography variant="caption" color="text.secondary">
                                                         {formatTime(message.createdAt)}
                                                     </Typography>
-                                                </Box>
-                                            )}
+                                                )}
+
+                                                <Paper
+                                                    elevation={0}
+                                                    sx={{
+                                                        px: 1.5,
+                                                        py: 1,
+                                                        bgcolor: message.isOwn
+                                                            ? (isDark ? '#facc15' : '#fee500')
+                                                            : (isDark ? '#374151' : '#ffffff'),
+                                                        color: message.isOwn
+                                                            ? '#1c1917'
+                                                            : (isDark ? '#fafaf9' : 'inherit'),
+                                                        borderRadius: message.isOwn ? '12px 12px 0 12px' : '12px 12px 12px 0',
+                                                        opacity: message.isPending ? 0.7 : 1,
+                                                    }}
+                                                >
+                                                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                                                        {message.content}
+                                                    </Typography>
+                                                </Paper>
+
+                                                {!message.isOwn && (
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => handlePlayTTS(message.id)}
+                                                            disabled={playingTTS === message.id}
+                                                            sx={{ p: 0.5 }}
+                                                        >
+                                                            {playingTTS === message.id ? (
+                                                                <CircularProgress size={16} />
+                                                            ) : (
+                                                                <VolumeUpIcon fontSize="small" />
+                                                            )}
+                                                        </IconButton>
+                                                        <Typography variant="caption" color="text.secondary">
+                                                            {formatTime(message.createdAt)}
+                                                        </Typography>
+                                                    </Box>
+                                                )}
+                                            </Box>
                                         </Box>
-                                    </Box>
-                                </>
-                            )}
-                        </Box>
-                    ))
+                                    </>
+                                )}
+                            </Box>
+                        )
+                    })
                 )}
-                <div ref={messagesEndRef}/>
+                <div ref={messagesEndRef} />
             </Box>
 
             {/* 입력 영역 */}
@@ -430,13 +508,21 @@ const ChatRoomPage = () => {
                     alignItems: 'center',
                     gap: 1,
                     borderRadius: 0,
+                    position: 'relative',
                 }}
             >
+                {/* 명령어 자동완성 */}
+                <CommandAutocomplete
+                    input={newMessage}
+                    onSelect={handleCommandSelect}
+                    show={showCommandAutocomplete}
+                />
+
                 <TextField
                     fullWidth
-                    placeholder={isConnected ? '메시지를 입력하세요...' : '연결 중...'}
+                    placeholder={isConnected ? '메시지를 입력하세요... ("/" 입력 시 명령어 보기)' : '연결 중...'}
                     value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
+                    onChange={handleInputChange}
                     onKeyPress={handleKeyPress}
                     size="small"
                     multiline
@@ -454,11 +540,11 @@ const ChatRoomPage = () => {
                     sx={{
                         bgcolor: 'primary.main',
                         color: 'white',
-                        '&:hover': {bgcolor: 'primary.dark'},
-                        '&:disabled': {bgcolor: 'grey.300'},
+                        '&:hover': { bgcolor: 'primary.dark' },
+                        '&:disabled': { bgcolor: 'grey.300' },
                     }}
                 >
-                    <SendIcon/>
+                    <SendIcon />
                 </IconButton>
             </Paper>
         </Box>

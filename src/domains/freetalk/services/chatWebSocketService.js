@@ -177,8 +177,33 @@ class ChatWebSocketConnection {
                 break
             case 'system_command':
             case 'SYSTEM_COMMAND':
-                // 시스템 명령어 응답 (예: /member, /help 등)
-                this.callbacks.onMessage?.(data)
+                // 시스템 명령어 응답 (예: /dice, /coin, /random, /members, /help 등)
+                this.callbacks.onSystemCommand?.(data)
+                break
+            case 'poll_create':
+            case 'POLL_CREATE':
+                console.log('[ChatWebSocket] Poll create received:', data)
+                this.callbacks.onPollCreate?.(data)
+                break
+            case 'poll_vote':
+            case 'POLL_VOTE':
+                console.log('[ChatWebSocket] Poll vote received:', data)
+                this.callbacks.onPollVote?.(data)
+                break
+            case 'poll_end':
+            case 'POLL_END':
+                console.log('[ChatWebSocket] Poll end received:', data)
+                this.callbacks.onPollEnd?.(data)
+                break
+            case 'clear_chat':
+            case 'CLEAR_CHAT':
+                console.log('[ChatWebSocket] Clear chat received:', data)
+                this.callbacks.onClearChat?.(data)
+                break
+            case 'leave_room':
+            case 'LEAVE_ROOM':
+                console.log('[ChatWebSocket] Leave room received:', data)
+                this.callbacks.onLeaveRoom?.(data)
                 break
             case 'error':
             case 'ERROR':
@@ -187,6 +212,31 @@ class ChatWebSocketConnection {
             case 'GUESS':
                 // 추측 메시지 - 일반 메시지로 처리
                 this.callbacks.onMessage?.(data)
+                break
+            case 'wordchain_start':
+            case 'WORDCHAIN_START':
+                console.log('[ChatWebSocket] Wordchain start received:', data)
+                this.callbacks.onWordchainStart?.(data)
+                break
+            case 'wordchain_correct':
+            case 'WORDCHAIN_CORRECT':
+                console.log('[ChatWebSocket] Wordchain correct received:', data)
+                this.callbacks.onWordchainCorrect?.(data)
+                break
+            case 'wordchain_wrong':
+            case 'WORDCHAIN_WRONG':
+                console.log('[ChatWebSocket] Wordchain wrong received:', data)
+                this.callbacks.onWordchainWrong?.(data)
+                break
+            case 'wordchain_timeout':
+            case 'WORDCHAIN_TIMEOUT':
+                console.log('[ChatWebSocket] Wordchain timeout received:', data)
+                this.callbacks.onWordchainTimeout?.(data)
+                break
+            case 'wordchain_end':
+            case 'WORDCHAIN_END':
+                console.log('[ChatWebSocket] Wordchain end received:', data)
+                this.callbacks.onWordchainEnd?.(data)
                 break
             default:
                 console.log('[ChatWebSocket] Unknown message type:', type || messageType, data)

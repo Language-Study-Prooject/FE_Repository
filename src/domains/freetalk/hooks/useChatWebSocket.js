@@ -1,6 +1,6 @@
-import {useCallback, useEffect, useRef, useState} from 'react'
-import {chatWebSocketService} from '../services/chatWebSocketService'
-import {chatRoomService} from '../../chat/services/chatService'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { chatWebSocketService } from '../services/chatWebSocketService'
+import { chatRoomService } from '../../chat/services/chatService'
 
 /**
  * Chat WebSocket 훅
@@ -26,10 +26,10 @@ export function useChatWebSocket(roomId, userId) {
      * WebSocket 연결
      */
     const connect = useCallback(async (forceNewToken = false) => {
-        console.log('[useChatWebSocket] Attempting to connect...', {roomId, userId, forceNewToken})
+        console.log('[useChatWebSocket] Attempting to connect...', { roomId, userId, forceNewToken })
 
         if (!roomId || !userId) {
-            console.error('[useChatWebSocket] roomId and userId are required', {roomId, userId})
+            console.error('[useChatWebSocket] roomId and userId are required', { roomId, userId })
             return
         }
 
@@ -74,9 +74,12 @@ export function useChatWebSocket(roomId, userId) {
                         id: messageId,
                         content: data.content,
                         userId: data.userId,
+                        nickname: data.nickname,
                         messageType: data.messageType || 'TEXT',
                         createdAt: data.createdAt || new Date().toISOString(),
                         isOwn: data.userId === userId,
+                        // 추가 데이터 (투표, 시스템 명령어 등)
+                        data: data.data || data.payload,
                     }
                     setMessages((prev) => {
                         // 중복 메시지 방지 (같은 messageId가 이미 있으면 추가하지 않음)
@@ -85,6 +88,101 @@ export function useChatWebSocket(roomId, userId) {
                         }
                         return [...prev, newMessage]
                     })
+                },
+
+                onPollCreate: (data) => {
+                    console.log('[useChatWebSocket] Poll created:', data)
+                    const pollData = data.data || data
+                    const pollMessage = {
+                        id: `poll-${pollData.pollId}`,
+                        messageType: 'POLL_CREATE',
+                        userId: pollData.creatorId,
+                        createdAt: pollData.createdAt || new Date().toISOString(),
+                        isOwn: pollData.creatorId === userId,
+                        data: pollData,
+                    }
+                    setMessages((prev) => [...prev, pollMessage])
+                },
+
+                onPollVote: (data) => {
+                    console.log('[useChatWebSocket] Poll vote:', data)
+                    const voteData = data.data || data
+                    setMessages((prev) =>
+                        prev.map((msg) => {
+                            if (msg.id === `poll-${voteData.pollId}` && msg.data) {
+                                return {
+                                    ...msg,
+                                    data: {
+                                        ...msg.data,
+                                        options: voteData.updatedOptions || msg.data.options,
+                                    },
+                                }
+                            }
+                            return msg
+                        })
+                    )
+                },
+
+                onPollEnd: (data) => {
+                    console.log('[useChatWebSocket] Poll ended:', data)
+                    const endData = data.data || data
+                    setMessages((prev) =>
+                        prev.map((msg) => {
+                            if (msg.id === `poll-${endData.pollId}` && msg.data) {
+                                return {
+                                    ...msg,
+                                    data: {
+                                        ...msg.data,
+                                        isActive: false,
+                                        options: endData.finalResults || msg.data.options,
+                                    },
+                                }
+                            }
+                            return msg
+                        })
+                    )
+                },
+
+                onClearChat: (data) => {
+                    console.log('[useChatWebSocket] Clear chat:', data)
+                    const clearData = data.data || data
+                    // 특정 사용자의 메시지만 삭제
+                    setMessages((prev) =>
+                        prev.filter((msg) => !clearData.messageIds?.includes(msg.id))
+                    )
+                },
+
+                onLeaveRoom: (data) => {
+                    console.log('[useChatWebSocket] User left room:', data)
+                    const leaveData = data.data || data
+                    const systemMessage = {
+                        id: `leave-${Date.now()}`,
+                        content: `${leaveData.userId}님이 채팅방을 나갔습니다.`,
+                        messageType: 'SYSTEM',
+                        createdAt: leaveData.leftAt || new Date().toISOString(),
+                        isSystem: true,
+                    }
+                    setMessages((prev) => [...prev, systemMessage])
+                },
+
+                onSystemCommand: (data) => {
+                    const commandData = data.data || {}
+                    const commandMessage = {
+                        id: `syscmd-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        messageType: 'SYSTEM_COMMAND',
+                        userId: commandData.userId || commandData.nickname || data.userId,
+                        createdAt: data.createdAt || new Date().toISOString(),
+                        data: {
+                            commandType: commandData.type || 'help',
+                            userId: commandData.userId || commandData.nickname,
+                            displayText: data.content || data.message || '',
+                            result: typeof commandData.result === 'object'
+                                ? commandData.result
+                                : { value: commandData.result },
+                            raw: commandData,
+                        },
+                    }
+                    setMessages((prev) => [...prev, commandMessage])
                 },
 
                 onGameStart: (data) => {
@@ -115,6 +213,97 @@ export function useChatWebSocket(roomId, userId) {
                         status: 'FINISHED',
                         finalScores: gameData.scores,
                     }))
+                },
+
+                // 끝말잇기 게임 시작
+                onWordchainStart: (data) => {
+                    console.log('[useChatWebSocket] Wordchain started - FULL DATA:', JSON.stringify(data, null, 2))
+                    const gameData = data.data || data
+                    // 서버 필드명 매핑: starterWord->currentWord, currentPlayerId->currentTurnUserId, timeLimit->turnTimeLimit
+                    const wordchainState = {
+                        status: 'PLAYING',
+                        gameType: 'WORDCHAIN',
+                        currentTurnUserId: gameData.currentPlayerId || gameData.currentTurnUserId,
+                        currentWord: gameData.starterWord || gameData.currentWord,
+                        nextLetter: gameData.nextLetter,
+                        turnTimeLimit: gameData.timeLimit || gameData.turnTimeLimit || 15,
+                        turnStartTime: gameData.turnStartTime || Date.now(),
+                        scores: gameData.scores || {},
+                        players: gameData.players || gameData.activePlayers || [],
+                    }
+                    setGameState(wordchainState)
+                    // PlayPage에서 사용할 수 있도록 sessionStorage에 저장
+                    sessionStorage.setItem(`wordchainState_${roomId}`, JSON.stringify(wordchainState))
+                },
+
+                // 끝말잇기 정답
+                onWordchainCorrect: (data) => {
+                    console.log('[useChatWebSocket] Wordchain correct:', data)
+                    const correctData = data.data || data
+                    // 서버 필드명 매핑: word->currentWord, nextPlayerId->currentTurnUserId, nextTimeLimit->turnTimeLimit
+                    setGameState((prev) => {
+                        const newState = {
+                            ...prev,
+                            currentWord: correctData.word || correctData.currentWord,
+                            nextLetter: correctData.nextLetter || prev?.nextLetter,
+                            currentTurnUserId: correctData.nextPlayerId || correctData.nextTurnUserId,
+                            turnTimeLimit: correctData.nextTimeLimit || prev?.turnTimeLimit,
+                            turnStartTime: correctData.turnStartTime || Date.now(),
+                            scores: correctData.scores || prev?.scores,
+                            usedWords: prev?.usedWords ? [...prev.usedWords, correctData.word] : [correctData.word],
+                        }
+                        // sessionStorage 업데이트
+                        sessionStorage.setItem(`wordchainState_${roomId}`, JSON.stringify(newState))
+                        return newState
+                    })
+                },
+
+                // 끝말잇기 오답
+                onWordchainWrong: (data) => {
+                    console.log('[useChatWebSocket] Wordchain wrong:', data)
+                },
+
+                // 끝말잇기 타임아웃
+                onWordchainTimeout: (data) => {
+                    console.log('[useChatWebSocket] Wordchain timeout:', data)
+                    const timeoutData = data.data || data
+                    // 서버 필드명 매핑: nextPlayerId->currentTurnUserId, nextTimeLimit->turnTimeLimit
+                    setGameState((prev) => {
+                        const newState = {
+                            ...prev,
+                            currentTurnUserId: timeoutData.nextPlayerId || timeoutData.nextTurnUserId,
+                            nextLetter: timeoutData.nextLetter || prev?.nextLetter,
+                            turnTimeLimit: timeoutData.nextTimeLimit || prev?.turnTimeLimit,
+                            turnStartTime: timeoutData.turnStartTime || Date.now(),
+                            players: timeoutData.activePlayers || prev?.players,
+                        }
+                        // sessionStorage 업데이트
+                        sessionStorage.setItem(`wordchainState_${roomId}`, JSON.stringify(newState))
+                        return newState
+                    })
+                },
+
+                // 끝말잇기 게임 종료
+                onWordchainEnd: (data) => {
+                    console.log('[useChatWebSocket] Wordchain ended:', data)
+                    const endData = data.data || data
+                    setGameState((prev) => {
+                        const newState = {
+                            ...prev,
+                            status: 'FINISHED',
+                            winner: endData.winnerId ? {
+                                id: endData.winnerId,
+                                nickname: endData.winnerNickname,
+                            } : null,
+                            ranking: endData.ranking,
+                            finalScores: endData.scores || prev?.scores,
+                            usedWords: endData.usedWords || prev?.usedWords,
+                            wordDefinitions: endData.wordDefinitions || {},
+                        }
+                        // sessionStorage 업데이트
+                        sessionStorage.setItem(`wordchainState_${roomId}`, JSON.stringify(newState))
+                        return newState
+                    })
                 },
 
                 onRoundStart: (data) => {

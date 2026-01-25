@@ -1,32 +1,13 @@
-import axios from 'axios'
+import api from './axios'
 
-const badgeApi = axios.create({
-    baseURL: import.meta.env.VITE_BADGE_API_URL || import.meta.env.VITE_API_URL,
-    timeout: 10000,
-    headers: {
-        'Content-Type': 'application/json',
-    },
-})
-
-// Request interceptor for JWT token
-badgeApi.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('accessToken')
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`
-        }
-        return config
-    },
-    (error) => Promise.reject(error)
-)
-
-// Response interceptor for error handling
-badgeApi.interceptors.response.use(
-    (response) => response.data,
-    (error) => {
-        console.error('Badge API Error:', error.response?.data || error.message)
-        return Promise.reject(error)
-    }
-)
+// 공통 axios 인스턴스 사용 (토큰 갱신 로직 포함)
+// response.data 자동 추출을 위한 래퍼
+const badgeApi = {
+    get: (url, config) => api.get(url, config).then(res => res.data),
+    post: (url, data, config) => api.post(url, data, config).then(res => res.data),
+    put: (url, data, config) => api.put(url, data, config).then(res => res.data),
+    patch: (url, data, config) => api.patch(url, data, config).then(res => res.data),
+    delete: (url, config) => api.delete(url, config).then(res => res.data),
+}
 
 export default badgeApi

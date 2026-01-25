@@ -3,28 +3,33 @@
  * 뉴스 영어 학습 관련 API 호출
  */
 
-const API_URL = import.meta.env.VITE_API_URL
+import api from '../../../api/axios'
 
 /**
- * API 요청 헬퍼
+ * API 요청 헬퍼 - 공통 axios 인스턴스 사용 (토큰 갱신 로직 포함)
  */
 const fetchWithAuth = async (endpoint, options = {}) => {
-    const token = localStorage.getItem('accessToken')
-    const response = await fetch(`${API_URL}${endpoint}`, {
-        ...options,
-        headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
-            ...options.headers,
-        },
-    })
+    const { method = 'GET', body, ...restOptions } = options
 
-    if (!response.ok) {
-        const error = await response.json().catch(() => ({}))
-        throw new Error(error.message || 'API request failed')
+    const config = {
+        ...restOptions,
     }
 
-    return response.json()
+    if (method === 'GET') {
+        const response = await api.get(endpoint, config)
+        return response.data
+    } else if (method === 'POST') {
+        const response = await api.post(endpoint, body ? JSON.parse(body) : undefined, config)
+        return response.data
+    } else if (method === 'PUT') {
+        const response = await api.put(endpoint, body ? JSON.parse(body) : undefined, config)
+        return response.data
+    } else if (method === 'DELETE') {
+        const response = await api.delete(endpoint, config)
+        return response.data
+    }
+
+    throw new Error(`Unsupported method: ${method}`)
 }
 
 /**

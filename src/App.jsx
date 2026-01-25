@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { useDispatch } from 'react-redux'
 import { Box, Button, Card, CardContent, CircularProgress, Collapse, Container, Grid, Typography } from '@mui/material'
 import {
     ChevronRight as ChevronRightIcon,
@@ -32,6 +33,9 @@ import { BadgeSection } from './domains/badge'
 import CatchmindLobbyPage from './domains/games/pages/CatchmindLobbyPage'
 import CatchmindWaitingPage from './domains/games/pages/CatchmindWaitingPage'
 import CatchmindPlayPage from './domains/games/pages/CatchmindPlayPage'
+import WordchainLobbyPage from './domains/games/pages/WordchainLobbyPage'
+import WordchainWaitingPage from './domains/games/pages/WordchainWaitingPage'
+import WordchainPlayPage from './domains/games/pages/WordchainPlayPage'
 import { NewsListPage, NewsDetailPage, NewsQuizPage, NewsWordsPage, NewsStatsPage } from './domains/news'
 import { dailyService, statsService } from './domains/vocab/services/vocabService'
 import { getNewsStats, getDashboardStats } from './domains/news/services/newsService'
@@ -40,6 +44,7 @@ import { useSettings } from './contexts/SettingsContext'
 import { useAuth } from './contexts/AuthContext'
 import LoginPage from './pages/Login'
 import SignUpPage from './pages/SignUp'
+import { fetchMyProfile } from "./domains/profile/store/profileSlice";
 
 
 function ProtectedRoute({ children }) {
@@ -268,6 +273,13 @@ function Dashboard() {
                     icon: GameIcon,
                     path: '/games/catchmind',
                     description: t('games.catchmindDesc')
+                },
+                {
+                    id: 'wordchain',
+                    title: t('games.wordchainTitle'),
+                    icon: GameIcon,
+                    path: '/games/wordchain',
+                    description: t('games.wordchainDesc')
                 },
             ],
         },
@@ -1131,7 +1143,16 @@ function NotFound() {
 }
 
 function App() {
+    const dispatch = useDispatch()
+    const { isAuthenticated } = useAuth()
     const { activeRoom, closeChatRoom } = useChat()
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            // redux로 프로필 정보 API(/users/profile/me) 호출
+            dispatch(fetchMyProfile())
+        }
+    }, [isAuthenticated, dispatch])
 
     const handleRefreshRooms = () => {
         // Refresh rooms list after leaving a room
@@ -1176,6 +1197,9 @@ function App() {
                     <Route path="/games/catchmind" element={<CatchmindLobbyPage />} />
                     <Route path="/games/catchmind/:roomId/waiting" element={<CatchmindWaitingPage />} />
                     <Route path="/games/catchmind/:roomId/play" element={<CatchmindPlayPage />} />
+                    <Route path="/games/wordchain" element={<WordchainLobbyPage />} />
+                    <Route path="/games/wordchain/:roomId/waiting" element={<WordchainWaitingPage />} />
+                    <Route path="/games/wordchain/:roomId/play" element={<WordchainPlayPage />} />
                     <Route path="/news" element={<NewsListPage />} />
                     <Route path="/news/:articleId" element={<NewsDetailPage />} />
                     <Route path="/news/:articleId/quiz" element={<NewsQuizPage />} />
