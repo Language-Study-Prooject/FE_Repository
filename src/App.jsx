@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
-import { useDispatch } from 'react-redux'
 import { Box, Button, Card, CardContent, CircularProgress, Collapse, Container, Grid, Typography } from '@mui/material'
 import {
     ChevronRight as ChevronRightIcon,
