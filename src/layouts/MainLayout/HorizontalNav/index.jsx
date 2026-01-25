@@ -141,6 +141,13 @@ const HorizontalNav = () => {
                     path: '/games/catchmind',
                     desc: t('games.catchmindDesc')
                 },
+                {
+                    id: 'wordchain',
+                    label: t('games.wordchainTitle') || '끝말잇기',
+                    icon: GameIcon,
+                    path: '/games/wordchain',
+                    desc: t('games.wordchainDesc') || '영어 끝말잇기'
+                },
             ],
         },
         {

@@ -215,6 +215,97 @@ export function useChatWebSocket(roomId, userId) {
                     }))
                 },
 
+                // 끝말잇기 게임 시작
+                onWordchainStart: (data) => {
+                    console.log('[useChatWebSocket] Wordchain started - FULL DATA:', JSON.stringify(data, null, 2))
+                    const gameData = data.data || data
+                    // 서버 필드명 매핑: starterWord->currentWord, currentPlayerId->currentTurnUserId, timeLimit->turnTimeLimit
+                    const wordchainState = {
+                        status: 'PLAYING',
+                        gameType: 'WORDCHAIN',
+                        currentTurnUserId: gameData.currentPlayerId || gameData.currentTurnUserId,
+                        currentWord: gameData.starterWord || gameData.currentWord,
+                        nextLetter: gameData.nextLetter,
+                        turnTimeLimit: gameData.timeLimit || gameData.turnTimeLimit || 15,
+                        turnStartTime: gameData.turnStartTime || Date.now(),
+                        scores: gameData.scores || {},
+                        players: gameData.players || gameData.activePlayers || [],
+                    }
+                    setGameState(wordchainState)
+                    // PlayPage에서 사용할 수 있도록 sessionStorage에 저장
+                    sessionStorage.setItem(`wordchainState_${roomId}`, JSON.stringify(wordchainState))
+                },
+
+                // 끝말잇기 정답
+                onWordchainCorrect: (data) => {
+                    console.log('[useChatWebSocket] Wordchain correct:', data)
+                    const correctData = data.data || data
+                    // 서버 필드명 매핑: word->currentWord, nextPlayerId->currentTurnUserId, nextTimeLimit->turnTimeLimit
+                    setGameState((prev) => {
+                        const newState = {
+                            ...prev,
+                            currentWord: correctData.word || correctData.currentWord,
+                            nextLetter: correctData.nextLetter || prev?.nextLetter,
+                            currentTurnUserId: correctData.nextPlayerId || correctData.nextTurnUserId,
+                            turnTimeLimit: correctData.nextTimeLimit || prev?.turnTimeLimit,
+                            turnStartTime: correctData.turnStartTime || Date.now(),
+                            scores: correctData.scores || prev?.scores,
+                            usedWords: prev?.usedWords ? [...prev.usedWords, correctData.word] : [correctData.word],
+                        }
+                        // sessionStorage 업데이트
+                        sessionStorage.setItem(`wordchainState_${roomId}`, JSON.stringify(newState))
+                        return newState
+                    })
+                },
+
+                // 끝말잇기 오답
+                onWordchainWrong: (data) => {
+                    console.log('[useChatWebSocket] Wordchain wrong:', data)
+                },
+
+                // 끝말잇기 타임아웃
+                onWordchainTimeout: (data) => {
+                    console.log('[useChatWebSocket] Wordchain timeout:', data)
+                    const timeoutData = data.data || data
+                    // 서버 필드명 매핑: nextPlayerId->currentTurnUserId, nextTimeLimit->turnTimeLimit
+                    setGameState((prev) => {
+                        const newState = {
+                            ...prev,
+                            currentTurnUserId: timeoutData.nextPlayerId || timeoutData.nextTurnUserId,
+                            nextLetter: timeoutData.nextLetter || prev?.nextLetter,
+                            turnTimeLimit: timeoutData.nextTimeLimit || prev?.turnTimeLimit,
+                            turnStartTime: timeoutData.turnStartTime || Date.now(),
+                            players: timeoutData.activePlayers || prev?.players,
+                        }
+                        // sessionStorage 업데이트
+                        sessionStorage.setItem(`wordchainState_${roomId}`, JSON.stringify(newState))
+                        return newState
+                    })
+                },
+
+                // 끝말잇기 게임 종료
+                onWordchainEnd: (data) => {
+                    console.log('[useChatWebSocket] Wordchain ended:', data)
+                    const endData = data.data || data
+                    setGameState((prev) => {
+                        const newState = {
+                            ...prev,
+                            status: 'FINISHED',
+                            winner: endData.winnerId ? {
+                                id: endData.winnerId,
+                                nickname: endData.winnerNickname,
+                            } : null,
+                            ranking: endData.ranking,
+                            finalScores: endData.scores || prev?.scores,
+                            usedWords: endData.usedWords || prev?.usedWords,
+                            wordDefinitions: endData.wordDefinitions || {},
+                        }
+                        // sessionStorage 업데이트
+                        sessionStorage.setItem(`wordchainState_${roomId}`, JSON.stringify(newState))
+                        return newState
+                    })
+                },
+
                 onRoundStart: (data) => {
                     console.log('[useChatWebSocket] Round started - FULL DATA:', JSON.stringify(data, null, 2))
                     // 실제 라운드 데이터 추출 (data.data에 중첩되어 있을 수 있음)

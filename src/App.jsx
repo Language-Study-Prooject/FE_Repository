@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
+import { useDispatch } from 'react-redux'
 import { Box, Button, Card, CardContent, CircularProgress, Collapse, Container, Grid, Typography } from '@mui/material'
 import {
     ChevronRight as ChevronRightIcon,
@@ -277,10 +278,10 @@ function Dashboard() {
                 },
                 {
                     id: 'wordchain',
-                    title: '끝말잇기',
+                    title: t('games.wordchainTitle'),
                     icon: GameIcon,
                     path: '/games/wordchain',
-                    description: '영어 끝말잇기'
+                    description: t('games.wordchainDesc')
                 },
             ],
         },
