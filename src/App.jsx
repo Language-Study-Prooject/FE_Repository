@@ -276,10 +276,10 @@ function Dashboard() {
                 },
                 {
                     id: 'wordchain',
-                    title: '끝말잇기',
+                    title: t('games.wordchainTitle'),
                     icon: GameIcon,
                     path: '/games/wordchain',
-                    description: '영어 끝말잇기'
+                    description: t('games.wordchainDesc')
                 },
             ],
         },

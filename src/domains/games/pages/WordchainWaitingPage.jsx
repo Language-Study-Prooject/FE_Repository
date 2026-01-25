@@ -19,6 +19,7 @@ import {
 import ParticipantList from '../components/ParticipantList'
 import WaitingChat from '../components/WaitingChat'
 import { gameService } from '../services/gameService'
+import { wordchainService } from '../services/wordchainService'
 import { GAME_COLORS } from '../theme/gameTheme'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useThemeMode } from '../../../contexts/ThemeContext'
@@ -137,7 +138,7 @@ const WordchainWaitingPage = () => {
     const handleStartGame = async () => {
         try {
             setStarting(true)
-            await gameService.startGame(roomId)
+            await wordchainService.start(roomId)
             navigate(`/games/wordchain/${roomId}/play`)
         } catch (err) {
             console.error('Failed to start game:', err)

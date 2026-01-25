@@ -48,16 +48,14 @@ const WordchainLobbyPage = () => {
             setLoading(true)
             setError(null)
 
-            const params = {}
+            const params = {
+                gameType: 'WORDCHAIN',
+            }
             if (filters.level) params.level = filters.level
             if (filters.waitingOnly) params.status = 'WAITING'
 
             const response = await gameService.getRooms(params)
-            // WORDCHAIN 타입 필터링
-            const wordchainRooms = (response.data.rooms || []).filter(
-                room => room.gameType === 'WORDCHAIN'
-            )
-            setRooms(wordchainRooms)
+            setRooms(response.data.rooms || [])
         } catch (err) {
             console.error('Failed to fetch rooms:', err)
             setError('방 목록을 불러오는데 실패했습니다')
