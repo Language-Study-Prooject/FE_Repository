@@ -45,6 +45,7 @@ import { useAuth } from './contexts/AuthContext'
 import LoginPage from './pages/Login'
 import SignUpPage from './pages/SignUp'
 import { fetchMyProfile } from "./domains/profile/store/profileSlice";
+import ProfilePage from './domains/profile/pages/ProfilePage'
 
 
 function ProtectedRoute({ children }) {
@@ -1183,6 +1184,7 @@ function App() {
                 }>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/profile" element={<ProfilePage />} />
                     <Route path="/opic" element={<OpicPage />} />
                     <Route path="/freetalk/people" element={<FreetalkPeoplePage />} />
                     <Route path="/freetalk/ai" element={<SpeakingPage />} />
