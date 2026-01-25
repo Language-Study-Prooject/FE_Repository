@@ -16,16 +16,37 @@ import { GAME_COLORS, GAME_TYPOGRAPHY } from '../../theme/gameTheme'
 
 /**
  * GameEndModal - 게임 종료 모달
+ * @param {Object} winner - { id, nickname } or { userId, nickname }
+ * @param {Array} finalPlayers - 백엔드 ranking 배열 또는 기존 players 배열
+ *   - 백엔드: [{ playerId, nickname, score, eliminated }]
+ *   - 기존: [{ userId, nickname, isAlive, wordsSubmitted }]
  */
-const GameEndModal = ({ open, winner, finalPlayers, onRestart, onExit, currentUserId }) => {
-    const sortedPlayers = [...(finalPlayers || [])]
+const GameEndModal = ({ open, winner, finalPlayers, ranking, onRestart, onExit, currentUserId }) => {
+    // 백엔드 ranking 또는 기존 finalPlayers 사용
+    const players = ranking || finalPlayers || []
+
+    // 데이터 정규화 - 백엔드 형식과 기존 형식 모두 지원
+    const sortedPlayers = [...players]
+        .map(player => ({
+            userId: player.playerId || player.userId,
+            nickname: player.nickname || player.userId || player.playerId,
+            score: player.score || 0,
+            isAlive: player.eliminated !== undefined ? !player.eliminated : player.isAlive,
+            wordsSubmitted: player.wordsSubmitted || player.score || 0,
+        }))
         .sort((a, b) => {
             // 생존자가 우선
             if (a.isAlive && !b.isAlive) return -1
             if (!a.isAlive && b.isAlive) return 1
-            // 제출한 단어 수로 정렬
-            return (b.wordsSubmitted || 0) - (a.wordsSubmitted || 0)
+            // 점수로 정렬
+            return (b.score || 0) - (a.score || 0)
         })
+
+    // winner 정규화
+    const normalizedWinner = winner ? {
+        userId: winner.id || winner.userId || winner.playerId,
+        nickname: winner.nickname || winner.id || winner.userId,
+    } : null
 
     return (
         <Dialog
@@ -51,7 +72,7 @@ const GameEndModal = ({ open, winner, finalPlayers, onRestart, onExit, currentUs
             </DialogTitle>
 
             <DialogContent sx={{ py: 3 }}>
-                {winner && (
+                {normalizedWinner && (
                     <Box
                         sx={{
                             textAlign: 'center',
@@ -65,8 +86,8 @@ const GameEndModal = ({ open, winner, finalPlayers, onRestart, onExit, currentUs
                             우승자
                         </Typography>
                         <Typography variant="h4" fontWeight={800} color="#F59E0B">
-                            {winner.nickname || winner.userId}
-                            {winner.userId === currentUserId && ' (나)'}
+                            {normalizedWinner.nickname || normalizedWinner.userId}
+                            {normalizedWinner.userId === currentUserId && ' (나)'}
                         </Typography>
                     </Box>
                 )}
@@ -121,7 +142,7 @@ const GameEndModal = ({ open, winner, finalPlayers, onRestart, onExit, currentUs
                                     color: player.isAlive ? GAME_COLORS.primary : 'text.secondary',
                                 }}
                             >
-                                {player.wordsSubmitted || 0}단어
+                                {player.score || 0}점
                             </Typography>
                         </Box>
                     ))}

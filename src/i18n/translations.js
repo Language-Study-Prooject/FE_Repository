@@ -388,6 +388,8 @@ export const translations = {
             description: '재미있는 게임으로 영어 실력을 향상하세요',
             catchmindTitle: '캐치마인드',
             catchmindDesc: '그림 맞추기 게임',
+            wordchainTitle: '끝말잇기',
+            wordchainDesc: '영어 끝말잇기',
         },
 
         // News
@@ -837,6 +839,8 @@ export const translations = {
             description: 'Improve your English with fun games',
             catchmindTitle: 'Catchmind',
             catchmindDesc: 'Drawing guessing game',
+            wordchainTitle: 'Word Chain',
+            wordchainDesc: 'English word chain game',
         },
 
         // News

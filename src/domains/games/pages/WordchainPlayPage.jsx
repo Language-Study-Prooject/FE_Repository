@@ -56,6 +56,8 @@ const WordchainPlayPage = () => {
         players: [],
         usedWords: [],
         winner: null,
+        ranking: null,
+        finalScores: null,
     })
 
     const [room, setRoom] = useState(null)
@@ -63,38 +65,83 @@ const WordchainPlayPage = () => {
     const [timeLeft, setTimeLeft] = useState(15)
     const [showEndModal, setShowEndModal] = useState(false)
     const [submitting, setSubmitting] = useState(false)
+    const [timeoutSent, setTimeoutSent] = useState(false) // 타임아웃 중복 방지
 
     const isMyTurn = gameState.currentTurnUserId === currentUserId
+    console.log('[WordchainPlayPage] Turn check:', { currentUserId, currentTurnUserId: gameState.currentTurnUserId, isMyTurn })
+
+    // WebSocket에서 온 players 배열을 객체 배열로 변환 (nickname 매핑)
+    const mapPlayersWithNickname = (playerIds, existingPlayers, participants) => {
+        if (!playerIds || !Array.isArray(playerIds)) return existingPlayers
+
+        // playerIds가 이미 객체 배열이면 그대로 반환
+        if (playerIds.length > 0 && typeof playerIds[0] === 'object') {
+            return playerIds
+        }
+
+        // 문자열 배열이면 nickname 매핑
+        return playerIds.map(userId => {
+            // 기존 players에서 찾기
+            const existing = existingPlayers?.find(p => p.userId === userId)
+            if (existing) return existing
+
+            // room.participants에서 찾기
+            const participant = participants?.find(p => p.id === userId || p.participantId === userId || p.userId === userId)
+            if (participant) {
+                return {
+                    userId,
+                    nickname: participant.nickname || participant.name || userId.substring(0, 8),
+                    isAlive: true,
+                }
+            }
+
+            // 못 찾으면 userId로 표시
+            return {
+                userId,
+                nickname: userId.substring(0, 8),
+                isAlive: true,
+            }
+        })
+    }
 
     // WebSocket gameState 업데이트 반영
     useEffect(() => {
         if (wsGameState) {
             console.log('[WordchainPlayPage] Received wsGameState:', wsGameState)
 
-            setGameState(prev => ({
-                ...prev,
-                status: wsGameState.status ?? prev.status,
-                currentWord: wsGameState.currentWord ?? prev.currentWord,
-                nextLetter: wsGameState.nextLetter ?? prev.nextLetter,
-                currentTurnUserId: wsGameState.currentTurnUserId ?? prev.currentTurnUserId,
-                turnStartTime: wsGameState.turnStartTime ?? prev.turnStartTime,
-                turnTimeLimit: wsGameState.turnTimeLimit ?? prev.turnTimeLimit ?? 15,
-                players: wsGameState.players ?? prev.players,
-                usedWords: wsGameState.usedWords ?? prev.usedWords,
-                winner: wsGameState.winner ?? prev.winner,
-            }))
+            setGameState(prev => {
+                // 턴이 변경되면 타이머 리셋
+                if (wsGameState.currentTurnUserId && wsGameState.currentTurnUserId !== prev.currentTurnUserId) {
+                    setTimeLeft(wsGameState.turnTimeLimit ?? prev.turnTimeLimit ?? 15)
+                }
 
-            // 턴이 변경되면 타이머 리셋
-            if (wsGameState.currentTurnUserId && wsGameState.currentTurnUserId !== prev.currentTurnUserId) {
-                setTimeLeft(wsGameState.turnTimeLimit ?? 15)
-            }
+                // players 매핑
+                const mappedPlayers = wsGameState.players
+                    ? mapPlayersWithNickname(wsGameState.players, prev.players, room?.participants)
+                    : prev.players
+
+                return {
+                    ...prev,
+                    status: wsGameState.status ?? prev.status,
+                    currentWord: wsGameState.currentWord ?? prev.currentWord,
+                    nextLetter: wsGameState.nextLetter ?? prev.nextLetter,
+                    currentTurnUserId: wsGameState.currentTurnUserId ?? prev.currentTurnUserId,
+                    turnStartTime: wsGameState.turnStartTime ?? prev.turnStartTime,
+                    turnTimeLimit: wsGameState.turnTimeLimit ?? prev.turnTimeLimit ?? 15,
+                    players: mappedPlayers,
+                    usedWords: wsGameState.usedWords ?? prev.usedWords,
+                    winner: wsGameState.winner ?? prev.winner,
+                    ranking: wsGameState.ranking ?? prev.ranking,
+                    finalScores: wsGameState.finalScores ?? prev.finalScores,
+                }
+            })
 
             // 게임 종료 처리
             if (wsGameState.status === 'FINISHED' && !showEndModal) {
                 setShowEndModal(true)
             }
         }
-    }, [wsGameState, showEndModal])
+    }, [wsGameState, showEndModal, room])
 
     // 초기 로드 및 WebSocket 연결
     useEffect(() => {
@@ -106,15 +153,33 @@ const WordchainPlayPage = () => {
                 const roomResponse = await gameService.getRoom(roomId)
                 setRoom(roomResponse.data)
 
-                // 게임 상태 조회
-                let gameData
-                try {
-                    const statusResponse = await wordchainService.getStatus(roomId)
-                    gameData = statusResponse.data || statusResponse
-                } catch {
-                    // 게임 상태가 없으면 시작
-                    const gameResponse = await wordchainService.start(roomId)
-                    gameData = gameResponse.data || gameResponse
+                // sessionStorage에서 WORDCHAIN_START 데이터 확인
+                const savedState = sessionStorage.getItem(`wordchainState_${roomId}`)
+                let gameData = null
+
+                if (savedState) {
+                    gameData = JSON.parse(savedState)
+                    console.log('[WordchainPlayPage] Got saved wordchain state:', gameData)
+                    // 페이지 이탈 시 삭제하도록 변경 (StrictMode 두 번 마운트 대응)
+                } else {
+                    // sessionStorage에 없으면 API 조회 시도
+                    try {
+                        const statusResponse = await wordchainService.getStatus(roomId)
+                        gameData = statusResponse.data || statusResponse
+                        console.log('[WordchainPlayPage] Got game status:', gameData)
+                    } catch (err) {
+                        // 게임 상태 조회 실패 시 WebSocket 이벤트 대기
+                        console.log('[WordchainPlayPage] Failed to get status, waiting for WebSocket:', err.message)
+                        // 기본 상태로 시작하고 WebSocket에서 업데이트 받음
+                        gameData = {
+                            currentWord: null,
+                            nextLetter: null,
+                            currentTurnUserId: null,
+                            turnTimeLimit: 15,
+                            players: roomResponse.data.participants || [],
+                            usedWords: [],
+                        }
+                    }
                 }
 
                 setGameState({
@@ -157,13 +222,6 @@ const WordchainPlayPage = () => {
         const interval = setInterval(() => {
             setTimeLeft(prev => {
                 if (prev <= 1) {
-                    // 시간 초과
-                    if (isMyTurn && isConnected) {
-                        console.log('[WordchainPlayPage] Timer expired, sending timeout')
-                        wordchainService.timeout(roomId).catch(err => {
-                            console.error('Failed to send timeout:', err)
-                        })
-                    }
                     return 0
                 }
                 return prev - 1
@@ -171,7 +229,23 @@ const WordchainPlayPage = () => {
         }, 1000)
 
         return () => clearInterval(interval)
-    }, [gameState.status, isMyTurn, isConnected, roomId])
+    }, [gameState.status])
+
+    // 타임아웃 처리 (한 번만 전송)
+    useEffect(() => {
+        if (timeLeft === 0 && isMyTurn && isConnected && !timeoutSent) {
+            console.log('[WordchainPlayPage] Timer expired, sending timeout')
+            setTimeoutSent(true)
+            wordchainService.timeout(roomId).catch(err => {
+                console.error('Failed to send timeout:', err)
+            })
+        }
+    }, [timeLeft, isMyTurn, isConnected, timeoutSent, roomId])
+
+    // 턴 변경 시 타임아웃 플래그 리셋
+    useEffect(() => {
+        setTimeoutSent(false)
+    }, [gameState.currentTurnUserId])
 
     // 단어 제출
     const handleSubmitWord = async (word) => {
@@ -191,14 +265,16 @@ const WordchainPlayPage = () => {
 
     // 게임 종료
     const handleStopGame = async () => {
+        disconnect()
         try {
-            disconnect()
             await wordchainService.stop(roomId)
-            sessionStorage.removeItem(`roomToken_${roomId}`)
-            navigate('/games/wordchain')
         } catch (err) {
             console.error('Failed to stop game:', err)
+            // 에러가 나도 무시하고 진행
         }
+        sessionStorage.removeItem(`roomToken_${roomId}`)
+        sessionStorage.removeItem(`wordchainState_${roomId}`)
+        navigate('/games/wordchain')
     }
 
     // 재시작
@@ -389,6 +465,7 @@ const WordchainPlayPage = () => {
                 open={showEndModal}
                 winner={gameState.winner}
                 finalPlayers={gameState.players}
+                ranking={gameState.ranking}
                 onRestart={handleRestart}
                 onExit={handleLeave}
                 currentUserId={currentUserId}
