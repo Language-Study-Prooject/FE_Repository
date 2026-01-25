@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { useDispatch } from 'react-redux'
 import { Box, Button, Card, CardContent, CircularProgress, Collapse, Container, Grid, Typography } from '@mui/material'
 import {
     ChevronRight as ChevronRightIcon,
@@ -43,6 +44,7 @@ import { useSettings } from './contexts/SettingsContext'
 import { useAuth } from './contexts/AuthContext'
 import LoginPage from './pages/Login'
 import SignUpPage from './pages/SignUp'
+import { fetchMyProfile } from "./domains/profile/store/profileSlice";
 
 
 function ProtectedRoute({ children }) {
@@ -1141,7 +1143,16 @@ function NotFound() {
 }
 
 function App() {
+    const dispatch = useDispatch()
+    const { isAuthenticated } = useAuth()
     const { activeRoom, closeChatRoom } = useChat()
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            // redux로 프로필 정보 API(/users/profile/me) 호출
+            dispatch(fetchMyProfile())
+        }
+    }, [isAuthenticated, dispatch])
 
     const handleRefreshRooms = () => {
         // Refresh rooms list after leaving a room
