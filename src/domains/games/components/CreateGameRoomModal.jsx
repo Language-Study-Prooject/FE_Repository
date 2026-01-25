@@ -22,14 +22,17 @@ const levelOptions = [
     { value: 'ADVANCED', label: '고급', color: '#EF4444' },
 ]
 
-const CreateGameRoomModal = ({ open, onClose, onCreate, loading }) => {
+const CreateGameRoomModal = ({ open, onClose, onCreate, loading, gameType = 'CATCHMIND' }) => {
+    const isWordchain = gameType === 'WORDCHAIN'
+
     const [formData, setFormData] = useState({
         name: '',
         description: '',
         level: 'BEGINNER',
-        maxParticipants: 4,
+        maxParticipants: isWordchain ? 6 : 4,
         maxRounds: 5,
         roundTimeLimit: 60,
+        turnTimeLimit: 15, // 끝말잇기용
     })
 
     const handleChange = (field, value) => {
@@ -46,9 +49,10 @@ const CreateGameRoomModal = ({ open, onClose, onCreate, loading }) => {
             name: '',
             description: '',
             level: 'BEGINNER',
-            maxParticipants: 4,
+            maxParticipants: isWordchain ? 6 : 4,
             maxRounds: 5,
             roundTimeLimit: 60,
+            turnTimeLimit: 15,
         })
         onClose?.()
     }
@@ -190,59 +194,96 @@ const CreateGameRoomModal = ({ open, onClose, onCreate, loading }) => {
                     />
                 </Box>
 
-                {/* 라운드 수 */}
-                <Box sx={{ mb: 3 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                        <Typography variant="subtitle2" fontWeight={600}>
-                            라운드 수
-                        </Typography>
-                        <Typography variant="body2" fontWeight={700} color={GAME_COLORS.primary}>
-                            {formData.maxRounds}라운드
-                        </Typography>
+                {/* 캐치마인드: 라운드 수 */}
+                {!isWordchain && (
+                    <Box sx={{ mb: 3 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                            <Typography variant="subtitle2" fontWeight={600}>
+                                라운드 수
+                            </Typography>
+                            <Typography variant="body2" fontWeight={700} color={GAME_COLORS.primary}>
+                                {formData.maxRounds}라운드
+                            </Typography>
+                        </Box>
+                        <Slider
+                            value={formData.maxRounds}
+                            onChange={(e, value) => handleChange('maxRounds', value)}
+                            min={3}
+                            max={10}
+                            step={1}
+                            marks
+                            sx={{
+                                color: GAME_COLORS.primary,
+                            }}
+                        />
                     </Box>
-                    <Slider
-                        value={formData.maxRounds}
-                        onChange={(e, value) => handleChange('maxRounds', value)}
-                        min={3}
-                        max={10}
-                        step={1}
-                        marks
-                        sx={{
-                            color: GAME_COLORS.primary,
-                        }}
-                    />
-                </Box>
+                )}
 
-                {/* 라운드 시간 */}
-                <Box sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                        <Typography variant="subtitle2" fontWeight={600}>
-                            라운드 시간
-                        </Typography>
-                        <Typography variant="body2" fontWeight={700} color={GAME_COLORS.primary}>
-                            {formData.roundTimeLimit}초
-                        </Typography>
+                {/* 캐치마인드: 라운드 시간 */}
+                {!isWordchain && (
+                    <Box sx={{ mb: 2 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                            <Typography variant="subtitle2" fontWeight={600}>
+                                라운드 시간
+                            </Typography>
+                            <Typography variant="body2" fontWeight={700} color={GAME_COLORS.primary}>
+                                {formData.roundTimeLimit}초
+                            </Typography>
+                        </Box>
+                        <Slider
+                            value={formData.roundTimeLimit}
+                            onChange={(e, value) => handleChange('roundTimeLimit', value)}
+                            min={30}
+                            max={120}
+                            step={15}
+                            marks={[
+                                { value: 30, label: '30초' },
+                                { value: 60, label: '60초' },
+                                { value: 90, label: '90초' },
+                                { value: 120, label: '120초' },
+                            ]}
+                            sx={{
+                                color: GAME_COLORS.primary,
+                                '& .MuiSlider-markLabel': {
+                                    fontSize: '0.65rem',
+                                },
+                            }}
+                        />
                     </Box>
-                    <Slider
-                        value={formData.roundTimeLimit}
-                        onChange={(e, value) => handleChange('roundTimeLimit', value)}
-                        min={30}
-                        max={120}
-                        step={15}
-                        marks={[
-                            { value: 30, label: '30초' },
-                            { value: 60, label: '60초' },
-                            { value: 90, label: '90초' },
-                            { value: 120, label: '120초' },
-                        ]}
-                        sx={{
-                            color: GAME_COLORS.primary,
-                            '& .MuiSlider-markLabel': {
-                                fontSize: '0.65rem',
-                            },
-                        }}
-                    />
-                </Box>
+                )}
+
+                {/* 끝말잇기: 턴 시간 */}
+                {isWordchain && (
+                    <Box sx={{ mb: 2 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                            <Typography variant="subtitle2" fontWeight={600}>
+                                턴 시간
+                            </Typography>
+                            <Typography variant="body2" fontWeight={700} color={GAME_COLORS.primary}>
+                                {formData.turnTimeLimit}초
+                            </Typography>
+                        </Box>
+                        <Slider
+                            value={formData.turnTimeLimit}
+                            onChange={(e, value) => handleChange('turnTimeLimit', value)}
+                            min={10}
+                            max={30}
+                            step={5}
+                            marks={[
+                                { value: 10, label: '10초' },
+                                { value: 15, label: '15초' },
+                                { value: 20, label: '20초' },
+                                { value: 30, label: '30초' },
+                            ]}
+                            sx={{
+                                color: GAME_COLORS.primary,
+                                '& .MuiSlider-markLabel': {
+                                    fontSize: '0.65rem',
+                                },
+                            }}
+                        />
+                    </Box>
+                )}
             </DialogContent>
 
             <DialogActions sx={{ p: 2.5, pt: 0 }}>

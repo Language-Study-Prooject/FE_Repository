@@ -1,4 +1,6 @@
-import {configureStore, createSlice} from '@reduxjs/toolkit'
+import { configureStore, createSlice } from '@reduxjs/toolkit'
+
+import profileReducer from '../domains/profile/store/profileSlice'
 
 // 임시 슬라이스 (빈 store 에러 방지)
 const appSlice = createSlice({
@@ -12,6 +14,7 @@ const appSlice = createSlice({
 export const store = configureStore({
     reducer: {
         app: appSlice.reducer,
+        profile: profileReducer,
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
