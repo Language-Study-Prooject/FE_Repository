@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useRef, useState} from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
     Alert,
     Avatar,
@@ -30,20 +30,20 @@ import {
     messageService,
     voiceService
 } from '../../chat/services/chatService'
-import {useSettings} from '../../../contexts/SettingsContext'
-import {useAuth} from '../../../contexts/AuthContext'
-import {useThemeMode} from '../../../contexts/ThemeContext'
-import {DESIGN_TOKENS, getChatStyles} from '../../../theme/theme'
-import {useChatWebSocket} from '../hooks/useChatWebSocket'
+import { useSettings } from '../../../contexts/SettingsContext'
+import { useAuth } from '../../../contexts/AuthContext'
+import { useThemeMode } from '../../../contexts/ThemeContext'
+import { DESIGN_TOKENS, getChatStyles } from '../../../theme/theme'
+import { useChatWebSocket } from '../hooks/useChatWebSocket'
 import SystemCommandMessage from './SystemCommandMessage'
-import {MessageType} from '../types/chatCommandTypes'
+import { MessageType } from '../types/chatCommandTypes'
 
-const ChatRoomModal = ({open, onClose, room, onLeave}) => {
+const ChatRoomModal = ({ open, onClose, room, onLeave }) => {
     const theme = useTheme()
-    const {mode} = useThemeMode()
+    const { mode } = useThemeMode()
     const isDark = mode === 'dark'
-    const {settings} = useSettings()
-    const {user} = useAuth()
+    const { settings } = useSettings()
+    const { user } = useAuth()
     const currentUserId = user?.userId || user?.username || user?.sub
     const messagesEndRef = useRef(null)
     const dragRef = useRef(null)
@@ -65,10 +65,10 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
     const [error, setError] = useState(null)
     const [playingTTS, setPlayingTTS] = useState(null)
     const [minimized, setMinimized] = useState(false)
-    const [position, setPosition] = useState({x: 0, y: 0})
-    const [savedPosition, setSavedPosition] = useState({x: 0, y: 0})
+    const [position, setPosition] = useState({ x: 0, y: 0 })
+    const [savedPosition, setSavedPosition] = useState({ x: 0, y: 0 })
     const [isDragging, setIsDragging] = useState(false)
-    const [dragOffset, setDragOffset] = useState({x: 0, y: 0})
+    const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
     const [opacity, setOpacity] = useState(100)
     const [opacityAnchorEl, setOpacityAnchorEl] = useState(null)
     // 메시지 목록 조회
@@ -76,7 +76,7 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
         if (!room?.id) return
 
         try {
-            const response = await messageService.getList(room.id, {limit: 50})
+            const response = await messageService.getList(room.id, { limit: 50 })
             const responseData = response.data || response
             const transformedMessages = (responseData.messages || []).map((msg) => ({
                 id: msg.messageId || msg.pk?.replace('MESSAGE#', ''),
@@ -102,9 +102,9 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
 
     // 초기 로드
     useEffect(() => {
-        console.log('[ChatRoomModal] useEffect triggered:', {open, roomId: room?.id, currentUserId})
+        console.log('[ChatRoomModal] useEffect triggered:', { open, roomId: room?.id, currentUserId })
         if (open && room?.id && currentUserId) {
-            console.log('[ChatRoomModal] Initializing...', {roomId: room.id, userId: currentUserId})
+            console.log('[ChatRoomModal] Initializing...', { roomId: room.id, userId: currentUserId })
             setLoading(true)
             setMinimized(false)
 
@@ -125,7 +125,7 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
 
     // 스크롤 맨 아래로
     const scrollToBottom = (instant = false) => {
-        messagesEndRef.current?.scrollIntoView({behavior: instant ? 'instant' : 'smooth'})
+        messagesEndRef.current?.scrollIntoView({ behavior: instant ? 'instant' : 'smooth' })
     }
 
     // 메시지 로드 완료 후 스크롤
@@ -259,7 +259,7 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
         if (!minimized) {
             // 최소화: 현재 위치 저장 후 우측 하단으로 이동
             setSavedPosition(position)
-            setPosition({x: 0, y: 0})
+            setPosition({ x: 0, y: 0 })
         } else {
             // 최대화: 저장된 위치로 복원 후 스크롤 맨 아래로
             setPosition(savedPosition)
@@ -299,7 +299,7 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
             <Paper
                 ref={dragRef}
                 elevation={8}
-                style={{opacity: opacity / 100}}
+                style={{ opacity: opacity / 100 }}
                 sx={{
                     position: 'fixed',
                     bottom: position.y || 20,
@@ -333,7 +333,7 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                         pointerEvents: 'auto',
                     }}
                 >
-                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1, flex: 1, minWidth: 0}}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, minWidth: 0 }}>
                         <Typography variant="subtitle2" fontWeight={600} noWrap>
                             {room?.name || '채팅방'}
                         </Typography>
@@ -358,28 +358,28 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                             />
                         )}
                     </Box>
-                    <Box sx={{display: 'flex'}}>
+                    <Box sx={{ display: 'flex' }}>
                         <IconButton
                             size="small"
                             onClick={(e) => setOpacityAnchorEl(e.currentTarget)}
-                            sx={{color: 'white'}}
+                            sx={{ color: 'white' }}
                             title="투명도"
                         >
-                            <OpacityIcon fontSize="small"/>
+                            <OpacityIcon fontSize="small" />
                         </IconButton>
                         <Popover
                             open={Boolean(opacityAnchorEl)}
                             anchorEl={opacityAnchorEl}
                             onClose={() => setOpacityAnchorEl(null)}
-                            anchorOrigin={{vertical: 'top', horizontal: 'center'}}
-                            transformOrigin={{vertical: 'bottom', horizontal: 'center'}}
+                            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                            transformOrigin={{ vertical: 'bottom', horizontal: 'center' }}
                             slotProps={{
                                 paper: {
-                                    sx: {pointerEvents: 'auto'}
+                                    sx: { pointerEvents: 'auto' }
                                 }
                             }}
                         >
-                            <Box sx={{width: 150, px: 2, py: 1}}>
+                            <Box sx={{ width: 150, px: 2, py: 1 }}>
                                 <Typography variant="caption" color="text.secondary">
                                     투명도: {opacity}%
                                 </Typography>
@@ -392,18 +392,18 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                                 />
                             </Box>
                         </Popover>
-                        <IconButton size="small" onClick={fetchMessages} sx={{color: 'white'}} title="새로고침">
-                            <RefreshIcon fontSize="small"/>
+                        <IconButton size="small" onClick={fetchMessages} sx={{ color: 'white' }} title="새로고침">
+                            <RefreshIcon fontSize="small" />
                         </IconButton>
-                        <IconButton size="small" onClick={handleToggleMinimize} sx={{color: 'white'}}
-                                    title={minimized ? '최대화' : '최소화'}>
-                            {minimized ? <MaximizeIcon fontSize="small"/> : <MinimizeIcon fontSize="small"/>}
+                        <IconButton size="small" onClick={handleToggleMinimize} sx={{ color: 'white' }}
+                            title={minimized ? '최대화' : '최소화'}>
+                            {minimized ? <MaximizeIcon fontSize="small" /> : <MinimizeIcon fontSize="small" />}
                         </IconButton>
-                        <IconButton size="small" onClick={handleLeaveRoom} sx={{color: 'white'}} title="나가기">
-                            <ExitToAppIcon fontSize="small"/>
+                        <IconButton size="small" onClick={handleLeaveRoom} sx={{ color: 'white' }} title="나가기">
+                            <ExitToAppIcon fontSize="small" />
                         </IconButton>
-                        <IconButton size="small" onClick={onClose} sx={{color: 'white'}} title="닫기">
-                            <CloseIcon fontSize="small"/>
+                        <IconButton size="small" onClick={onClose} sx={{ color: 'white' }} title="닫기">
+                            <CloseIcon fontSize="small" />
                         </IconButton>
                     </Box>
                 </Box>
@@ -412,61 +412,61 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                     <>
                         {/* 에러 메시지 */}
                         {error && (
-                            <Alert severity="error" onClose={() => setError(null)} sx={{borderRadius: 0}}>
+                            <Alert severity="error" onClose={() => setError(null)} sx={{ borderRadius: 0 }}>
                                 {error}
                             </Alert>
                         )}
 
                         {/* 메시지 영역 */}
                         {loading ? (
-                                <Box sx={{
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
+                            <Box sx={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                flex: 1,
+                                bgcolor: isDark ? DESIGN_TOKENS.chat.background.dark : DESIGN_TOKENS.chat.background.light,
+                            }}>
+                                <CircularProgress />
+                            </Box>
+                        ) : (
+                            <Box
+                                sx={{
                                     flex: 1,
+                                    overflow: 'auto',
+                                    p: 1,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 0.5,
                                     bgcolor: isDark ? DESIGN_TOKENS.chat.background.dark : DESIGN_TOKENS.chat.background.light,
-                                }}>
-                                    <CircularProgress/>
-                                </Box>
-                            ) : (
-                                <Box
-                                    sx={{
-                                        flex: 1,
-                                        overflow: 'auto',
-                                        p: 1,
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: 0.5,
-                                        bgcolor: isDark ? DESIGN_TOKENS.chat.background.dark : DESIGN_TOKENS.chat.background.light,
-                                        // 스크롤바 숨김 (hover 시만 표시)
-                                        '&::-webkit-scrollbar': {
-                                            width: 6,
-                                        },
-                                        '&::-webkit-scrollbar-thumb': {
-                                            bgcolor: 'transparent',
-                                            borderRadius: 3,
-                                        },
-                                        '&:hover::-webkit-scrollbar-thumb': {
-                                            bgcolor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
-                                        },
-                                    }}
-                                >
-                                    {messages.length === 0 ? (
-                                        <Box sx={{textAlign: 'center', py: 4}}>
-                                            <Typography variant="body2" color="text.secondary">
-                                                첫 메시지를 보내보세요!
-                                            </Typography>
-                                        </Box>
-                                    ) : (
-                                        messages.map((message) => {
-                                            // 시스템 명령어 메시지 (SYSTEM_COMMAND)
-                                            if (message.messageType === MessageType.SYSTEM_COMMAND || message.messageType === 'SYSTEM_COMMAND') {
-                                                return (
-                                                    <SystemCommandMessage key={message.id} data={message.data} />
-                                                )
-                                            }
-
+                                    // 스크롤바 숨김 (hover 시만 표시)
+                                    '&::-webkit-scrollbar': {
+                                        width: 6,
+                                    },
+                                    '&::-webkit-scrollbar-thumb': {
+                                        bgcolor: 'transparent',
+                                        borderRadius: 3,
+                                    },
+                                    '&:hover::-webkit-scrollbar-thumb': {
+                                        bgcolor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+                                    },
+                                }}
+                            >
+                                {messages.length === 0 ? (
+                                    <Box sx={{ textAlign: 'center', py: 4 }}>
+                                        <Typography variant="body2" color="text.secondary">
+                                            첫 메시지를 보내보세요!
+                                        </Typography>
+                                    </Box>
+                                ) : (
+                                    messages.map((message) => {
+                                        // 시스템 명령어 메시지 (SYSTEM_COMMAND)
+                                        if (message.messageType === MessageType.SYSTEM_COMMAND || message.messageType === 'SYSTEM_COMMAND') {
                                             return (
+                                                <SystemCommandMessage key={message.id} data={message.data} />
+                                            )
+                                        }
+
+                                        return (
                                             <Box
                                                 key={message.id}
                                                 sx={{
@@ -488,7 +488,7 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                                                             whiteSpace: 'pre-wrap',
                                                             height: 'auto',
                                                             py: 0.5,
-                                                            '& .MuiChip-label': {whiteSpace: 'pre-wrap'},
+                                                            '& .MuiChip-label': { whiteSpace: 'pre-wrap' },
                                                         }}
                                                     />
                                                 ) : (
@@ -518,7 +518,7 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                                                                 mr: message.isOwn ? 0.5 : 0,
                                                                 fontSize: '0.6rem'
                                                             }}>
-                                                                {message.userId}
+                                                                {message.nickname || message.userId}
                                                             </Typography>
 
                                                             <Box sx={{
@@ -532,20 +532,20 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                                                                             size="small"
                                                                             onClick={() => handlePlayTTS(message.id)}
                                                                             disabled={playingTTS === message.id}
-                                                                            sx={{p: 0.25}}
+                                                                            sx={{ p: 0.25 }}
                                                                         >
                                                                             {playingTTS === message.id ? (
-                                                                                <CircularProgress size={12}/>
+                                                                                <CircularProgress size={12} />
                                                                             ) : (
                                                                                 <VolumeUpIcon sx={{
                                                                                     fontSize: 14,
                                                                                     color: 'text.secondary'
-                                                                                }}/>
+                                                                                }} />
                                                                             )}
                                                                         </IconButton>
                                                                         <Typography variant="caption"
-                                                                                    color="text.secondary"
-                                                                                    sx={{fontSize: '0.55rem'}}>
+                                                                            color="text.secondary"
+                                                                            sx={{ fontSize: '0.55rem' }}>
                                                                             {formatTime(message.createdAt)}
                                                                         </Typography>
                                                                     </>
@@ -584,17 +584,17 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                                                                             size="small"
                                                                             onClick={() => handlePlayTTS(message.id)}
                                                                             disabled={playingTTS === message.id}
-                                                                            sx={{p: 0.25}}
+                                                                            sx={{ p: 0.25 }}
                                                                         >
                                                                             {playingTTS === message.id ? (
-                                                                                <CircularProgress size={12}/>
+                                                                                <CircularProgress size={12} />
                                                                             ) : (
-                                                                                <VolumeUpIcon sx={{fontSize: 14}}/>
+                                                                                <VolumeUpIcon sx={{ fontSize: 14 }} />
                                                                             )}
                                                                         </IconButton>
                                                                         <Typography variant="caption"
-                                                                                    color="text.secondary"
-                                                                                    sx={{fontSize: '0.55rem'}}>
+                                                                            color="text.secondary"
+                                                                            sx={{ fontSize: '0.55rem' }}>
                                                                             {formatTime(message.createdAt)}
                                                                         </Typography>
                                                                     </Box>
@@ -604,11 +604,12 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                                                     </>
                                                 )}
                                             </Box>
-                                        )})
-                                    )}
-                                    <div ref={messagesEndRef}/>
-                                </Box>
-                            )}
+                                        )
+                                    })
+                                )}
+                                <div ref={messagesEndRef} />
+                            </Box>
+                        )}
 
                         {/* 입력 영역 */}
                         <Box
@@ -651,12 +652,12 @@ const ChatRoomModal = ({open, onClose, room, onLeave}) => {
                                     color: 'white',
                                     width: 32,
                                     height: 32,
-                                    '&:hover': {bgcolor: 'primary.dark'},
-                                    '&:disabled': {bgcolor: 'grey.300'},
+                                    '&:hover': { bgcolor: 'primary.dark' },
+                                    '&:disabled': { bgcolor: 'grey.300' },
                                 }}
                             >
-                                {sendingMessage ? <CircularProgress size={16} color="inherit"/> :
-                                    <SendIcon fontSize="small"/>}
+                                {sendingMessage ? <CircularProgress size={16} color="inherit" /> :
+                                    <SendIcon fontSize="small" />}
                             </IconButton>
                         </Box>
                     </>
