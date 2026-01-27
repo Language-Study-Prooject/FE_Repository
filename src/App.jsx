@@ -46,6 +46,7 @@ import LoginPage from './pages/Login'
 import SignUpPage from './pages/SignUp'
 import { fetchMyProfile } from "./domains/profile/store/profileSlice";
 import ProfilePage from './domains/profile/pages/ProfilePage'
+import OPIcPage from './domains/opic/pages/OPIcPage'
 
 
 function ProtectedRoute({ children }) {
@@ -666,16 +667,6 @@ function Dashboard() {
     )
 }
 
-// Placeholder Pages
-function OpicPage() {
-    return (
-        <Container maxWidth="lg" sx={{ py: 4 }}>
-            <Typography variant="h4" fontWeight={700}>OPIC Practice</Typography>
-            <Typography color="text.secondary">Level-based training</Typography>
-        </Container>
-    )
-}
-
 
 function ReportsPage() {
     const { isKorean } = useSettings()
@@ -1185,7 +1176,7 @@ function App() {
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/profile" element={<ProfilePage />} />
-                    <Route path="/opic" element={<OpicPage />} />
+                    <Route path="/opic" element={<OPIcPage />} />
                     <Route path="/freetalk/people" element={<FreetalkPeoplePage />} />
                     <Route path="/freetalk/ai" element={<SpeakingPage />} />
                     <Route path="/writing" element={<WritingPage />} />
