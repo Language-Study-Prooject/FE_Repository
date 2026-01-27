@@ -40,7 +40,7 @@ import {
 } from '@mui/icons-material'
 import { useSettings } from '../../../contexts/SettingsContext'
 import { useAuth } from '../../../contexts/AuthContext'
-import { sessionService, uploadAudioToS3 } from '../services/opicService'
+import { sessionService, uploadAudioToS3, pollForAnswerResult } from '../services/opicService'
 import {
     OPIC_TOPICS,
     OPIC_TOPIC_LABELS,
@@ -73,6 +73,7 @@ export default function OPIcPage() {
     const [mediaRecorder, setMediaRecorder] = useState(null)
     const [recordingTime, setRecordingTime] = useState(0)
     const audioChunksRef = useRef([])
+    const [processingStatus, setProcessingStatus] = useState(null)
 
     // Upload state
     const [uploadUrl, setUploadUrl] = useState(null)
@@ -163,6 +164,7 @@ export default function OPIcPage() {
         setRecordedUrl(null)
         setUploadUrl(null)
         setS3Key(null)
+        setProcessingStatus(null)
     }
 
     // Get next question
@@ -179,10 +181,15 @@ export default function OPIcPage() {
                 return
             }
 
-            // 질문 데이터로 화면 업데이트
-            displayQuestion(data)  // data.question → data로 수정
-            setQuestionNumber(data.questionNumber || questionNumber + 1)
-            setTotalQuestions(data.totalQuestions || totalQuestions)
+            if (data.question) {
+                displayQuestion(data.question)
+
+                // 질문 번호 업데이트 (백엔드에서 오는 questionNumber가 있으면 사용, 없으면 수동 계산)
+                setQuestionNumber(data.question.questionNumber || questionNumber + 1)
+            } else {
+                console.error("❌ 질문 데이터를 찾을 수 없습니다:", data)
+                setError(isKorean ? '질문 데이터를 불러오지 못했습니다' : 'Failed to load question data')
+            }
         } catch (err) {
             console.error('Failed to get next question:', err)
             setError(isKorean ? '다음 질문을 불러오는데 실패했습니다' : 'Failed to get next question')
@@ -256,18 +263,34 @@ export default function OPIcPage() {
             setLoading(true)
             setError(null)
             setUploadProgress(0)
+            setProcessingStatus(isKorean ? 'S3에 업로드 중...' : 'Uploading to S3...')
 
-            // Upload to S3
+            // 1. S3 업로드
             await uploadAudioToS3(uploadUrl, recordedBlob)
-            setUploadProgress(50)
+            setUploadProgress(20)
+            setProcessingStatus(isKorean ? '답변 제출 중...' : 'Submitting...')
 
-            // Submit answer
-            const data = await sessionService.submitAnswer(sessionId, { audioS3Key: s3Key })
-            setFeedback(data)
+            // 2. 답변 제출 (비동기 처리 시작 요청)
+            const submitResult = await sessionService.submitAnswer(sessionId, { audioS3Key: s3Key })
+            setUploadProgress(40)
+            setProcessingStatus(isKorean ? 'AI가 분석 중...' : 'AI is analyzing...')
+
+            // 3. 폴링으로 결과 대기 (백엔드 완료될 때까지 반복 확인)
+            const result = await pollForAnswerResult(sessionId, submitResult.questionIndex, {
+                onProgress: ({ attempt }) => {
+                    // 진행 상황에 따라 프로그레스 바를 조금씩 채움 (40% ~ 90%)
+                    setUploadProgress(prev => Math.min(prev + 1, 90))
+                }
+            })
+
+            // 4. 최종 결과 세팅
+            setFeedback(result)
             setUploadProgress(100)
+            setProcessingStatus(null)
+
         } catch (err) {
             console.error('Failed to submit answer:', err)
-            setError(isKorean ? '답변 제출에 실패했습니다' : 'Failed to submit answer')
+            setError(isKorean ? '분석 중 오류가 발생했습니다. 다시 시도해주세요.' : 'Analysis failed. Please try again.')
         } finally {
             setLoading(false)
             setTimeout(() => setUploadProgress(0), 2000)
@@ -578,11 +601,25 @@ export default function OPIcPage() {
                                             </Button>
                                         ) : (
                                             <Button fullWidth variant="contained" color="success" startIcon={<SendIcon />} onClick={handleSubmitAnswer} disabled={loading} sx={{ borderRadius: '12px', py: 1.5 }}>
-                                                {loading ? 'Submitting...' : isKorean ? '제출하기' : 'Submit'}
+                                                {loading ? (
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                        <CircularProgress size={20} color="inherit" />
+                                                        <span>{processingStatus || (isKorean ? '처리 중...' : 'Processing...')}</span>
+                                                    </Box>
+                                                ) : isKorean ? '제출하기' : 'Submit'}
                                             </Button>
                                         )}
                                     </Box>
-                                    {uploadProgress > 0 && <LinearProgress variant="determinate" value={uploadProgress} sx={{ mt: 2, borderRadius: 4, height: 6 }} />}
+                                    {uploadProgress > 0 && (
+                                        <Box sx={{ mt: 2 }}>
+                                            <LinearProgress variant="determinate" value={uploadProgress} sx={{ borderRadius: 4, height: 6 }} />
+                                            {processingStatus && (
+                                                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', textAlign: 'center' }}>
+                                                    {processingStatus}
+                                                </Typography>
+                                            )}
+                                        </Box>
+                                    )}
                                 </CardContent>
                             </Card>
                         )}
