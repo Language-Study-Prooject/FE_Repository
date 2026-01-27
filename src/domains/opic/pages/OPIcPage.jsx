@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
     Alert,
     Box,
@@ -18,6 +19,8 @@ import {
     Chip,
     Divider,
     IconButton,
+    Grid,
+    Paper
 } from '@mui/material'
 import {
     RecordVoiceOver as VoiceIcon,
@@ -29,10 +32,15 @@ import {
     Send as SendIcon,
     UploadFile as UploadIcon,
     VolumeUp as SpeakerIcon,
+    Home as HomeIcon,
+    TrendingUp as TrendingUpIcon,
+    Warning as WarningIcon,
+    Lightbulb as LightbulbIcon,
+    Email as EmailIcon
 } from '@mui/icons-material'
 import { useSettings } from '../../../contexts/SettingsContext'
 import { useAuth } from '../../../contexts/AuthContext'
-import { sessionService, uploadAudioToS3 } from '../services/opicService'
+import { sessionService, uploadAudioToS3, pollForAnswerResult } from '../services/opicService'
 import {
     OPIC_TOPICS,
     OPIC_TOPIC_LABELS,
@@ -43,6 +51,7 @@ export default function OPIcPage() {
     const { t, isKorean } = useSettings()
     const { user } = useAuth()
     const theme = useTheme()
+    const navigate = useNavigate()
     const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
     // Session state
@@ -64,6 +73,7 @@ export default function OPIcPage() {
     const [mediaRecorder, setMediaRecorder] = useState(null)
     const [recordingTime, setRecordingTime] = useState(0)
     const audioChunksRef = useRef([])
+    const [processingStatus, setProcessingStatus] = useState(null)
 
     // Upload state
     const [uploadUrl, setUploadUrl] = useState(null)
@@ -71,6 +81,10 @@ export default function OPIcPage() {
 
     // Feedback state
     const [feedback, setFeedback] = useState(null)
+
+    // Report state
+    const [sessionReport, setSessionReport] = useState(null)
+    const [showReport, setShowReport] = useState(false)
 
     // UI state
     const [loading, setLoading] = useState(false)
@@ -150,6 +164,7 @@ export default function OPIcPage() {
         setRecordedUrl(null)
         setUploadUrl(null)
         setS3Key(null)
+        setProcessingStatus(null)
     }
 
     // Get next question
@@ -162,14 +177,19 @@ export default function OPIcPage() {
             // 모든 질문 완료 확인
             if (data.completed) {
                 // 세션 완료 처리
-                handleCompleteSession()
+                await handleCompleteSession()
                 return
             }
 
-            // 질문 데이터로 화면 업데이트
-            displayQuestion(data)  // data.question → data로 수정
-            setQuestionNumber(data.questionNumber || questionNumber + 1)
-            setTotalQuestions(data.totalQuestions || totalQuestions)
+            if (data.question) {
+                displayQuestion(data.question)
+
+                // 질문 번호 업데이트 (백엔드에서 오는 questionNumber가 있으면 사용, 없으면 수동 계산)
+                setQuestionNumber(data.question.questionNumber || questionNumber + 1)
+            } else {
+                console.error("❌ 질문 데이터를 찾을 수 없습니다:", data)
+                setError(isKorean ? '질문 데이터를 불러오지 못했습니다' : 'Failed to load question data')
+            }
         } catch (err) {
             console.error('Failed to get next question:', err)
             setError(isKorean ? '다음 질문을 불러오는데 실패했습니다' : 'Failed to get next question')
@@ -243,18 +263,34 @@ export default function OPIcPage() {
             setLoading(true)
             setError(null)
             setUploadProgress(0)
+            setProcessingStatus(isKorean ? 'S3에 업로드 중...' : 'Uploading to S3...')
 
-            // Upload to S3
+            // 1. S3 업로드
             await uploadAudioToS3(uploadUrl, recordedBlob)
-            setUploadProgress(50)
+            setUploadProgress(20)
+            setProcessingStatus(isKorean ? '답변 제출 중...' : 'Submitting...')
 
-            // Submit answer
-            const data = await sessionService.submitAnswer(sessionId, { audioS3Key: s3Key })
-            setFeedback(data)
+            // 2. 답변 제출 (비동기 처리 시작 요청)
+            const submitResult = await sessionService.submitAnswer(sessionId, { audioS3Key: s3Key })
+            setUploadProgress(40)
+            setProcessingStatus(isKorean ? 'AI가 분석 중...' : 'AI is analyzing...')
+
+            // 3. 폴링으로 결과 대기 (백엔드 완료될 때까지 반복 확인)
+            const result = await pollForAnswerResult(sessionId, submitResult.questionIndex, {
+                onProgress: ({ attempt }) => {
+                    // 진행 상황에 따라 프로그레스 바를 조금씩 채움 (40% ~ 90%)
+                    setUploadProgress(prev => Math.min(prev + 1, 90))
+                }
+            })
+
+            // 4. 최종 결과 세팅
+            setFeedback(result)
             setUploadProgress(100)
+            setProcessingStatus(null)
+
         } catch (err) {
             console.error('Failed to submit answer:', err)
-            setError(isKorean ? '답변 제출에 실패했습니다' : 'Failed to submit answer')
+            setError(isKorean ? '분석 중 오류가 발생했습니다. 다시 시도해주세요.' : 'Analysis failed. Please try again.')
         } finally {
             setLoading(false)
             setTimeout(() => setUploadProgress(0), 2000)
@@ -269,24 +305,36 @@ export default function OPIcPage() {
             setLoading(true)
             setError(null)
             const report = await sessionService.complete(sessionId)
-            // TODO: Navigate to report page or display report
-            console.log('Session completed:', report)
-            alert(
-                isKorean
-                    ? '세션이 완료되었습니다! 리포트를 확인하세요.'
-                    : 'Session completed! Check your report.'
-            )
-            // Reset for new session
-            setSessionId(null)
-            setCurrentQuestion(null)
-            setQuestionNumber(0)
-            setFeedback(null)
+
+            const reportData = report.data || report;
+
+            // 리포트 데이터 저장 및 화면 전환
+            setSessionReport(reportData)
+            setShowReport(true)
         } catch (err) {
             console.error('Failed to complete session:', err)
             setError(isKorean ? '세션 완료에 실패했습니다' : 'Failed to complete session')
         } finally {
             setLoading(false)
         }
+    }
+
+    const handleStartNewSession = () => {
+        setSessionId(null)
+        setCurrentQuestion(null)
+        setQuestionNumber(0)
+        setFeedback(null)
+        setShowReport(false)
+        setSessionReport(null)
+        setRecordedBlob(null)
+        setRecordedUrl(null)
+        setUploadUrl(null)
+        setS3Key(null)
+    }
+
+    // Navigate to reports page
+    const handleGoToReports = () => {
+        navigate('/reports')
     }
 
     // Play question audio
@@ -315,491 +363,332 @@ export default function OPIcPage() {
         }
     }
 
+    const getLevelColor = (level) => {
+        const colors = {
+            'IM1': '#22c55e', 'IM2': '#3b82f6', 'IM3': '#8b5cf6',
+            'IH': '#f97316', 'AL': '#ef4444'
+        };
+        return colors[level] || '#3b82f6';
+    }
+
+    // 결과 리포트 화면
+    if (showReport && sessionReport) {
+        return (
+            <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 800, mx: 'auto' }}>
+                <Paper elevation={0} sx={{ p: { xs: 3, md: 5 }, borderRadius: 4, border: '1px solid #e0e0e0', bgcolor: '#fff' }}>
+
+                    {/* Header: Score & Level */}
+                    <Box sx={{ textAlign: 'center', mb: 5 }}>
+                        <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 1.5, fontWeight: 600 }}>
+                            {isKorean ? '테스트 결과 리포트' : 'TEST REPORT'}
+                        </Typography>
+
+                        <Box sx={{ mt: 3, mb: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6 }}>
+                            {/* Level */}
+                            <Box sx={{ textAlign: 'center' }}>
+                                <Typography variant="h2" fontWeight={800} color="primary.main" sx={{ lineHeight: 1, mb: 0.5 }}>
+                                    {sessionReport.estimatedLevel}
+                                </Typography>
+                                <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ letterSpacing: 1 }}>LEVEL</Typography>
+                            </Box>
+
+                            <Divider orientation="vertical" flexItem sx={{ height: 40, alignSelf: 'center', bgcolor: '#e0e0e0' }} />
+
+                            {/* Score */}
+                            <Box sx={{ textAlign: 'center' }}>
+                                <Typography variant="h2" fontWeight={800} color="text.primary" sx={{ lineHeight: 1, mb: 0.5 }}>
+                                    {sessionReport.overallScore}
+                                </Typography>
+                                <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ letterSpacing: 1 }}>SCORE</Typography>
+                            </Box>
+                        </Box>
+
+                        {/* Overall Feedback */}
+                        <Box sx={{ bgcolor: '#f8fafc', p: 3, borderRadius: 3, textAlign: 'left', border: '1px solid #f1f5f9' }}>
+                            <Typography variant="body1" sx={{ lineHeight: 1.8, color: '#334155' }}>
+                                {sessionReport.feedback}
+                            </Typography>
+                        </Box>
+                    </Box>
+
+                    <Divider sx={{ my: 4, borderStyle: 'dashed' }} />
+
+                    {/* Details Grid */}
+                    <Grid container spacing={4}>
+                        {[
+                            { title: isKorean ? "잘한 점" : "Strengths", items: sessionReport.strengths, color: "#16a34a", icon: TrendingUpIcon },
+                            { title: isKorean ? "아쉬운 점" : "Weaknesses", items: sessionReport.weaknesses, color: "#ea580c", icon: WarningIcon },
+                            { title: isKorean ? "학습 추천" : "Tips", items: sessionReport.recommendations, color: "#7c3aed", icon: LightbulbIcon }
+                        ].map((section, idx) => (
+                            <Grid item xs={12} md={4} key={idx}>
+                                <Paper elevation={0} sx={{ p: 2, height: '100%', border: `1px solid ${section.color}`, borderRadius: 3, bgcolor: `${section.color}0d` }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                                        <section.icon sx={{ color: section.color }} />
+                                        <Typography variant="h6" fontWeight={700} color={section.color}>
+                                            {section.title}
+                                        </Typography>
+                                    </Box>
+                                    <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                                        {section.items && section.items.length > 0 ? (
+                                            section.items.map((item, i) => (
+                                                <Typography component="li" key={i} variant="body2" sx={{ mb: 1, color: '#334155' }}>
+                                                    {item}
+                                                </Typography>
+                                            ))
+                                        ) : (
+                                            <Typography variant="body2" color="text.secondary">-</Typography>
+                                        )}
+                                    </Box>
+                                </Paper>
+                            </Grid>
+                        ))}
+                    </Grid>
+
+                    {/* Email Notification */}
+                    <Box sx={{ mt: 5, textAlign: 'center' }}>
+                        <Chip
+                            icon={<EmailIcon style={{ fontSize: 16 }} />}
+                            label={isKorean ? "결과가 이메일로 발송되었습니다." : "Report sent to your email."}
+                            variant="outlined"
+                            size="small"
+                            sx={{ borderColor: '#e2e8f0', color: '#94a3b8', fontSize: '0.8rem' }}
+                        />
+                    </Box>
+                </Paper>
+
+                {/* Bottom Actions */}
+                <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center', gap: 2 }}>
+                    <Button
+                        onClick={() => navigate('/')}
+                        sx={{ color: '#64748b' }}
+                    >
+                        {isKorean ? '나가기' : 'Exit'}
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleStartNewSession}
+                        disableElevation
+                        sx={{
+                            borderRadius: 2,
+                            px: 3,
+                            py: 1,
+                            bgcolor: '#0f172a',
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            '&:hover': { bgcolor: '#1e293b' }
+                        }}
+                    >
+                        {isKorean ? '새 테스트 시작' : 'Start New Test'}
+                    </Button>
+                </Box>
+            </Box>
+        );
+    }
+
     return (
-        <Box
-            sx={{
-                minHeight: 'calc(100vh - 120px)',
-                display: 'flex',
-                flexDirection: 'column',
-                backgroundColor: '#fff',
-                borderRadius: { xs: 0, md: '20px' },
-                border: { xs: 'none', md: '1px solid' },
-                borderColor: 'divider',
-                mx: { xs: 0, md: 3 },
-                my: { xs: 0, md: 2 },
-                overflow: 'auto',
-            }}
-        >
+        <Box sx={{
+            minHeight: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column', backgroundColor: '#fff',
+            borderRadius: { xs: 0, md: '20px' }, border: { xs: 'none', md: '1px solid' }, borderColor: 'divider',
+            mx: { xs: 0, md: 3 }, my: { xs: 0, md: 2 }, overflow: 'auto',
+        }}>
+
             {/* Header */}
-            <Box
-                sx={{
-                    p: 2,
-                    borderBottom: '1px solid',
-                    borderColor: 'divider',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                    backgroundColor: '#fafafa',
-                }}
-            >
-                <Box
-                    sx={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: '12px',
-                        background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: '0 4px 12px -2px rgba(245, 158, 11, 0.3)',
-                    }}
-                >
+            <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 2, backgroundColor: '#fafafa' }}>
+                <Box sx={{ width: 40, height: 40, borderRadius: '12px', background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px -2px rgba(245, 158, 11, 0.3)' }}>
                     <VoiceIcon sx={{ fontSize: 22, color: 'white' }} />
                 </Box>
-
                 <Box>
-                    <Typography variant="h6" fontWeight={700}>
-                        {isKorean ? 'OPIc 스피킹 테스트' : 'OPIc Speaking Test'}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                        {isKorean
-                            ? 'AI 기반 OPIc 연습 및 피드백'
-                            : 'AI-powered English speaking practice & feedback'}
-                    </Typography>
+                    <Typography variant="h6" fontWeight={700}>{isKorean ? 'OPIc 스피킹 테스트' : 'OPIc Speaking Test'}</Typography>
+                    <Typography variant="caption" color="text.secondary">{isKorean ? 'AI 기반 OPIc 연습 및 피드백' : 'AI-powered English speaking practice'}</Typography>
                 </Box>
             </Box>
 
             {/* Main Content */}
-            <Box
-                sx={{
-                    flex: 1,
-                    p: { xs: 2, md: 4 },
-                    maxWidth: 800,
-                    width: '100%',
-                    mx: 'auto',
-                }}
-            >
-                {error && (
-                    <Alert severity="error" sx={{ mb: 3, borderRadius: '12px' }}>
-                        {error}
-                    </Alert>
-                )}
+            <Box sx={{ flex: 1, p: { xs: 2, md: 4 }, maxWidth: 800, width: '100%', mx: 'auto' }}>
+                {error && <Alert severity="error" sx={{ mb: 3, borderRadius: '12px' }}>{error}</Alert>}
 
-                {/* Session Setup */}
+                {/* --- [1] Session Setup --- */}
                 {!sessionId && (
                     <Card sx={{ borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
                         <CardContent sx={{ p: 3 }}>
-                            <Typography variant="h6" fontWeight={600} sx={{ mb: 3 }}>
-                                {isKorean ? 'OPIc 질문 생성' : 'Session Setup'}
-                            </Typography>
+                            <Typography variant="h6" fontWeight={600} sx={{ mb: 3 }}>{isKorean ? 'OPIc 질문 생성' : 'Session Setup'}</Typography>
 
-                            {/* 주제 선택 */}
                             <FormControl fullWidth sx={{ mb: 2 }}>
                                 <InputLabel>{isKorean ? '질문 유형' : 'Question Type'}</InputLabel>
-                                <Select
-                                    value={sessionSettings.topic}
-                                    label={isKorean ? '질문 유형' : 'Question Type'}
-                                    onChange={(e) =>
-                                        setSessionSettings((prev) => ({
-                                            ...prev,
-                                            topic: e.target.value,
-                                        }))
-                                    }
-                                >
+                                <Select value={sessionSettings.topic} label={isKorean ? '질문 유형' : 'Question Type'} onChange={(e) => setSessionSettings((prev) => ({ ...prev, topic: e.target.value }))}>
                                     {Object.values(OPIC_TOPICS).map((topic) => (
-                                        <MenuItem key={topic} value={topic}>
-                                            {isKorean
-                                                ? OPIC_TOPIC_LABELS[topic].ko
-                                                : OPIC_TOPIC_LABELS[topic].en}
-                                        </MenuItem>
+                                        <MenuItem key={topic} value={topic}>{isKorean ? OPIC_TOPIC_LABELS[topic].ko : OPIC_TOPIC_LABELS[topic].en}</MenuItem>
                                     ))}
                                 </Select>
                             </FormControl>
 
-                            {/* 세부 주제 (소재) 선택 - 업데이트된 목록 사용 */}
                             <FormControl fullWidth sx={{ mb: 2 }}>
                                 <InputLabel>{isKorean ? '주제' : 'Topic'}</InputLabel>
-                                <Select
-                                    value={sessionSettings.subTopic}
-                                    label={isKorean ? '주제' : 'Topic'}
-                                    onChange={(e) =>
-                                        setSessionSettings((prev) => ({
-                                            ...prev,
-                                            subTopic: e.target.value,
-                                        }))
-                                    }
-                                    MenuProps={{ PaperProps: { sx: { maxHeight: 300 } } }} // 목록이 기니까 스크롤
-                                >
+                                <Select value={sessionSettings.subTopic} label={isKorean ? '주제' : 'Topic'} onChange={(e) => setSessionSettings((prev) => ({ ...prev, subTopic: e.target.value }))} MenuProps={{ PaperProps: { sx: { maxHeight: 300 } } }}>
                                     {OPIC_SUBTOPICS.map((item) => (
-                                        <MenuItem key={item.value} value={item.value}>
-                                            {isKorean ? item.labelKo : item.labelEn}
-                                        </MenuItem>
+                                        <MenuItem key={item.value} value={item.value}>{isKorean ? item.labelKo : item.labelEn}</MenuItem>
                                     ))}
                                 </Select>
                             </FormControl>
 
-
                             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 3, ml: 1 }}>
-                                * {isKorean
-                                    ? `프로필에 설정된 나의 레벨(${user?.level})에 맞춰 AI 피드백이 제공됩니다.`
-                                    : `AI feedback will be tailored to your current level (${user?.level || 'IM2'}).`}
+                                * {isKorean ? `프로필에 설정된 나의 레벨(${user?.level || 'IM2'})에 맞춰 AI 피드백이 제공됩니다.` : `AI feedback tailored to level (${user?.level || 'IM2'}).`}
                             </Typography>
 
-                            <Button
-                                fullWidth
-                                variant="contained"
-                                size="large"
-                                onClick={handleCreateSession}
-                                disabled={loading}
-                            // ... 스타일 유지
-                            >
-                                {loading ? (
-                                    <CircularProgress size={24} color="inherit" />
-                                ) : isKorean ? (
-                                    '시작하기'
-                                ) : (
-                                    'Start Session'
-                                )}
+                            <Button fullWidth variant="contained" size="large" onClick={handleCreateSession} disabled={loading} sx={{ borderRadius: '12px', py: 1.5 }}>
+                                {loading ? <CircularProgress size={24} color="inherit" /> : isKorean ? '시작하기' : 'Start Session'}
                             </Button>
                         </CardContent>
                     </Card>
                 )}
 
-                {/* Question Area */}
+                {/* --- [2] Question Area --- */}
                 {sessionId && currentQuestion && (
                     <>
                         <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <Chip
-                                label={`${isKorean ? '질문' : 'Question'} ${questionNumber}/${totalQuestions}`}
-                                color="primary"
-                                sx={{ fontWeight: 600 }}
-                            />
-                            <LinearProgress
-                                variant="determinate"
-                                value={(questionNumber / totalQuestions) * 100}
-                                sx={{ flex: 1, height: 8, borderRadius: 4 }}
-                            />
+                            <Chip label={`${isKorean ? '질문' : 'Question'} ${questionNumber}/${totalQuestions}`} color="primary" sx={{ fontWeight: 600 }} />
+                            <LinearProgress variant="determinate" value={(questionNumber / totalQuestions) * 100} sx={{ flex: 1, height: 8, borderRadius: 4 }} />
                         </Box>
 
-                        <Card
-                            sx={{
-                                borderRadius: '12px',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                                mb: 3,
-                                backgroundColor: '#e7f3ff',
-                            }}
-                        >
+                        {/* 질문 카드 */}
+                        <Card sx={{ borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', mb: 3, backgroundColor: '#e7f3ff' }}>
                             <CardContent sx={{ p: 3 }}>
-                                <Typography
-                                    variant="h6"
-                                    fontWeight={600}
-                                    sx={{ mb: 2, color: '#1976d2' }}
-                                >
-                                    {currentQuestion.questionText}
-                                </Typography>
-
+                                <Typography variant="h6" fontWeight={600} sx={{ mb: 2, color: '#1976d2', whiteSpace: 'pre-line' }}>{currentQuestion.questionText}</Typography>
                                 {currentQuestion.audioUrl && (
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <IconButton
-                                            onClick={handlePlayQuestionAudio}
-                                            sx={{
-                                                backgroundColor: '#1976d2',
-                                                color: 'white',
-                                                '&:hover': { backgroundColor: '#1565c0' },
-                                            }}
-                                        >
-                                            {isPlayingQuestion ? (
-                                                <PauseIcon />
-                                            ) : (
-                                                <SpeakerIcon />
-                                            )}
+                                        <IconButton onClick={handlePlayQuestionAudio} sx={{ backgroundColor: '#1976d2', color: 'white', '&:hover': { backgroundColor: '#1565c0' } }}>
+                                            {isPlayingQuestion ? <PauseIcon /> : <SpeakerIcon />}
                                         </IconButton>
-                                        <Typography variant="body2" color="text.secondary">
-                                            {isKorean ? '질문 듣기' : 'Listen to question'}
-                                        </Typography>
-                                        <audio
-                                            ref={questionAudioRef}
-                                            src={currentQuestion.audioUrl}
-                                            onEnded={() => setIsPlayingQuestion(false)}
-                                            style={{ display: 'none' }}
-                                        />
+                                        <Typography variant="body2" color="text.secondary">{isKorean ? '질문 듣기' : 'Listen'}</Typography>
+                                        <audio ref={questionAudioRef} src={currentQuestion.audioUrl} onEnded={() => setIsPlayingQuestion(false)} style={{ display: 'none' }} />
                                     </Box>
                                 )}
                             </CardContent>
                         </Card>
 
-                        {/* Recording Area */}
-                        <Card
-                            sx={{
-                                borderRadius: '12px',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                                mb: 3,
-                            }}
-                        >
+                        {/* 녹음 카드 */}
+                        <Card sx={{ borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', mb: 3 }}>
                             <CardContent sx={{ p: 3 }}>
-                                <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
-                                    {isKorean ? '답변 녹음' : 'Record Answer'}
-                                </Typography>
-
-                                <Box
-                                    sx={{
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        gap: 2,
-                                    }}
-                                >
-                                    <Button
-                                        variant={isRecording ? 'outlined' : 'contained'}
-                                        color={isRecording ? 'error' : 'primary'}
-                                        size="large"
-                                        startIcon={isRecording ? <StopIcon /> : <MicIcon />}
-                                        onClick={toggleRecording}
-                                        disabled={feedback !== null}
-                                        sx={{
-                                            borderRadius: '12px',
-                                            textTransform: 'none',
-                                            fontWeight: 600,
-                                            minWidth: 200,
-                                            py: 1.5,
-                                            animation: isRecording
-                                                ? 'pulse 1.5s ease-in-out infinite'
-                                                : 'none',
-                                            '@keyframes pulse': {
-                                                '0%, 100%': { opacity: 1 },
-                                                '50%': { opacity: 0.6 },
-                                            },
-                                        }}
-                                    >
-                                        {isRecording
-                                            ? isKorean
-                                                ? '녹음 중지'
-                                                : 'Stop Recording'
-                                            : isKorean
-                                                ? '녹음 시작'
-                                                : 'Start Recording'}
+                                <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>{isKorean ? '답변 녹음' : 'Record Answer'}</Typography>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                                    <Button variant={isRecording ? 'outlined' : 'contained'} color={isRecording ? 'error' : 'primary'} size="large" startIcon={isRecording ? <StopIcon /> : <MicIcon />} onClick={toggleRecording} disabled={feedback !== null} sx={{ borderRadius: '12px', minWidth: 200, py: 1.5, animation: isRecording ? 'pulse 1.5s infinite' : 'none', '@keyframes pulse': { '0%, 100%': { opacity: 1 }, '50%': { opacity: 0.6 } } }}>
+                                        {isRecording ? (isKorean ? '녹음 중지' : 'Stop') : (isKorean ? '녹음 시작' : 'Start Recording')}
                                     </Button>
-
-                                    {isRecording && (
-                                        <Typography variant="h6" color="error" fontWeight={600}>
-                                            {formatTime(recordingTime)}
-                                        </Typography>
-                                    )}
-
+                                    {isRecording && <Typography variant="h6" color="error" fontWeight={600}>{formatTime(recordingTime)}</Typography>}
                                     {recordedUrl && !isRecording && (
-                                        <Box
-                                            sx={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: 1,
-                                                width: '100%',
-                                            }}
-                                        >
-                                            <IconButton
-                                                onClick={handlePlayRecordedAudio}
-                                                sx={{
-                                                    backgroundColor: '#10b981',
-                                                    color: 'white',
-                                                    '&:hover': { backgroundColor: '#059669' },
-                                                }}
-                                            >
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                                            <IconButton onClick={handlePlayRecordedAudio} sx={{ backgroundColor: '#10b981', color: 'white', '&:hover': { backgroundColor: '#059669' } }}>
                                                 {isPlayingRecorded ? <PauseIcon /> : <PlayIcon />}
                                             </IconButton>
                                             <Box sx={{ flex: 1 }}>
-                                                <Typography variant="body2" fontWeight={600}>
-                                                    {isKorean ? '녹음 완료' : 'Recording Ready'}
-                                                </Typography>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {isKorean
-                                                        ? '재생하여 확인하세요'
-                                                        : 'Play to review'}
-                                                </Typography>
+                                                <Typography variant="body2" fontWeight={600}>{isKorean ? '녹음 완료' : 'Recorded'}</Typography>
                                             </Box>
-                                            <audio
-                                                ref={recordedAudioRef}
-                                                src={recordedUrl}
-                                                onEnded={() => setIsPlayingRecorded(false)}
-                                                style={{ display: 'none' }}
-                                            />
+                                            <audio ref={recordedAudioRef} src={recordedUrl} onEnded={() => setIsPlayingRecorded(false)} style={{ display: 'none' }} />
                                         </Box>
                                     )}
                                 </Box>
                             </CardContent>
                         </Card>
 
-                        {/* Submit Area */}
+                        {/* 제출 버튼 영역 */}
                         {recordedBlob && !feedback && (
-                            <Card
-                                sx={{
-                                    borderRadius: '12px',
-                                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                                    mb: 3,
-                                }}
-                            >
+                            <Card sx={{ borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', mb: 3 }}>
                                 <CardContent sx={{ p: 3 }}>
                                     <Box sx={{ display: 'flex', gap: 2 }}>
                                         {!uploadUrl ? (
-                                            <Button
-                                                fullWidth
-                                                variant="outlined"
-                                                startIcon={<UploadIcon />}
-                                                onClick={handleGetUploadUrl}
-                                                disabled={loading}
-                                                sx={{
-                                                    borderRadius: '12px',
-                                                    textTransform: 'none',
-                                                    fontWeight: 600,
-                                                    py: 1.5,
-                                                }}
-                                            >
-                                                {loading
-                                                    ? isKorean
-                                                        ? '준비 중...'
-                                                        : 'Preparing...'
-                                                    : isKorean
-                                                        ? 'Upload URL 발급'
-                                                        : 'Get Upload URL'}
+                                            <Button fullWidth variant="outlined" startIcon={<UploadIcon />} onClick={handleGetUploadUrl} disabled={loading} sx={{ borderRadius: '12px', py: 1.5 }}>
+                                                {loading ? 'Preparing...' : isKorean ? '업로드 준비' : 'Prepare Upload'}
                                             </Button>
                                         ) : (
-                                            <Button
-                                                fullWidth
-                                                variant="contained"
-                                                color="success"
-                                                startIcon={<SendIcon />}
-                                                onClick={handleSubmitAnswer}
-                                                disabled={loading}
-                                                sx={{
-                                                    borderRadius: '12px',
-                                                    textTransform: 'none',
-                                                    fontWeight: 600,
-                                                    py: 1.5,
-                                                }}
-                                            >
-                                                {loading
-                                                    ? isKorean
-                                                        ? '제출 중...'
-                                                        : 'Submitting...'
-                                                    : isKorean
-                                                        ? '답변 제출'
-                                                        : 'Submit Answer'}
+                                            <Button fullWidth variant="contained" color="success" startIcon={<SendIcon />} onClick={handleSubmitAnswer} disabled={loading} sx={{ borderRadius: '12px', py: 1.5 }}>
+                                                {loading ? (
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                        <CircularProgress size={20} color="inherit" />
+                                                        <span>{processingStatus || (isKorean ? '처리 중...' : 'Processing...')}</span>
+                                                    </Box>
+                                                ) : isKorean ? '제출하기' : 'Submit'}
                                             </Button>
                                         )}
                                     </Box>
                                     {uploadProgress > 0 && (
-                                        <LinearProgress
-                                            variant="determinate"
-                                            value={uploadProgress}
-                                            sx={{ mt: 2, borderRadius: 4, height: 6 }}
-                                        />
+                                        <Box sx={{ mt: 2 }}>
+                                            <LinearProgress variant="determinate" value={uploadProgress} sx={{ borderRadius: 4, height: 6 }} />
+                                            {processingStatus && (
+                                                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', textAlign: 'center' }}>
+                                                    {processingStatus}
+                                                </Typography>
+                                            )}
+                                        </Box>
                                     )}
                                 </CardContent>
                             </Card>
                         )}
 
-                        {/* Feedback Area */}
+                        {/* 피드백 및 다음 질문 버튼 */}
                         {feedback && (
-                            <Card
-                                sx={{
-                                    borderRadius: '12px',
-                                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                                    mb: 3,
-                                }}
-                            >
+                            <Card sx={{ borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', mb: 3 }}>
                                 <CardContent sx={{ p: 3 }}>
-                                    <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
-                                        {isKorean ? 'AI 피드백' : 'AI Feedback'}
-                                    </Typography>
+                                    <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>AI Feedback</Typography>
 
-                                    {/* My Answer (STT) */}
                                     {feedback.transcript && (
                                         <Box sx={{ mb: 2, p: 2, borderRadius: '8px', backgroundColor: '#f3f4f6' }}>
-                                            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
-                                                {isKorean ? '내 답변' : 'Your Answer'}
-                                            </Typography>
+                                            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>{isKorean ? '내 답변' : 'Your Answer'}</Typography>
                                             <Typography variant="body2">{feedback.transcript}</Typography>
                                         </Box>
                                     )}
 
-                                    {/* Corrected Answer */}
                                     {feedback.feedback?.correctedAnswer && (
                                         <Box sx={{ mb: 2, p: 2, borderRadius: '8px', backgroundColor: '#fef3c7' }}>
-                                            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
-                                                {isKorean ? '교정된 답변' : 'Corrected Answer'}
-                                            </Typography>
+                                            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>{isKorean ? '교정된 답변' : 'Corrected'}</Typography>
                                             <Typography variant="body2">{feedback.feedback.correctedAnswer}</Typography>
                                         </Box>
                                     )}
-
-                                    {/* Model Answer */}
-                                    {feedback.feedback?.sampleAnswer && (
-                                        <Box sx={{ mb: 2, p: 2, borderRadius: '8px', backgroundColor: '#dcfce7' }}>
-                                            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
-                                                {isKorean ? '모범 답변' : 'Model Answer'}
-                                            </Typography>
-                                            <Typography variant="body2">{feedback.feedback.sampleAnswer}</Typography>
-                                        </Box>
-                                    )}
-
-                                    {/* Grammar Errors */}
                                     {feedback.feedback?.errors && feedback.feedback.errors.length > 0 && (
-                                        <Box sx={{ p: 2, borderRadius: '8px', backgroundColor: '#fee2e2' }}>
-                                            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
-                                                {isKorean ? '문법 오류' : 'Grammar Errors'}
+                                        <Box sx={{ p: 2, borderRadius: '8px', backgroundColor: '#fee2e2', mb: 2, border: '1px solid #fca5a5' }}>
+                                            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1, color: '#991b1b' }}>
+                                                {isKorean ? ' 문법 오류 체크' : 'Grammar Errors'}
                                             </Typography>
                                             {feedback.feedback.errors.map((error, index) => (
-                                                <Typography key={index} variant="body2" sx={{ mb: 0.5 }}>
-                                                    • <strong>{error.type}</strong>: {error.original} → {error.corrected}
-                                                    <br />
-                                                    <Typography component="span" variant="caption" color="text.secondary">
-                                                        {error.explanation}
+                                                <Box key={index} sx={{ mb: 1 }}>
+                                                    <Typography variant="body2" sx={{ color: '#b91c1c' }}>
+                                                        • <strong>{error.original}</strong> → <strong>{error.corrected}</strong>
                                                     </Typography>
-                                                </Typography>
+                                                    {error.explanation && (
+                                                        <Typography variant="caption" sx={{ display: 'block', color: '#7f1d1d', ml: 2 }}>
+                                                            └ {error.explanation}
+                                                        </Typography>
+                                                    )}
+                                                </Box>
                                             ))}
                                         </Box>
                                     )}
 
+                                    {(feedback.feedback?.grammarCorrection || feedback.feedback?.feedback) && (
+                                        <Box sx={{ p: 2, borderRadius: '8px', backgroundColor: '#e0f2fe', border: '1px solid #bae6fd', mb: 2 }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                                <LightbulbIcon sx={{ fontSize: 18, color: '#0284c7' }} />
+                                                <Typography variant="subtitle2" fontWeight={600} sx={{ color: '#0369a1' }}>
+                                                    {isKorean ? ' AI 학습 팁 & 문법 교정' : 'Tips & Grammar Correction'}
+                                                </Typography>
+                                            </Box>
+                                            <Typography variant="body2" sx={{ whiteSpace: 'pre-line', color: '#0c4a6e', lineHeight: 1.6 }}>
+                                                {/* grammarCorrection이 있으면 우선 보여주고, 없으면 전체 feedback을 보여줌 */}
+                                                {feedback.feedback.grammarCorrection || feedback.feedback.feedback}
+                                            </Typography>
+                                        </Box>
+                                    )}
 
                                     <Divider sx={{ my: 3 }} />
 
-                                    {/* Action Buttons */}
                                     <Box sx={{ display: 'flex', gap: 2 }}>
-                                        {feedback.hasNextQuestion ? (
-                                            <Button
-                                                fullWidth
-                                                variant="contained"
-                                                onClick={handleNextQuestion}
-                                                disabled={loading}
-                                                sx={{
-                                                    borderRadius: '12px',
-                                                    textTransform: 'none',
-                                                    fontWeight: 600,
-                                                    py: 1.5,
-                                                }}
-                                            >
+                                        {/* 마지막 질문이 아니면 '다음 질문' 버튼, 마지막 질문이면 '세션 완료' 버튼 */}
+                                        {questionNumber < totalQuestions ? (
+                                            <Button fullWidth variant="contained" onClick={handleNextQuestion} disabled={loading} sx={{ borderRadius: '12px', py: 1.5 }}>
                                                 {isKorean ? '다음 질문' : 'Next Question'}
                                             </Button>
                                         ) : (
-                                            <Button
-                                                fullWidth
-                                                variant="contained"
-                                                color="success"
-                                                startIcon={<CheckIcon />}
-                                                onClick={handleCompleteSession}
-                                                disabled={loading}
-                                                sx={{
-                                                    borderRadius: '12px',
-                                                    textTransform: 'none',
-                                                    fontWeight: 600,
-                                                    py: 1.5,
-                                                }}
-                                            >
-                                                {loading
-                                                    ? isKorean
-                                                        ? '완료 중...'
-                                                        : 'Completing...'
-                                                    : isKorean
-                                                        ? '세션 완료'
-                                                        : 'Complete Session'}
+                                            <Button fullWidth variant="contained" color="success" startIcon={<CheckIcon />} onClick={handleCompleteSession} disabled={loading} sx={{ borderRadius: '12px', py: 1.5 }}>
+                                                {loading ? (isKorean ? '완료 중...' : 'Completing...') : (isKorean ? '결과 보기' : 'View Results')}
                                             </Button>
                                         )}
                                     </Box>
@@ -810,5 +699,6 @@ export default function OPIcPage() {
                 )}
             </Box>
         </Box>
-    )
+    );
 }
+
