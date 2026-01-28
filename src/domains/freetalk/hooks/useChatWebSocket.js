@@ -108,8 +108,8 @@ export function useChatWebSocket(roomId, userId) {
                 onPollVote: (data) => {
                     console.log('[useChatWebSocket] Poll vote:', data)
                     const voteData = data.data || data
-                    setMessages((prev) =>
-                        prev.map((msg) => {
+                    setMessages((prev) => {
+                        const updated = prev.map((msg) => {
                             if (msg.id === `poll-${voteData.pollId}` && msg.data) {
                                 return {
                                     ...msg,
@@ -121,14 +121,27 @@ export function useChatWebSocket(roomId, userId) {
                             }
                             return msg
                         })
-                    )
+                        // 투표 알림 메시지 추가 (서버에서 content를 보내는 경우)
+                        if (data.content) {
+                            updated.push({
+                                id: `poll-vote-${Date.now()}`,
+                                messageType: 'POLL_VOTE',
+                                userId: voteData.voterId || voteData.userId,
+                                content: data.content,
+                                createdAt: data.createdAt || new Date().toISOString(),
+                                data: voteData,
+                            })
+                        }
+                        return updated
+                    })
                 },
 
                 onPollEnd: (data) => {
                     console.log('[useChatWebSocket] Poll ended:', data)
                     const endData = data.data || data
-                    setMessages((prev) =>
-                        prev.map((msg) => {
+                    // 기존 투표 메시지 업데이트
+                    setMessages((prev) => {
+                        const updated = prev.map((msg) => {
                             if (msg.id === `poll-${endData.pollId}` && msg.data) {
                                 return {
                                     ...msg,
@@ -141,7 +154,19 @@ export function useChatWebSocket(roomId, userId) {
                             }
                             return msg
                         })
-                    )
+                        // 투표 종료 결과 메시지 추가
+                        if (data.content) {
+                            updated.push({
+                                id: `poll-end-${endData.pollId}`,
+                                messageType: 'POLL_END',
+                                userId: endData.endedBy,
+                                content: data.content,
+                                createdAt: data.createdAt || new Date().toISOString(),
+                                data: endData,
+                            })
+                        }
+                        return updated
+                    })
                 },
 
                 onClearChat: (data) => {
