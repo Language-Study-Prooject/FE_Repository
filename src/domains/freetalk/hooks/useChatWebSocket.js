@@ -96,9 +96,10 @@ export function useChatWebSocket(roomId, userId) {
                     const pollMessage = {
                         id: `poll-${pollData.pollId}`,
                         messageType: 'POLL_CREATE',
-                        userId: pollData.creatorId,
-                        createdAt: pollData.createdAt || new Date().toISOString(),
-                        isOwn: pollData.creatorId === userId,
+                        userId: pollData.creatorId || pollData.createdBy,
+                        content: data.content,
+                        createdAt: data.createdAt || pollData.createdAt || new Date().toISOString(),
+                        isOwn: (pollData.creatorId || pollData.createdBy) === userId,
                         data: pollData,
                     }
                     setMessages((prev) => [...prev, pollMessage])
@@ -107,8 +108,8 @@ export function useChatWebSocket(roomId, userId) {
                 onPollVote: (data) => {
                     console.log('[useChatWebSocket] Poll vote:', data)
                     const voteData = data.data || data
-                    setMessages((prev) =>
-                        prev.map((msg) => {
+                    setMessages((prev) => {
+                        const updated = prev.map((msg) => {
                             if (msg.id === `poll-${voteData.pollId}` && msg.data) {
                                 return {
                                     ...msg,
@@ -120,14 +121,26 @@ export function useChatWebSocket(roomId, userId) {
                             }
                             return msg
                         })
-                    )
+                        if (data.content) {
+                            updated.push({
+                                id: `poll-vote-${Date.now()}`,
+                                messageType: 'POLL_VOTE',
+                                userId: voteData.voterId || voteData.userId,
+                                content: data.content,
+                                createdAt: data.createdAt || new Date().toISOString(),
+                                data: voteData,
+                            })
+                        }
+                        return updated
+                    })
                 },
 
                 onPollEnd: (data) => {
                     console.log('[useChatWebSocket] Poll ended:', data)
+                    console.log('[useChatWebSocket] Poll end content:', data.content)
                     const endData = data.data || data
-                    setMessages((prev) =>
-                        prev.map((msg) => {
+                    setMessages((prev) => {
+                        const updated = prev.map((msg) => {
                             if (msg.id === `poll-${endData.pollId}` && msg.data) {
                                 return {
                                     ...msg,
@@ -140,7 +153,21 @@ export function useChatWebSocket(roomId, userId) {
                             }
                             return msg
                         })
-                    )
+                        console.log('[useChatWebSocket] Adding poll end message, content exists:', !!data.content)
+                        if (data.content) {
+                            const pollEndMsg = {
+                                id: `poll-end-${endData.pollId}`,
+                                messageType: 'POLL_END',
+                                userId: endData.endedBy,
+                                content: data.content,
+                                createdAt: data.createdAt || new Date().toISOString(),
+                                data: endData,
+                            }
+                            console.log('[useChatWebSocket] Poll end message:', pollEndMsg)
+                            updated.push(pollEndMsg)
+                        }
+                        return updated
+                    })
                 },
 
                 onClearChat: (data) => {
@@ -166,16 +193,20 @@ export function useChatWebSocket(roomId, userId) {
                 },
 
                 onSystemCommand: (data) => {
+                    console.log('[useChatWebSocket] System command received:', data)
                     const commandData = data.data || {}
+                    const displayText = data.content || data.message || commandData.content || commandData.message || commandData.displayText || ''
+                    console.log('[useChatWebSocket] System command displayText:', displayText)
                     const commandMessage = {
                         id: `syscmd-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                         messageType: 'SYSTEM_COMMAND',
                         userId: commandData.userId || commandData.nickname || data.userId,
+                        content: displayText,
                         createdAt: data.createdAt || new Date().toISOString(),
                         data: {
                             commandType: commandData.type || 'help',
                             userId: commandData.userId || commandData.nickname,
-                            displayText: data.content || data.message || '',
+                            displayText: displayText,
                             result: typeof commandData.result === 'object'
                                 ? commandData.result
                                 : { value: commandData.result },

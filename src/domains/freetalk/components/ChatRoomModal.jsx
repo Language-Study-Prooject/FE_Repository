@@ -466,6 +466,39 @@ const ChatRoomModal = ({ open, onClose, room, onLeave }) => {
                                             )
                                         }
 
+                                        // 투표 관련 메시지 (POLL_CREATE, POLL_VOTE, POLL_END)
+                                        if (message.messageType === 'POLL_CREATE' || message.messageType === 'poll_create' ||
+                                            message.messageType === 'POLL_VOTE' || message.messageType === 'poll_vote' ||
+                                            message.messageType === 'POLL_END' || message.messageType === 'poll_end') {
+                                            return (
+                                                <Box key={message.id} sx={{ width: '100%', display: 'flex', justifyContent: 'center', py: 0.5 }}>
+                                                    <Paper
+                                                        elevation={0}
+                                                        sx={{
+                                                            px: 2,
+                                                            py: 1,
+                                                            bgcolor: isDark ? 'rgba(139, 92, 246, 0.1)' : '#f5f3ff',
+                                                            border: isDark ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid rgba(139, 92, 246, 0.2)',
+                                                            borderRadius: 2,
+                                                            maxWidth: '85%',
+                                                        }}
+                                                    >
+                                                        <Typography
+                                                            variant="body2"
+                                                            sx={{
+                                                                whiteSpace: 'pre-wrap',
+                                                                color: isDark ? '#e9d5ff' : '#6b21a8',
+                                                                fontWeight: 500,
+                                                                fontSize: '0.8rem',
+                                                            }}
+                                                        >
+                                                            {message.content}
+                                                        </Typography>
+                                                    </Paper>
+                                                </Box>
+                                            )
+                                        }
+
                                         return (
                                             <Box
                                                 key={message.id}
