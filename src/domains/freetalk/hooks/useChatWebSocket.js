@@ -138,6 +138,7 @@ export function useChatWebSocket(roomId, userId) {
 
                 onPollEnd: (data) => {
                     console.log('[useChatWebSocket] Poll ended:', data)
+                    console.log('[useChatWebSocket] Poll end content:', data.content)
                     const endData = data.data || data
                     // 기존 투표 메시지 업데이트
                     setMessages((prev) => {
@@ -155,15 +156,18 @@ export function useChatWebSocket(roomId, userId) {
                             return msg
                         })
                         // 투표 종료 결과 메시지 추가
+                        console.log('[useChatWebSocket] Adding poll end message, content exists:', !!data.content)
                         if (data.content) {
-                            updated.push({
+                            const pollEndMsg = {
                                 id: `poll-end-${endData.pollId}`,
                                 messageType: 'POLL_END',
                                 userId: endData.endedBy,
                                 content: data.content,
                                 createdAt: data.createdAt || new Date().toISOString(),
                                 data: endData,
-                            })
+                            }
+                            console.log('[useChatWebSocket] Poll end message:', pollEndMsg)
+                            updated.push(pollEndMsg)
                         }
                         return updated
                     })
