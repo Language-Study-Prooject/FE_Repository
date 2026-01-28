@@ -97,7 +97,7 @@ export function useChatWebSocket(roomId, userId) {
                         id: `poll-${pollData.pollId}`,
                         messageType: 'POLL_CREATE',
                         userId: pollData.creatorId || pollData.createdBy,
-                        content: data.content, // 서버에서 보낸 포맷팅된 텍스트
+                        content: data.content,
                         createdAt: data.createdAt || pollData.createdAt || new Date().toISOString(),
                         isOwn: (pollData.creatorId || pollData.createdBy) === userId,
                         data: pollData,
@@ -121,7 +121,6 @@ export function useChatWebSocket(roomId, userId) {
                             }
                             return msg
                         })
-                        // 투표 알림 메시지 추가 (서버에서 content를 보내는 경우)
                         if (data.content) {
                             updated.push({
                                 id: `poll-vote-${Date.now()}`,
@@ -140,7 +139,6 @@ export function useChatWebSocket(roomId, userId) {
                     console.log('[useChatWebSocket] Poll ended:', data)
                     console.log('[useChatWebSocket] Poll end content:', data.content)
                     const endData = data.data || data
-                    // 기존 투표 메시지 업데이트
                     setMessages((prev) => {
                         const updated = prev.map((msg) => {
                             if (msg.id === `poll-${endData.pollId}` && msg.data) {
@@ -155,7 +153,6 @@ export function useChatWebSocket(roomId, userId) {
                             }
                             return msg
                         })
-                        // 투표 종료 결과 메시지 추가
                         console.log('[useChatWebSocket] Adding poll end message, content exists:', !!data.content)
                         if (data.content) {
                             const pollEndMsg = {
@@ -198,14 +195,13 @@ export function useChatWebSocket(roomId, userId) {
                 onSystemCommand: (data) => {
                     console.log('[useChatWebSocket] System command received:', data)
                     const commandData = data.data || {}
-                    // displayText 추출 (여러 위치에서 시도)
                     const displayText = data.content || data.message || commandData.content || commandData.message || commandData.displayText || ''
                     console.log('[useChatWebSocket] System command displayText:', displayText)
                     const commandMessage = {
                         id: `syscmd-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                         messageType: 'SYSTEM_COMMAND',
                         userId: commandData.userId || commandData.nickname || data.userId,
-                        content: displayText, // 일반 메시지 렌더링 fallback용
+                        content: displayText,
                         createdAt: data.createdAt || new Date().toISOString(),
                         data: {
                             commandType: commandData.type || 'help',
