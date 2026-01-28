@@ -37,7 +37,7 @@ import {useAuth} from '../../../contexts/AuthContext'
 import {useThemeMode} from '../../../contexts/ThemeContext'
 
 // 카드 셔플 애니메이션 컴포넌트
-function ShuffleAnimation({count, isKorean}) {
+function ShuffleAnimation({count, isKorean, isDark}) {
     return (
         <Box
             sx={{
@@ -623,6 +623,7 @@ export default function DailyLearning() {
                 <ShuffleAnimation
                     count={shuffleCount}
                     isKorean={isKorean}
+                    isDark={isDark}
                 />
             )}
 
