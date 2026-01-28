@@ -178,6 +178,8 @@ class ChatWebSocketConnection {
             case 'system_command':
             case 'SYSTEM_COMMAND':
                 // 시스템 명령어 응답 (예: /dice, /coin, /random, /members, /help 등)
+                console.log('[ChatWebSocket] System command received:', data)
+                console.log('[ChatWebSocket] onSystemCommand callback exists:', !!this.callbacks.onSystemCommand)
                 this.callbacks.onSystemCommand?.(data)
                 break
             case 'poll_create':
