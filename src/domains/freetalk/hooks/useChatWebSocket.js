@@ -96,9 +96,10 @@ export function useChatWebSocket(roomId, userId) {
                     const pollMessage = {
                         id: `poll-${pollData.pollId}`,
                         messageType: 'POLL_CREATE',
-                        userId: pollData.creatorId,
-                        createdAt: pollData.createdAt || new Date().toISOString(),
-                        isOwn: pollData.creatorId === userId,
+                        userId: pollData.creatorId || pollData.createdBy,
+                        content: data.content, // 서버에서 보낸 포맷팅된 텍스트
+                        createdAt: data.createdAt || pollData.createdAt || new Date().toISOString(),
+                        isOwn: (pollData.creatorId || pollData.createdBy) === userId,
                         data: pollData,
                     }
                     setMessages((prev) => [...prev, pollMessage])
