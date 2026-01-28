@@ -192,16 +192,21 @@ export function useChatWebSocket(roomId, userId) {
                 },
 
                 onSystemCommand: (data) => {
+                    console.log('[useChatWebSocket] System command received:', data)
                     const commandData = data.data || {}
+                    // displayText 추출 (여러 위치에서 시도)
+                    const displayText = data.content || data.message || commandData.content || commandData.message || commandData.displayText || ''
+                    console.log('[useChatWebSocket] System command displayText:', displayText)
                     const commandMessage = {
                         id: `syscmd-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                         messageType: 'SYSTEM_COMMAND',
                         userId: commandData.userId || commandData.nickname || data.userId,
+                        content: displayText, // 일반 메시지 렌더링 fallback용
                         createdAt: data.createdAt || new Date().toISOString(),
                         data: {
                             commandType: commandData.type || 'help',
                             userId: commandData.userId || commandData.nickname,
-                            displayText: data.content || data.message || '',
+                            displayText: displayText,
                             result: typeof commandData.result === 'object'
                                 ? commandData.result
                                 : { value: commandData.result },
